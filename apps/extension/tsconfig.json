@@ -1,0 +1,10 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "allowImportingTsExtensions": true,
+    "types": ["chrome", "node"]
+  },
+  "include": [".wxt/wxt.d.ts", "entrypoints", "src", "test", "e2e", "*.config.ts"]
+}
