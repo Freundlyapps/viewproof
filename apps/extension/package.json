@@ -8,11 +8,16 @@
     "build": "wxt build",
     "dev": "wxt",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json",
-    "e2e": "wxt build && playwright test",
-    "postinstall": "wxt prepare"
+    "typecheck": "wxt prepare && tsc -p tsconfig.json",
+    "e2e": "wxt build && playwright test"
   },
   "dependencies": {
     "@open-iq/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/chrome": "^0.3.7",
+    "happy-dom": "^21.0.4",
+    "wxt": "^0.21.5"
   }
 }

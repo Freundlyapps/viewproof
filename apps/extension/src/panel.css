@@ -23,3 +23,4 @@
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 2px 8px; font-size: 12px; }
 .err { color: var(--muted); }
+.head .sfx { color: var(--on-accent); opacity: 0.85; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
