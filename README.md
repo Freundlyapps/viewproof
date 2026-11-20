@@ -7,8 +7,8 @@ License: AGPL-3.0. Status: Phase 1, plan 1 of 8 (browser extension, no server ye
 
 On any YouTube video page, a panel at the top of the right-hand column shows:
 
-- **Views / hour**: views divided by hours since upload ("avg since upload"). If you opened the same video at least 10 minutes earlier, it uses the change since your last visit instead ("since your last visit").
-- **vs usual (×N)**: this video's views divided by the median views of the channel's earlier uploads of the same type (long video or Short), taken from the channel's public RSS feed (its latest 15 uploads). It needs at least 5 earlier videos of the same type; otherwise it says "No data" and why.
+- **Views / hour**: views divided by hours since upload ("avg since upload"). If you opened the same video at least an hour earlier and its count has moved, it uses the change since your last visit instead ("since your last visit"). A line under the tiles shows the exact numbers used.
+- **vs usual (×N)**: this video's views divided by the median views of the channel's earlier uploads of the same type (long video or Short), taken from the channel's public RSS feed (its latest 15 uploads). It needs at least 5 earlier videos of the same type; otherwise it says "No data" and why. Videos older than the channel's latest 15 uploads get "No data" too: the feed has nothing earlier to compare with.
 - **Age** and **tags** (the video's public tags).
 
 Live and upcoming videos show "No data" with the reason instead of a misleading number.
