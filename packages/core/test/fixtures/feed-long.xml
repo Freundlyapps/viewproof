@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+ <link rel="self" href="http://www.youtube.com/feeds/videos.xml?channel_id=UCHnyfMqiRRG1u-2MsSQLbXA"/>
+ <id>yt:channel:HnyfMqiRRG1u-2MsSQLbXA</id>
+ <yt:channelId>HnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+ <title>Veritasium</title>
+ <link rel="alternate" href="https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA"/>
+ <author>
+  <name>Veritasium</name>
+  <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+ </author>
+ <published>2010-07-21T07:18:02+00:00</published>
+ <entry>
+  <id>yt:video:HZjRoKgDnow</id>
+  <yt:videoId>HZjRoKgDnow</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Does adding helium reduce a balloon’s mass?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/HZjRoKgDnow"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-20T14:34:58+00:00</published>
+  <updated>2026-11-20T17:53:32+00:00</updated>
+  <media:group>
+   <media:title>Does adding helium reduce a balloon’s mass?</media:title>
+   <media:content url="https://www.youtube.com/v/HZjRoKgDnow?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i1.ytimg.com/vi/HZjRoKgDnow/hqdefault.jpg" width="480" height="360"/>
+   <media:description>These questions are from our upcoming table top game Elements of Truth.
+
+Order yours today here - https://ve42.co/elementsoftruth_ytsqs
+
+If you want to try a digital version of the game you can play it here on YouTube - https://ve42.co/YouTubePlayables</media:description>
+   <media:community>
+    <media:starRating count="4055" average="5.00" min="1" max="5"/>
+    <media:statistics views="79232"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:uXuQF_PPg5U</id>
+  <yt:videoId>uXuQF_PPg5U</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Randomness is a lie. Let me explain</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=uXuQF_PPg5U"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-18T20:29:44+00:00</published>
+  <updated>2026-11-20T16:43:01+00:00</updated>
+  <media:group>
+   <media:title>Randomness is a lie. Let me explain</media:title>
+   <media:content url="https://www.youtube.com/v/uXuQF_PPg5U?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i2.ytimg.com/vi/uXuQF_PPg5U/hqdefault.jpg" width="480" height="360"/>
+   <media:description>Is anything random? Sponsored by Hostinger. Go to https://hostinger.com/veritasium and use code VERITASIUM for an additional 10% off.
+
+For more on Bell tests, watch our video - https://www.youtube.com/watch?v=NIk_0AW5hFU
+
+You can also check out Matthew Bolan’s video on the maths behind his Minecraft exploit here -  https://www.youtube.com/watch?v=5Icj5TNmBUI
+
+To see the random numbers produced by the quantum experiment in this video, go to https://ve42.co/CURBy
+
+Last year, we launched Elements of Truth on Kickstarter. We’re now in the final stages of production, and Kickstarter rewards are shipping soon. If you missed the campaign, you can now pre-order the retail edition through our new website here - https://ve42.co/YTDEcl  
+If you backed us on Kickstarter, don’t worry, your game will ship before any pre-orders are fulfilled.
+
+If you want to try a digital version of the game you can play it here on YouTube - https://ve42.co/YouTubePlayables
+
+If you’re looking for a molecular modelling kit, try Snatoms, a kit I invented where the atoms snap together magnetically - https://ve42.co/SnatomsV 
+
+Sign up for the Veritasium newsletter for weekly science updates - https://ve42.co/Newsletter
+
+Join our Patreon for early access to work-in-progress videos and behind-the-scenes extras https://ve42.co/VePatreon 
+
+3D graph made with Desmos (https://www.desmos.com), licensed CC BY-SA 4.0 - https://creativecommons.org/licenses/by-sa/4.0/
+
+Not an official Minecraft video. Not approved by or associated with Mojang or Microsoft.
+
+▀▀▀
+00:00 The Hack That Was Stumping Casinos
+01:49 Solitaire and Nuclear Fission
+05:43 The Monte Carlo Method 
+10:04 Finding Minecraft Diamonds With Math 
+13:38 Linear Congruential Generators
+15:39 Why Java's Random Numbers Are Predictable
+19:58 How Russian Hackers Cracked the Mersenne Twister 
+23:27 Cryptographic RNGs and Cloudflare's Lava Lamps 
+27:33 Quantum Entanglement and True Randomness 
+32:05 Using Quasars to Choose Quantum Measurements
+
+▀▀▀
+Special thanks to the experts and collaborators who made this video possible:
+Krister Shalm, for so generously sharing his time and expertise throughout the making of this video, and for all his help in explaining the science behind the quantum random number generator.  Our thanks also goes to Rebecca Jacobson and the rest of the NIST team for showing us their random number generator and reviewing our explanation of it.
+David Kaiser, for his invaluable guidance on the physics of Bell tests, and for generously giving his time to help us get the science right.
+Matthew Bolan for showing us his Minecraft exploit and reviewing the mathematics behind our explanation 
+Brian Hayes for his expertise on the history of random number generation and his guidance on the script
+Makoto Matsumoto, co-creator of the Mersenne Twister, for explaining how it works and sharing some wonderful stories about its creation.
+Darrin Hoke and Brendan Koerner for sharing their knowledge and helping us piece together the casino story.
+Statistics Crystallized, whose excellent video inspired our Mersenne Twister animation - https://www.youtube.com/channel/UCUOHBAq4ZYRh9BWQelSt7jg
+
+▀▀▀
+References: https://ve42.co/RNGRefs
+
+▀▀▀
+Special thanks to our Patreon supporters:
+
+Adam Foreman, Albert Wenger, Alex Porter, Alexander Tamas, André Powell, Anton Ragin, Balkrishna Heroor, Bertrand Serlet, Blake Byers, Bruce, Bryan Ackermann, Chris Brewer, Data Don, Dave Kircher, David Johnston, David Tseng, EJ Alexandra, Evgeny Skvortsov, Garrett Mueller, Gnare, gpoly, Hayden Christensen, Hong Thai Le, Hybrid Minds, Ibby Hadeed, Jeromy Johnson, Juan Benet, Kelcey Steele, KeyWestr, Kyi, Lee Redden, Marinus Kuivenhoven, Mark Heising, Martin Paull, Meekay, meg noah, Michael Krugman, Orlando Bassotto, Parsee Health, Paul Peijzel, Robson, Sam Lutfi, Shalva Bukia, Sinan Taifour, Sweet_Nemo, Tj Steyn, Ubiquity Ventures, wolfee
+
+▀▀▀
+Writers - Emilia Gyles &amp; Daniel Leonard
+Producers and Directors - Emilia Gyles &amp; Daniel Leonard
+Presenter - Gregor Čavlović
+Editor - Peter Nelson
+Additional Editors - Trenton Oliver, James Stuart &amp; Mirza Bajic
+Animators - Andrew Neet, Sarah Houlton, Emma Wright, Domonkos Józsa, Alex Drakoulis &amp; Ksenia Kirsta
+Researchers - Aakash Singh Bagga, Fred Green &amp; Sophia Rose
+Camera Operators - Leadmadness Studio, James Chance &amp; Sarah Houlton
+Thumbnail Designers - Abdallah Rabah, Daniel Ellacott &amp; Jakub Misiek
+Production Team - Jess Bishop-Laggett, Glen Griffiths, Anna Milkovic, Dom Ford, Matthew Cavanagh, Josh Pitt &amp; Justin St-Laurent
+Script Consultant - Emily Zhang
+Executive Producers - Emilia Gyles, Henry van Dyck, Casper Mebius &amp; Derek Muller</media:description>
+   <media:community>
+    <media:starRating count="32973" average="5.00" min="1" max="5"/>
+    <media:statistics views="2408554"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:LDloLvb3yno</id>
+  <yt:videoId>LDloLvb3yno</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>This is not a thread...</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/LDloLvb3yno"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-17T14:14:54+00:00</published>
+  <updated>2026-11-19T22:41:33+00:00</updated>
+  <media:group>
+   <media:title>This is not a thread...</media:title>
+   <media:content url="https://www.youtube.com/v/LDloLvb3yno?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i1.ytimg.com/vi/LDloLvb3yno/hqdefault.jpg" width="480" height="360"/>
+   <media:description>This isn't a thread, it's a stream of molten tin.
+
+Without this tiny stream, the trillion dollar tech industry would grind to a halt.
+
+Animated shots of machine courtesy of ASML</media:description>
+   <media:community>
+    <media:starRating count="43251" average="5.00" min="1" max="5"/>
+    <media:statistics views="1026113"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:V8rT6UI3Crg</id>
+  <yt:videoId>V8rT6UI3Crg</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Making Gunpowder From Scratch</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/V8rT6UI3Crg"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-13T14:00:08+00:00</published>
+  <updated>2026-11-18T06:29:06+00:00</updated>
+  <media:group>
+   <media:title>Making Gunpowder From Scratch</media:title>
+   <media:content url="https://www.youtube.com/v/V8rT6UI3Crg?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/V8rT6UI3Crg/hqdefault.jpg" width="480" height="360"/>
+   <media:description>The earliest gunpowder recipe contains just 3 natural ingredients...
+
+The following demonstration was performed by professionals in a safe and controlled environment; do not attempt at home.</media:description>
+   <media:community>
+    <media:starRating count="27581" average="5.00" min="1" max="5"/>
+    <media:statistics views="978430"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:2QSkkhbl3v4</id>
+  <yt:videoId>2QSkkhbl3v4</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Why you can't trust a test that's 99% accurate</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/2QSkkhbl3v4"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-11T14:00:12+00:00</published>
+  <updated>2026-11-18T15:16:18+00:00</updated>
+  <media:group>
+   <media:title>Why you can't trust a test that's 99% accurate</media:title>
+   <media:content url="https://www.youtube.com/v/2QSkkhbl3v4?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/2QSkkhbl3v4/hqdefault.jpg" width="480" height="360"/>
+   <media:description>What does it mean to get a positive result on a medical test? 
+
+Chances are you might not actually have the disease...</media:description>
+   <media:community>
+    <media:starRating count="42419" average="5.00" min="1" max="5"/>
+    <media:statistics views="1715852"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:rL0qEmTRI-I</id>
+  <yt:videoId>rL0qEmTRI-I</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Why do deserts get cold at night?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/rL0qEmTRI-I"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-06T14:00:17+00:00</published>
+  <updated>2026-11-09T23:40:03+00:00</updated>
+  <media:group>
+   <media:title>Why do deserts get cold at night?</media:title>
+   <media:content url="https://www.youtube.com/v/rL0qEmTRI-I?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/rL0qEmTRI-I/hqdefault.jpg" width="480" height="360"/>
+   <media:description>The desert ground is blistering hot in the day but just a few hours after nightfall, it's freezing.
+
+Why does this happen?</media:description>
+   <media:community>
+    <media:starRating count="41458" average="5.00" min="1" max="5"/>
+    <media:statistics views="2012842"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:KfODG5REyss</id>
+  <yt:videoId>KfODG5REyss</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>I finally saw quantum physics with my own eyes... (It's spookier than I expected)</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=KfODG5REyss"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-04T15:52:59+00:00</published>
+  <updated>2026-11-20T19:51:12+00:00</updated>
+  <media:group>
+   <media:title>I finally saw quantum physics with my own eyes... (It's spookier than I expected)</media:title>
+   <media:content url="https://www.youtube.com/v/KfODG5REyss?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i4.ytimg.com/vi/KfODG5REyss/hqdefault.jpg" width="480" height="360"/>
+   <media:description>The world’s coldest liquid is far stranger than you’d imagine. Sponsored by Ground News - Go to https://ground.news/Ve and subscribe to get 40% off the unlimited access Vantage Plan. Stay informed on breaking news and compare coverage from every angle.
+
+Last year, we launched Elements of Truth on Kickstarter. We’re now in the final stages of production, and Kickstarter rewards are shipping soon. If you missed the campaign, you can now pre-order the retail edition through our new website here - https://ve42.co/YTDEcl  
+If you backed us on Kickstarter, don’t worry, your game will ship before any pre-orders are fulfilled.
+
+If you’re looking for a molecular modelling kit, try Snatoms, a kit I invented where the atoms snap together magnetically - https://ve42.co/SnatomsV 
+
+Sign up for the Veritasium newsletter for weekly science updates - https://ve42.co/Newsletter
+
+Join our Patreon for early access to work in progress videos and behind-the-scenes extras https://ve42.co/VePatreon
+
+▀▀▀
+Chapters: 
+0:00 The &quot;Impossible&quot; Liquid
+1:59 The Race to Absolute Zero
+6:33 Why Helium Seemed Impossible to Liquefy
+15:04 The First Liquid Helium Ever Made
+19:08 Can you make solid helium?
+21:42 What is superconductivity?
+28:41 Zero Viscosity and Superfluidity
+36:15 What are Bose-Einstein condensates?
+43:20 How Kapitsa Saved Landau From Prison
+46:20 The Superfluid Fountain Powered by Light
+47:46 Landau's Theory of Phonons
+58:32 Why Helium (Almost) Never Freezes
+1:01:58 The takeaway
+
+▀▀▀
+A big thank you to Prof. Dirk van Delft for his guidance and expertise on Onnes’ life and work. If you want to read more about it you can find the free PDF of his book “Freezing Physics” here:  https://ve42.co/Freezing_physics 
+A massive thank you to Prof. Martin Zwierlein for his enthusiasm and helping us get the specifics of superfluidity and BECs right.
+As well as a huge thank you to everyone who helped us understand the physics, the story, and provided valuable feedback on different parts of this video: Prof. Kostas Gavroglu, Dr. Philippe Lebrun, Prof. David Kaiser, Dr. John G Weisend II, Prof. Ad Maas, and Prof Robert Taylor.
+Then two more special thank-you’s:
+The first is to Rijksmuseum Boerhaave, for showing us around the archives and Onnes’ original equipment. You can check them out here: https://www.rijksmuseumboerhaave.nl/ 
+And the second, of course, is to everyone at the Gravity Laboratory and Nottingham University who recreated all the experiments for us. Your efforts made this video possible. Dr. Chris Goodwin, thank you for your unrelenting support in helping us get the physics of superfluidity right. You can check out the gravity laboratory here: ve42.co/GravityLaboratory
+
+▀▀▀
+References: https://ve42.co/SuperfluidsReferences
+
+▀▀▀
+Special thanks to our Patreon supporters: 
+Adam Foreman, Albert Wenger, Alex Porter, Alexander Tamas, André Powell, Anton Ragin, Balkrishna Heroor, Bertrand Serlet, Blake Byers, Bruce, Bryan Ackermann, Chris Brewer, Data Don, Dave Kircher, David Johnston, David Tseng, EJ Alexandra, Evgeny Skvortsov, Garrett Mueller, Gnare, gpoly, Hayden Christensen, Hong Thai Le, Hybrid Minds, Ibby Hadeed, Jeromy Johnson, Juan Benet, Kelcey Steele, KeyWestr, Kyi, Lee Redden, Marinus Kuivenhoven, Mark Heising, Martin Paull, Meekay, meg noah, Michael Krugman, Orlando Bassotto, Parsee Health, Paul Peijzel, Robson, Sam Lutfi, Shalva Bukia, Sinan Taifour, Sweet_Nemo, Tj Steyn, Ubiquity Ventures, wolfee
+
+▀▀▀
+Credits: 
+Writers: Casper Mebius &amp; Derek Muller
+Producer and Director: Casper Mebius
+Presenters:  Derek Muller &amp; Casper Mebius
+Editors: Trenton Oliver, George Reynolds &amp; Axel Oliver
+Assistant Editors: James Stuart &amp; Peter Nelson
+Animators: Domonkos Jozsa, Emma Wright, Fabio Albertelli, Andrew Neet, Alex Drakoulis, Rokas Viksraitis &amp; Mike Radjabov  
+Illustrators: Jakub Misiek &amp; Raphael Aubry
+Researchers: Sophia Rose, Gabe Strong and Fred Green
+Camera Operators: James Haslam, James Dann, Derek Muller, Raquel Muller, Casper Mebius, Stephen Foote, Gabe Strong &amp; Sophia Rose
+Thumbnail Designers: Abdallah Rabah, Ben Powell &amp; Patryk Ziolkowski
+Additional thumbnail picture by: Leonardo Solidoro
+Production Team: Anna Milkovic, Glen Griffiths, Jess Bishop-Laggett &amp; Matthew Cavanagh
+Executive Producers: Emilia Gyles, Derek Muller &amp; Casper Mebius</media:description>
+   <media:community>
+    <media:starRating count="211704" average="5.00" min="1" max="5"/>
+    <media:statistics views="20987756"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:xlNKNnXdtN4</id>
+  <yt:videoId>xlNKNnXdtN4</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>These ponds help support half the people on Earth</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/xlNKNnXdtN4"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-11-02T14:00:05+00:00</published>
+  <updated>2026-11-06T01:50:31+00:00</updated>
+  <media:group>
+   <media:title>These ponds help support half the people on Earth</media:title>
+   <media:content url="https://www.youtube.com/v/xlNKNnXdtN4?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i1.ytimg.com/vi/xlNKNnXdtN4/hqdefault.jpg" width="480" height="360"/>
+   <media:description>What are these electric blue ponds in the middle of the Utah desert? And why do they keep changing color?</media:description>
+   <media:community>
+    <media:starRating count="15645" average="5.00" min="1" max="5"/>
+    <media:statistics views="568111"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:zEmabFZvdqA</id>
+  <yt:videoId>zEmabFZvdqA</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>What happens if I lower this weight into the water?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/zEmabFZvdqA"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-30T14:00:38+00:00</published>
+  <updated>2026-11-03T03:22:12+00:00</updated>
+  <media:group>
+   <media:title>What happens if I lower this weight into the water?</media:title>
+   <media:content url="https://www.youtube.com/v/zEmabFZvdqA?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/zEmabFZvdqA/hqdefault.jpg" width="480" height="360"/>
+   <media:description>Will the weighing scale underneath go up, down or stay the same?</media:description>
+   <media:community>
+    <media:starRating count="92707" average="5.00" min="1" max="5"/>
+    <media:statistics views="3503561"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:Kap7mRzr13w</id>
+  <yt:videoId>Kap7mRzr13w</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Why doesn't your heart get tired like other muscles do?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/Kap7mRzr13w"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-27T14:00:11+00:00</published>
+  <updated>2026-10-31T04:33:32+00:00</updated>
+  <media:group>
+   <media:title>Why doesn't your heart get tired like other muscles do?</media:title>
+   <media:content url="https://www.youtube.com/v/Kap7mRzr13w?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i4.ytimg.com/vi/Kap7mRzr13w/hqdefault.jpg" width="480" height="360"/>
+   <media:description>The secret to why your heart never gets tired...</media:description>
+   <media:community>
+    <media:starRating count="45527" average="5.00" min="1" max="5"/>
+    <media:statistics views="1463361"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:eyZEqSPeMwg</id>
+  <yt:videoId>eyZEqSPeMwg</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Relativity is so much weirder than we thought...</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=eyZEqSPeMwg"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-23T18:46:44+00:00</published>
+  <updated>2026-11-19T22:48:36+00:00</updated>
+  <media:group>
+   <media:title>Relativity is so much weirder than we thought...</media:title>
+   <media:content url="https://www.youtube.com/v/eyZEqSPeMwg?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i2.ytimg.com/vi/eyZEqSPeMwg/hqdefault.jpg" width="480" height="360"/>
+   <media:description>Can atomic clocks prove Einstein wrong? The biggest protection in the game! Go to https://NordVPN.com/veritasium and get an exclusive NordVPN deal + 4 extra months. It’s risk free with NordVPN’s 30-day money-back guarantee!
+
+If you’re looking for a molecular modelling kit, try Snatoms, a kit I invented where the atoms snap together magnetically - https://ve42.co/SnatomsV
+
+Sign up for the Veritasium newsletter for weekly science updates - https://ve42.co/Newsletter
+
+Huge thanks to NIST for their help making this video. Visit their website: https://www.nist.gov/pml/time-and-frequency-division
+
+Join our Patreon for early access to work in progress videos and behind-the-scenes extras https://ve42.co/VePatreon
+
+Last year, we launched Elements of Truth on Kickstarter and were thrilled by the response. We’re now in the final stages of production, and Kickstarter rewards are shipping soon. If you missed the campaign, you can now pre-order the retail edition through our new website here - https://ve42.co/YTDEcl  
+
+If you backed us on Kickstarter, don’t worry, your game will ship before any pre-orders are fulfilled.
+
+▀▀▀
+0:00 Does gravity obey the rules of quantum mechanics?
+2:40 How does an atomic clock work?
+6:06 Why Optical Atomic Clocks Are So Accurate
+8:51 Using Lasers To Cool Atoms Down
+13:47 Driving an atomic clock up a mountain
+17:01 Linking Atomic Clocks Across 80 Kilometres
+19:00 Flying an Atomic Clock in a Helicopter
+25:11 How Do You Measure the Frequency of Light?
+28:40 Optical Frequency Combs
+30:42 Is Einstein Still Right?
+
+▀▀▀
+With special thanks to the experts and collaborators who made this video possible:
+In order of appearance, Prof. Jonathan Oppenheim (University College London), Greg Hoth (NIST), Dr. Andrew Ludlow (NIST), Dr. Laura Sinclair (NIST), Dr. Harikesh Ranganath (NIST), Lilani Toms-Hardman (University of Western Australia), Prof. Sascha Schediwy (University of Western Australia), Dr Sabrina Slimani (University of Western Australia), Dr Benjamin Dix-Matthews (University of Western Australia). 
+
+The National Institute of Standards and Technology (NIST), the University of Denver and the Meyer-Womble Observatory, the University of Western Australia and the International Centre for Radio Astronomy Research, RIKEN and the University of Tokyo. In addition, to the Precision Measurement Group (PMG) in the Institute for Photonics, Advanced Sensing and Quantum Technologies (IPAS-QT) at Adelaide University who provided the two portable atomic clocks used in the UWA test. https://ve42.co/AdelaideUniversityPrecisionMeasurementGroup
+In the production of this video, Rebecca Jacobson, Dr. Emily Caldwell, Dr. Kyle Latty (NIST), Nicholas Kurth, University of Colorado (Boulder), Dr. Bryn Crawford (Adelaide University), Prof. Hidetoshi Katori, A/Prof. Kai Suekane, Dr. Shota Yo and Dr. Hiutat Yang (RIKEN &amp; University of Tokyo). 
+
+In additional research and review, Prof. David Kaiser (MIT), Prof. Scott Diddams (University of Colorado Boulder), Prof. Claudia de Rham (Imperial College London), Prof. Steven Cundiff (University of Michigan) and Dr. Derek van Westrum (NOAA National Geodetic Survey). 
+
+For their support with archive footage, the NIST Archive, Prof. Jun Ye (NIST/JILA) and Brent Doerzman. 
+
+▀▀▀
+References: https://ve42.co/AtomicClockReferences
+
+For more information on the dipole trap:  https://ve42.co/HBDDipole
+
+MIT Open Access Course: https://ve42.co/FreeLecturesHere
+
+▀▀▀
+Special thanks to our Patreon supporters: 
+Adam Foreman, Albert Wenger, Alex Porter, Alexander Tamas, André Powell, Anton Ragin, Balkrishna Heroor, Bertrand Serlet, Blake Byers, Bruce, Bryan Ackermann, Chris Brewer, Data Don, Dave Kircher, David Johnston, David Tseng, EJ Alexandra, Evgeny Skvortsov, Garrett Mueller, Gnare, gpoly, Hayden Christensen, Hong Thai Le, Hybrid Minds, Ibby Hadeed, Jeromy Johnson, Juan Benet, Kelcey Steele, KeyWestr, Kyi, Lee Redden, Marinus Kuivenhoven, Mark Heising, Martin Paull, Meekay, meg noah, Michael Krugman, Orlando Bassotto, Parsee Health, Paul Peijzel, Robson, Sam Lutfi, Shalva Bukia, Sinan Taifour, Sweet_Nemo, Tj Steyn, Ubiquity Ventures, wolfee, Burt Humburg, Sanome, Ulf Hermjakob
+
+▀▀▀
+Credits
+Writers: Sarah Houlton, Gregor Čavlović, Emilia Gyles
+Producer and Director: Sarah Houlton
+Presenters: Gregor Čavlović and Emilia Gyles
+Editor: Peter Nelson
+Additional Editing: James Stuart and Trenton Oliver
+Animators: Alex Drakoulis, Andrew Neet, Domonkos Józsa, Emma Wright and Fabio Albertelli
+Researchers: Sophia Rose and Gabe Strong
+Camera Operators: James Chance, Jesse Bartlett, Sarah Houlton, Gregor Čavlović and Emilia Gyles
+Thumbnail Designers: Abdallah Rabah, Daniel Ellacott and Jakub Misiek
+Production Team: Anna Milkovic, Glen Griffiths, Jess Bishop-Laggett, Matthew Cavanagh
+Executive Producers: Gregor Čavlović, Emilia Gyles and Derek Muller</media:description>
+   <media:community>
+    <media:starRating count="86649" average="5.00" min="1" max="5"/>
+    <media:statistics views="8496436"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:wxLc-gFORPQ</id>
+  <yt:videoId>wxLc-gFORPQ</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Is there something faster than light?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/wxLc-gFORPQ"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-22T13:00:17+00:00</published>
+  <updated>2026-10-25T21:37:13+00:00</updated>
+  <media:group>
+   <media:title>Is there something faster than light?</media:title>
+   <media:content url="https://www.youtube.com/v/wxLc-gFORPQ?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i4.ytimg.com/vi/wxLc-gFORPQ/hqdefault.jpg" width="480" height="360"/>
+   <media:description>The experiment that broke relativity.
+
+How an argument between Einstein and Bohr changed quantum mechanics forever.</media:description>
+   <media:community>
+    <media:starRating count="35506" average="5.00" min="1" max="5"/>
+    <media:statistics views="1353359"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:6U6Z6pb6ewI</id>
+  <yt:videoId>6U6Z6pb6ewI</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>When you lose weight where does it go?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/6U6Z6pb6ewI"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-15T13:00:26+00:00</published>
+  <updated>2026-10-18T21:49:16+00:00</updated>
+  <media:group>
+   <media:title>When you lose weight where does it go?</media:title>
+   <media:content url="https://www.youtube.com/v/6U6Z6pb6ewI?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/6U6Z6pb6ewI/hqdefault.jpg" width="480" height="360"/>
+   <media:description>What does it mean to lose weight? 
+
+When you work out or eat less your overall size decreases. So where does this mass go?</media:description>
+   <media:community>
+    <media:starRating count="32893" average="5.00" min="1" max="5"/>
+    <media:statistics views="1424763"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:NiCgcUTL9_Q</id>
+  <yt:videoId>NiCgcUTL9_Q</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>Fiber Optics are so much cooler than I thought</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=NiCgcUTL9_Q"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-12T17:11:45+00:00</published>
+  <updated>2026-11-03T11:33:19+00:00</updated>
+  <media:group>
+   <media:title>Fiber Optics are so much cooler than I thought</media:title>
+   <media:content url="https://www.youtube.com/v/NiCgcUTL9_Q?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/NiCgcUTL9_Q/hqdefault.jpg" width="480" height="360"/>
+   <media:description>Why making glass fibers to send signals was almost impossible. Sponsored by Saily - 🌎 Get an exclusive 15% discount on Saily data plans!  Download Saily app go to https://saily.com/veritasium Use code veritasium at checkout ⛵
+
+If you’re looking for a molecular modelling kit, try Snatoms, a kit I invented where the atoms snap together magnetically - https://ve42.co/SnatomsV 
+
+For the latest science news, and for an exclusive bonus Q&amp;A with Sulli, the director of this video, sign up to the Veritasium newsletter - https://ve42.co/VeMail_FO
+
+For early access to work in progress videos join our patreon https://ve42.co/VePatreon 
+
+▀▀▀
+0:00 What are fiber optics?
+2:02 Why Copper Phone Lines Had Limited Capacity
+5:13 Trying To Go From Copper Communication To Glass
+8:15 Why is glass so ‘lossy’?
+11:29 Scattering and Absorption
+16:00 How can you remove impurities in glass?
+19:00 How They Make Fiber Optic Glass
+26:47 The Technology that Made the Internet Possible 
+
+▀▀▀
+Special thanks to the experts and collaborators who made this video possible:
+Dr. Donald Keck
+Prof. Vincent Chan
+Sir David Payne
+Dr. Nikola Alic
+Jim Hayes
+Jeff Hecht, whose book City of Light: The Story of Fiber Optics was an invaluable resource for this video (explore his work at https://www.jeffhecht.com).
+Diffraction Limited, who made the fiber kits we used and some additional simulations that were critical to our understanding (https://www.youtube.com/@DiffractionLimited)
+Trulala CANDY Chef (https://www.youtube.com/@TrulalaCANDYChef)
+Additional thanks to:
+ROSENDAHL NEXTROM for providing animations and fiber manufacturing 3D assets: (https://rosendahlnextrom.com/fiber/)
+Bay Area Glass Institute for hosting our team. (https://bagi.org/)
+Prysmian for giving us a guided tour of their fiber manufacturing plant, and our two on screen experts:
+Sujeet Rao, Operational Excellence Fiber Director and Jon Fitz, Technical Sales Support Sr. Manager.
+
+▀▀▀
+References: https://ve42.co/FiberRefs
+
+Note: The skin effect explanation is simplified. The full analysis involves the eddy currents' own magnetic fields, which induce further currents, and so on. Here’s an article on the same: https://ve42.co/SkinEffectDerivation
+
+▀▀▀
+Special thanks to our Patreon supporters:
+Adam Foreman, Albert Wenger, Alex Porter, Alexander Tamas, André Powell, Anton Ragin, Balkrishna Heroor, Bertrand Serlet, Blake Byers, Bruce, Bryan Ackermann, Chris Brewer, Data Don, Dave Kircher, David Johnston, David Tseng, EJ Alexandra, Evgeny Skvortsov, Garrett Mueller, Gnare, gpoly, Hayden Christensen, Hong Thai Le, Ibby Hadeed, Jeromy Johnson, Juan Benet, Kelcey Steele, Kyi, Lee Redden, Marinus Kuivenhoven, Mark Heising, Meekay, meg noah, Michael Krugman, Orlando Bassotto, Parsee Health, Patreon mp22, Paul Peijzel, Robson, Sam Lutfi, Shalva Bukia, Sinan Taifour, Steven, Sweet_Nemo, Tair Aurmont, Tj Steyn, Ubiquity Ventures, Vahe Andonians, wolfee
+
+▀▀▀
+Credits
+Writers: Sulli Yost, Henry van Dyck
+Producer and Director: Sulli Yost
+Presenter: Henry van Dyck
+Editors: George Reynolds, Trenton Oliver and Axel Oliver
+Assistant Editor: James Stuart
+Illustrators: Jakub Misiek, Raphael Aubry, Thomas Brizard and Emma Wright
+Animators: Aleksandrs Loginovs, Alex Drakoulis, Andrew Neet, Andrew Wernette, Domonkos Józsa, Emma Wright, Fabio Albertelli, Rokas Viksraitis and Sulli Yost
+Researchers: Aakash Singh Bagga, Sophia Rose, Callum Cuttle and Gabe Strong
+Camera Operators: Sulli Yost, Aaron Zhizhin, Emilia Gyles and Jesse Chandler
+Thumbnail Designers: Abdallah Rabah, Daniel Ellacott
+Production Team: Anna Milkovic, Glen Griffiths, Jess Bishop-Laggett, Matthew Cavanagh
+Executive Producers: Derek Muller, Emilia Gyles and Henry van Dyck</media:description>
+   <media:community>
+    <media:starRating count="168291" average="5.00" min="1" max="5"/>
+    <media:statistics views="16684434"/>
+   </media:community>
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:j9p3Sn8ROL4</id>
+  <yt:videoId>j9p3Sn8ROL4</yt:videoId>
+  <yt:channelId>UCHnyfMqiRRG1u-2MsSQLbXA</yt:channelId>
+  <title>What is edge dislocation?</title>
+  <link rel="alternate" href="https://www.youtube.com/shorts/j9p3Sn8ROL4"/>
+  <author>
+   <name>Veritasium</name>
+   <uri>https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA</uri>
+  </author>
+  <published>2026-10-09T13:00:03+00:00</published>
+  <updated>2026-10-13T02:45:28+00:00</updated>
+  <media:group>
+   <media:title>What is edge dislocation?</media:title>
+   <media:content url="https://www.youtube.com/v/j9p3Sn8ROL4?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/j9p3Sn8ROL4/hqdefault.jpg" width="480" height="360"/>
+   <media:description>We demonstrated a crystal lattice of atoms using bubbles.</media:description>
+   <media:community>
+    <media:starRating count="132724" average="5.00" min="1" max="5"/>
+    <media:statistics views="4858648"/>
+   </media:community>
+  </media:group>
+ </entry>
+</feed>

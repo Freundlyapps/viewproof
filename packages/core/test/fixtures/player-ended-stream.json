@@ -1,0 +1,81 @@
+{
+ "videoDetails": {
+  "videoId": "jfKfPfyJRdk",
+  "title": "lofi hip hop radio 📚 beats to relax/study to",
+  "lengthSeconds": "121601512",
+  "keywords": [
+   "lo-fi",
+   "lo fi",
+   "lofi",
+   "lofi hiphop",
+   "lo-fi hiphop",
+   "lo fi hiphop",
+   "hiphop",
+   "hip hop",
+   "lofi hip hop",
+   "lo-fi hip hop",
+   "lo fi hip hop",
+   "lofi radio",
+   "lo-fi radio",
+   "lo fi radio",
+   "lofi hip hop radio",
+   "lo-fi hip hop radio",
+   "lo fi hip hop radio",
+   "chilledcow",
+   "chilled cow",
+   "chilledcow radio",
+   "chilled cow radio",
+   "chilledcow station",
+   "lofi radio chilledcow",
+   "chillhop",
+   "study music",
+   "lofi hip hop radio - beats to relax\\/study to",
+   "beats to relax",
+   "music to study",
+   "radio",
+   "relaxing music",
+   "playlist",
+   "music"
+  ],
+  "channelId": "UCSJ4gkVC6NrvII8umztf0Ow",
+  "isOwnerViewing": false,
+  "isCrawlable": true,
+  "allowRatings": true,
+  "viewCount": "651847120",
+  "author": "Lofi Girl",
+  "isLowLatencyLiveStream": false,
+  "isPrivate": false,
+  "isUnpluggedCorpus": false,
+  "latencyClass": "MDE_STREAM_OPTIMIZATIONS_RENDERER_LATENCY_NORMAL",
+  "isLiveContent": true,
+  "isPostLiveDvr": true,
+  "isTvfilmVideo": false
+ },
+ "microformat": {
+  "playerMicroformatRenderer": {
+   "title": {
+    "simpleText": "lofi hip hop radio 📚 beats to relax/study to"
+   },
+   "lengthSeconds": "121601512",
+   "ownerProfileUrl": "http://www.youtube.com/@LofiGirl",
+   "externalChannelId": "UCSJ4gkVC6NrvII8umztf0Ow",
+   "isFamilySafe": true,
+   "isUnlisted": false,
+   "hasYpcMetadata": false,
+   "viewCount": "651847120",
+   "category": "Music",
+   "publishDate": "2022-07-12T05:12:29-07:00",
+   "ownerChannelName": "Lofi Girl",
+   "liveBroadcastDetails": {
+    "isLiveNow": false,
+    "startTimestamp": "2022-07-12T15:59:30+00:00",
+    "endTimestamp": "2026-05-20T02:11:23+00:00"
+   },
+   "uploadDate": "2022-07-12T05:12:29-07:00",
+   "isShortsEligible": false,
+   "externalVideoId": "jfKfPfyJRdk",
+   "likeCount": "3479740",
+   "canonicalUrl": "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+  }
+ }
+}

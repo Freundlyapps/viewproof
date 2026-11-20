@@ -3,3 +3,5 @@ export * from './measured';
 export * from './vph';
 export * from './types';
 export * from './outlier';
+export * from './feed';
+export * from './player';

@@ -1,0 +1,59 @@
+{
+ "videoDetails": {
+  "videoId": "uXuQF_PPg5U",
+  "title": "Randomness is a lie. Let me explain",
+  "lengthSeconds": "2328",
+  "keywords": [
+   "veritasium",
+   "science",
+   "physics",
+   "rng",
+   "random number generator",
+   "random",
+   "number",
+   "generator",
+   "maths",
+   "probability",
+   "math",
+   "mathematics",
+   "science experiment",
+   "quantum",
+   "quantum mechanics",
+   "quantum physics",
+   "quantum entanglement",
+   "quantum theory"
+  ],
+  "channelId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+  "isOwnerViewing": false,
+  "isCrawlable": true,
+  "allowRatings": true,
+  "viewCount": "2413033",
+  "author": "Veritasium",
+  "isPrivate": false,
+  "isUnpluggedCorpus": false,
+  "isLiveContent": false,
+  "isTvfilmVideo": false
+ },
+ "microformat": {
+  "playerMicroformatRenderer": {
+   "title": {
+    "simpleText": "Randomness is a lie. Let me explain"
+   },
+   "lengthSeconds": "2328",
+   "ownerProfileUrl": "http://www.youtube.com/@veritasium",
+   "externalChannelId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+   "isFamilySafe": true,
+   "isUnlisted": false,
+   "hasYpcMetadata": false,
+   "viewCount": "2413033",
+   "category": "Education",
+   "publishDate": "2026-11-18T12:29:44-08:00",
+   "ownerChannelName": "Veritasium",
+   "uploadDate": "2026-11-18T12:29:44-08:00",
+   "isShortsEligible": false,
+   "externalVideoId": "uXuQF_PPg5U",
+   "likeCount": "33050",
+   "canonicalUrl": "https://www.youtube.com/watch?v=uXuQF_PPg5U"
+  }
+ }
+}

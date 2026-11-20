@@ -1,0 +1,57 @@
+{
+ "videoDetails": {
+  "videoId": "HZjRoKgDnow",
+  "title": "Does adding helium reduce a balloon’s mass?",
+  "lengthSeconds": "93",
+  "keywords": [
+   "veritasium",
+   "science",
+   "physics",
+   "helium",
+   "balloon",
+   "helium balloon",
+   "weight",
+   "mass",
+   "question",
+   "elements of truth",
+   "elements of truth game",
+   "sand",
+   "quicksand",
+   "potato",
+   "kg",
+   "kilogram"
+  ],
+  "channelId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+  "isOwnerViewing": false,
+  "isCrawlable": true,
+  "allowRatings": true,
+  "viewCount": "81369",
+  "author": "Veritasium",
+  "isPrivate": false,
+  "isUnpluggedCorpus": false,
+  "isLiveContent": false,
+  "isTvfilmVideo": false
+ },
+ "microformat": {
+  "playerMicroformatRenderer": {
+   "title": {
+    "simpleText": "Does adding helium reduce a balloon’s mass?"
+   },
+   "lengthSeconds": "93",
+   "ownerProfileUrl": "http://www.youtube.com/@veritasium",
+   "externalChannelId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+   "isFamilySafe": true,
+   "isUnlisted": false,
+   "hasYpcMetadata": false,
+   "viewCount": "81369",
+   "category": "Education",
+   "publishDate": "2026-11-20T06:34:58-08:00",
+   "ownerChannelName": "Veritasium",
+   "uploadDate": "2026-11-20T06:34:58-08:00",
+   "isShortsEligible": true,
+   "externalVideoId": "HZjRoKgDnow",
+   "likeCount": "4121",
+   "canonicalUrl": "https://www.youtube.com/shorts/HZjRoKgDnow"
+  }
+ }
+}
