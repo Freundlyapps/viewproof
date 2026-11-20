@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>open-IQ — desktop UI prototype v2</title>
+<style>
+:root{
+  --bg:#FAFAF9; --surface:#FFFFFF; --surface-2:#F5F5F4; --text:#1C1917; --muted:#57534E; --border:#E7E5E4;
+  --accent:#0F766E; --on-accent:#FFFFFF; --accent-weak:color-mix(in srgb,var(--accent) 12%,transparent);
+  --hi:#B45309; --hi-weak:color-mix(in srgb,var(--hi) 14%,transparent);
+  --pos:#15803D; --neg:#B91C1C; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+  --r:12px; --pad:clamp(16px,2.2vw,36px); --side:248px;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:clamp(13px,.35vw + 9px,15px); color-scheme:light;
+}
+[data-theme=dark]{
+  --bg:#0F1115; --surface:#161920; --surface-2:#1D2129; --text:#E7E7EA; --muted:#9BA1AD; --border:#262A33;
+  --accent:#2DD4BF; --on-accent:#042F2E; --hi:#F59E0B; --pos:#4ADE80; --neg:#F87171;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark;
+}
+*{box-sizing:border-box} html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);line-height:1.45}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}
+.app{display:grid;grid-template-columns:var(--side) 1fr;height:100vh;transition:grid-template-columns .2s}
+.app.collapsed{--side:68px}
+/* sidebar */
+.side{border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;padding:14px 10px;gap:4px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 10px 16px;font-weight:700;font-size:1.15rem;white-space:nowrap}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:800;flex:none}
+.nav{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;color:var(--muted);cursor:pointer;white-space:nowrap;border:0;background:none;width:100%;text-align:left}
+.nav:hover{background:var(--surface-2);color:var(--text)}
+.nav.on{background:var(--accent-weak);color:var(--accent);font-weight:600}
+.nav svg{width:19px;height:19px;flex:none}
+.side .sep{height:1px;background:var(--border);margin:10px 6px}
+.side .grow{flex:1}
+.collapsed .lbl,.collapsed .brand span,.collapsed .side-card{display:none}
+.side-card{border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.85rem;color:var(--muted);margin:6px 2px}
+/* main */
+.main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.top{display:flex;align-items:center;gap:12px;padding:10px var(--pad);border-bottom:1px solid var(--border);background:var(--surface)}
+.search{flex:1;max-width:720px;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--muted)}
+.search input{border:0;background:none;outline:0;flex:1}
+.kbd{font-size:.75rem;border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;height:36px;min-width:36px;display:grid;place-items:center;cursor:pointer;padding:0 10px}
+.icon-btn:hover{background:var(--surface-2)}
+.chan{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer}
+.av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#a8a29e,#57534e);flex:none}
+.content{overflow:auto;padding:var(--pad);flex:1}
+.screen{display:none;flex-direction:column;gap:clamp(14px,1.6vw,24px)}
+.screen.on{display:flex}
+h1{font-size:clamp(1.4rem,1vw + .9rem,1.9rem);margin:0;letter-spacing:-.01em}
+h2{font-size:1.05rem;margin:0}
+.sub{color:var(--muted);margin:2px 0 0}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grid{display:grid;gap:clamp(12px,1.4vw,20px)}
+.g-auto{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.g-kpi{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.g-cards{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.g-main-side{grid-template-columns:minmax(0,1fr) clamp(280px,24vw,400px)}
+.kw td:first-child{white-space:nowrap}
+.g-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:clamp(14px,1.3vw,20px);box-shadow:var(--shadow);min-width:0}
+.card h2{margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2 .more{margin-left:auto;font-size:.85rem;font-weight:500}
+.kpi .v{font-size:clamp(1.3rem,1vw + .8rem,1.7rem);font-weight:700;margin-top:4px}
+.kpi .l{color:var(--muted);font-size:.85rem}
+.up{color:var(--pos)} .down{color:var(--neg)}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 14px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.pri:hover{filter:brightness(1.08)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.88rem;cursor:pointer;background:var(--surface);white-space:nowrap}
+.chip:hover,.chip.on{border-color:var(--accent);color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:600;border-radius:6px;padding:2px 7px;letter-spacing:.02em;white-space:nowrap}
+.b-real{background:var(--accent-weak);color:var(--accent)}
+.b-est{background:var(--hi-weak);color:var(--hi)}
+.b-ai{border:1px dashed var(--muted);color:var(--muted)}
+.xn{background:var(--hi);color:#fff;font-weight:700;border-radius:6px;padding:2px 7px;font-size:.8rem}
+[data-theme=dark] .xn{color:#1c1300}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer} tbody tr:hover{background:var(--surface-2)} tbody tr.sel{background:var(--accent-weak)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:.85rem}
+.thumb{aspect-ratio:16/9;border-radius:10px;position:relative;overflow:hidden}
+.thumb .xn{position:absolute;top:8px;left:8px}
+.thumb .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-size:.75rem;border-radius:4px;padding:1px 5px}
+.vcard .t{font-weight:600;margin:10px 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prompt{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.prompt textarea{border:0;background:none;outline:0;resize:none;min-height:48px;font-size:1.05rem}
+.meter{height:7px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.meter.warn i{background:var(--hi)}
+.check{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.check:last-child{border-bottom:0}
+.dot{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:.75rem;font-weight:700;color:#fff;margin-top:1px}
+.dot.ok{background:var(--pos)} .dot.no{background:var(--hi)}
+[data-theme=dark] .dot{color:#0f1115}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600;font-size:.9rem}
+.input{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:9px 12px;outline:0;width:100%}
+.input:focus{border-color:var(--accent)}
+.tag{display:inline-flex;gap:6px;align-items:center;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:3px 9px;font-size:.85rem}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border)}
+.tab{padding:9px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:0;border-left:0;border-right:0}
+.tab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.facts{display:grid;gap:10px}
+.fact{border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.fact .k{font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.fact .v{font-weight:700;font-size:1.1rem;margin-top:2px}
+.msg{max-width:min(760px,90%);padding:12px 16px;border-radius:14px;line-height:1.55}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+.src{display:inline-flex;font-size:.75rem;border:1px solid var(--border);border-radius:5px;padding:0 6px;margin-left:4px;color:var(--muted);vertical-align:1px}
+.toggle{width:40px;height:22px;border-radius:99px;background:var(--border);position:relative;cursor:pointer;flex:none;border:0}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.toggle.on{background:var(--accent)} .toggle.on::after{left:21px}
+.yt{background:#f1f1f1;border-radius:12px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;color:#111}
+[data-theme=dark] .yt{background:#0b0b0b;color:#eee}
+.yt .player{aspect-ratio:16/9;border-radius:12px;background:#000;display:grid;place-items:center;color:#777}
+.yt .bar{height:12px;border-radius:6px;background:#d6d6d6;margin:8px 0} [data-theme=dark] .yt .bar{background:#2a2a2a}
+.panel{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel .ph{background:var(--accent);color:var(--on-accent);padding:8px 12px;font-weight:700;display:flex;align-items:center;gap:8px}
+.note{font-size:.8rem;color:var(--muted);border-top:1px dashed var(--border);padding-top:10px}
+.hint{position:fixed;right:16px;bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:.8rem;color:var(--muted);box-shadow:var(--shadow)}
+@media (max-width:1100px){.g-main-side{grid-template-columns:1fr}}
+.pane{display:none;flex-direction:column;gap:clamp(14px,1.6vw,24px)} .pane.on{display:flex}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;place-items:center;z-index:50}
+.modal-bg.on{display:grid}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:min(560px,92vw);padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.steps{display:flex;gap:8px;margin-bottom:18px}.steps i{flex:1;height:4px;border-radius:4px;background:var(--border)}.steps i.on{background:var(--accent)}
+.later{font-size:.72rem;font-weight:600;border-radius:6px;padding:2px 7px;background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+code{background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.85em}
+.out{background:var(--surface-2);border-radius:9px;padding:10px 12px;font-size:.9rem}
+th .badge{margin-left:4px;vertical-align:1px}
+.card .row .input{flex:1;min-width:0}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">IQ</div><span>open-IQ</span></div>
+    <div id="nav"></div>
+    <div class="grow"></div>
+    <div class="side-card"><b style="color:var(--text)">Get the extension</b><br>Stats on every YouTube page. Free.<button class="btn pri" style="width:100%;margin-top:8px">Add to Chrome</button></div>
+    <div class="side-card" onclick="go('settings','plan')" style="cursor:pointer"><b style="color:var(--text)">Pro</b> · renews 20 Dec
+      <div class="meter" style="margin:8px 0 4px"><i style="width:38%"></i></div>AI 188 / 500 this month</div>
+    <button class="nav" onclick="toggleSide()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span class="lbl">Collapse</span></button>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input placeholder="Search a keyword, video URL or channel…"><span class="kbd">Ctrl K</span></div>
+      <div style="flex:1"></div>
+      <button class="icon-btn" title="Switch light / dark" onclick="toggleTheme()">◐</button>
+      <div class="chan" onclick="go('settings','channels')"><div class="av" style="background:linear-gradient(135deg,#2dd4bf,#0f766e)"></div><span>Quiet Hands Pottery</span><span class="muted">▾</span></div>
+    </header>
+
+    <main class="content">
+
+<!-- HOME -->
+<section class="screen" data-s="home">
+  <div><h1>Welcome back</h1><p class="sub">Your channel at a glance, and an AI that answers from your real numbers.</p></div>
+  <div class="prompt">
+    <textarea placeholder="Ask anything about your channel… e.g. “Why did my last video stall after day 2?”"></textarea>
+    <div class="row between"><div class="row" id="homeChips"></div><button class="btn pri" onclick="go('coach')">Ask</button></div>
+  </div>
+  <div class="grid g-kpi" id="homeKpi"></div>
+  <div class="grid g-2">
+    <div class="card"><h2>What to make next <span class="badge b-ai">AI + your data</span><a class="more" onclick="go('coach')">Discuss →</a></h2><div id="ideas"></div></div>
+    <div class="card"><h2>Search terms bringing you viewers <span class="badge b-real">REAL</span><a class="more" onclick="go('channel','terms')">All →</a></h2>
+      <table><thead><tr><th>Term</th><th class="num">Views 28d</th><th class="num">Change</th></tr></thead><tbody id="homeTerms"></tbody></table></div>
+  </div>
+  <div class="card"><h2>Outliers in your niche this week <a class="more" onclick="go('research','outliers')">Explore all →</a></h2><div class="grid g-cards" id="homeOut"></div></div>
+</section>
+
+<!-- RESEARCH -->
+<section class="screen" data-s="research">
+  <div class="row between"><div><h1>Research</h1><p class="sub">Find topics people search for and videos that beat their channel's normal.</p></div></div>
+  <div class="tabs" data-g="research"></div>
+  <div class="pane" data-g="research" data-t="keywords" data-label="Keywords">
+    <div class="row"><div class="search" style="max-width:520px;background:var(--surface)"><input value="wheel throwing for beginners"></div>
+      <select class="input" style="width:auto"><option>United States · English</option><option>Germany · German</option><option>India · Hindi</option></select>
+      <button class="btn pri">Search</button><span class="small muted">18 of 60 reports used · already-searched keywords are free</span></div>
+    <div class="grid g-main-side">
+      <div class="card" style="padding:0;overflow:auto"><table class="kw"><thead><tr><th>Keyword</th><th>Interest, 12 mo</th><th class="num">Searches / mo<span class="badge b-est">EST</span></th><th class="num">Views of top results</th><th class="num">Small channels ranking</th><th class="num">Your views<span class="badge b-real">REAL</span></th></tr></thead><tbody id="kwRows"></tbody></table></div>
+      <div class="card" id="kwDetail"></div>
+    </div>
+  </div>
+  <div class="pane" data-g="research" data-t="outliers" data-label="Outliers">
+    <div class="row between"><div class="row" id="outFilters"></div><span class="small muted"><b>×N</b> = views ÷ the channel's usual views (median of its last 15 uploads)</span></div>
+    <div class="grid g-cards" id="outGrid"></div>
+  </div>
+</section>
+
+<!-- CHANNEL -->
+<section class="screen" data-s="channel">
+  <div class="row between"><div><h1>My channel</h1><p class="sub">From YouTube Analytics, view-only access.</p></div><div class="row" id="rangeChips"></div></div>
+  <div class="tabs" data-g="channel"></div>
+  <div class="pane" data-g="channel" data-t="overview" data-label="Overview">
+    <div class="grid g-kpi" id="chKpi"></div>
+    <div class="card"><h2>Views per day <span class="badge b-real">REAL</span></h2><svg id="bigChart" viewBox="0 0 1000 240" preserveAspectRatio="none" style="width:100%;height:clamp(170px,20vw,260px)"></svg></div>
+    <div class="grid g-2">
+      <div class="card"><h2>Best time to post <span class="badge b-real">from your viewers</span></h2>
+        <div id="heat" style="display:grid;grid-template-columns:40px repeat(8,1fr);gap:3px;font-size:.75rem"></div>
+        <p class="small muted" style="margin:10px 0 0">Your viewers are most active <b style="color:var(--text)">Sat–Sun 16:00–20:00</b> (your time zone). Post 1–2 hours before.</p></div>
+      <div class="card"><h2>Needs attention</h2><div id="attention"></div></div>
+    </div>
+  </div>
+  <div class="pane" data-g="channel" data-t="videos" data-label="Videos">
+    <div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>Video</th><th class="num">Views</th><th class="num">Views / hour now</th><th class="num">vs your normal</th><th class="num">CTR</th><th class="num">Avg watch</th><th></th></tr></thead><tbody id="chVids"></tbody></table></div>
+  </div>
+  <div class="pane" data-g="channel" data-t="terms" data-label="Search terms">
+    <div class="card"><h2>What people typed before finding you <span class="badge b-real">REAL · YouTube</span></h2><p class="small muted" style="margin-top:-6px">The only real YouTube search data that exists. Other tools can only guess this.</p>
+      <table><thead><tr><th>Term</th><th class="num">Views 28d</th><th class="num">Change</th><th class="num">Avg watch</th><th>Your video</th></tr></thead><tbody id="chTerms"></tbody></table></div>
+  </div>
+  <div class="pane" data-g="channel" data-t="earnings" data-label="Earnings">
+    <div class="grid g-kpi" id="earnKpi"></div>
+    <div class="card"><h2>Top earning videos <span class="badge b-real">REAL · YouTube</span></h2><table><thead><tr><th>Video</th><th class="num">Revenue 28d</th><th class="num">RPM</th></tr></thead><tbody id="earnRows"></tbody></table>
+      <div class="note" style="margin-top:12px">Shown only if you allowed revenue access when connecting. Want an estimate for another channel? Use <a onclick="go('tools')">Tools → Earnings range</a>.</div></div>
+  </div>
+</section>
+
+<!-- OPTIMIZE -->
+<section class="screen" data-s="optimize">
+  <div class="row between"><div><h1>Optimize a video</h1><p class="sub">Pick a video or start a draft. Every suggestion says why.</p></div>
+    <div class="row"><select class="input" style="width:auto"><option>New draft: Trimming a bowl in 10 minutes</option><option>Glaze test tiles, 40 combos (published)</option></select><button class="btn">Copy all</button><button class="btn pri">Open in YouTube Studio ↗</button></div></div>
+  <div class="grid g-main-side">
+    <div class="grid" style="gap:16px">
+      <div class="card grid" style="gap:16px">
+        <div class="field"><label>Title <span class="muted small" id="tLen">48 / 100</span></label><input class="input" id="titleIn" value="Trimming a bowl in 10 minutes (beginner friendly)" oninput="checkTitle()"></div>
+        <div class="row" id="titleAlts"></div>
+        <div class="field"><label>Description</label><textarea class="input" rows="5">Learn how to trim a bowl on the wheel, step by step. We cover when the clay is ready, foot ring shape, and how to avoid chatter.
+
+00:00 Is it leather hard?
+01:20 Centering upside down</textarea></div>
+        <div class="field"><label>Tags <span class="muted small">(a small factor; spelling variants help)</span></label><div class="row" id="tags"></div></div>
+      </div>
+      <div class="card"><h2>Preview next to your niche</h2><div class="grid g-auto" id="feedPrev"></div></div>
+    </div>
+    <div class="card"><h2>Checklist <span class="badge b-real">6 / 8 done</span></h2><div id="checks"></div>
+      <div class="note" style="margin-top:12px">Changes are copied to YouTube Studio by you. Saving straight to YouTube comes later and will ask for extra permission only then.</div></div>
+  </div>
+</section>
+
+<!-- COMPETITORS -->
+<section class="screen" data-s="competitors">
+  <div class="row between"><div><h1>Competitors</h1><p class="sub">9 of 25 channels tracked. New uploads show up within about an hour.</p></div><button class="btn pri">+ Track a channel</button></div>
+  <div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>Channel</th><th class="num">Subscribers</th><th>Views, 90 days</th><th class="num">Uploads / 30d</th><th class="num">Usual views</th><th>Best recent video</th></tr></thead><tbody id="compRows"></tbody></table></div>
+  <div class="card"><h2>Their latest uploads</h2><div class="grid g-cards" id="compFeed"></div></div>
+</section>
+
+<!-- ASK AI -->
+<section class="screen" data-s="coach">
+  <div class="row between"><div><h1>Ask AI</h1><p class="sub">Answers show which data they used. If the data isn't there, it says so.</p></div>
+    <span class="small muted">41 of 150 messages used</span></div>
+  <div class="card" style="display:flex;flex-direction:column;gap:14px;min-height:460px">
+    <div class="msg me">Why did “Glaze test tiles, 40 combos” stall after day 2?</div>
+    <div class="msg ai">Two things stand out:<br><br>
+      1. <b>Click rate fell from 7.9% to 3.1% on day 2</b> <span class="src">Analytics</span>. YouTube started showing it on home pages that day, where list-style thumbnails get fewer clicks.<br>
+      2. <b>For “glaze combinations” you're 6th in search</b> <span class="src">Rank check 18 Nov</span>. The five above you are all under 12 minutes; yours is 31.<br><br>
+      Try a thumbnail with 2–3 finished pieces instead of the grid, and a shorter cut with chapters. I can't see second-by-second retention for this video yet.</div>
+    <div class="msg me">Write 5 titles for the short cut.</div>
+    <div class="msg ai"><span class="badge b-ai">AI</span> 1. 3 glaze combos that never fail · 2. I tested 40 glazes, these 3 won · 3. Stop wasting glaze: 3 combos to start with · 4. The glaze combo everyone asks about · 5. 40 tiles, 3 winners</div>
+    <div style="flex:1"></div>
+    <div class="prompt" style="box-shadow:none"><textarea placeholder="Ask a follow-up…"></textarea><div class="row between"><div class="row"><span class="chip">+ Video</span><span class="chip">+ Competitor</span><span class="chip">+ Keyword</span></div><button class="btn pri">Send</button></div></div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="screen" data-s="tools">
+  <div><h1>Tools</h1><p class="sub">Small, free tools. No limits, no AI needed.</p></div>
+  <div class="grid g-auto" id="tools"></div>
+</section>
+
+<!-- SETTINGS -->
+<section class="screen" data-s="settings">
+  <div><h1>Settings</h1></div>
+  <div class="tabs" data-g="settings"></div>
+  <div class="pane" data-g="settings" data-t="plan" data-label="Plan & usage">
+    <div class="grid g-2">
+      <div class="card"><h2>This month <span class="small muted" style="font-weight:400">resets 20 Dec</span></h2><div class="grid" style="gap:14px" id="usage"></div>
+        <div class="note" style="margin-top:14px">When you hit a limit, we tell you. You can add your own AI key to keep going. No surprise charges.</div></div>
+      <div class="card"><h2>Your plan</h2><div class="grid" style="grid-template-columns:1fr 1fr;gap:12px" id="plans"></div>
+        <div class="row" style="margin-top:14px"><button class="btn">Invoices & payment</button><button class="btn" style="color:var(--neg)">Cancel plan</button><span class="small muted">One click. You keep Pro until 20 Dec.</span></div></div>
+    </div>
+  </div>
+  <div class="pane" data-g="settings" data-t="channels" data-label="Channels">
+    <div class="card"><h2>Connected channels <span class="small muted" style="font-weight:400">2 of 3</span><button class="btn pri more" onclick="openConnect()">+ Add channel</button></h2>
+      <div class="check"><div class="av" style="background:linear-gradient(135deg,#2dd4bf,#0f766e)"></div><div style="flex:1"><b>Quiet Hands Pottery</b> <span class="badge b-real">active</span><div class="small muted">@quiethandspottery · 18.4k subscribers · view-only access · revenue allowed</div></div><button class="btn">Remove</button></div>
+      <div class="check"><div class="av"></div><div style="flex:1"><b>Old channel</b> <span class="badge b-est">no longer exists</span><div class="small muted">YouTube says this channel was removed. Its data stays readable until you remove it.</div></div><button class="btn">Remove</button></div>
+      <div class="note" style="margin-top:12px">We only ask to <b>view</b> your channel and analytics. We can't upload, edit or delete anything.</div></div>
+  </div>
+  <div class="pane" data-g="settings" data-t="ai" data-label="AI & apps">
+    <div class="grid g-2">
+      <div class="card"><h2>AI</h2>
+        <div class="check"><div style="flex:1"><b>Included AI</b><div class="small muted">Nothing to set up. Uses your monthly AI allowance.</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+        <div class="check"><div style="flex:1"><b>Use my own key instead</b><div class="small muted">Claude, OpenAI, Gemini or OpenRouter. Stored encrypted. No limits.</div></div><button class="btn">Add key</button></div></div>
+      <div class="card"><h2>Use open-IQ inside Claude, ChatGPT and others</h2><p class="small muted" style="margin-top:-4px">Add this address as a connector (MCP). Your AI app can then search keywords, outliers and your channel stats.</p>
+        <div class="row"><input class="input" style="flex:1" value="https://open-iq.app/mcp" readonly><button class="btn">Copy</button></div>
+        <div class="row" style="margin-top:10px"><a class="small">How to add it in Claude</a><a class="small">in ChatGPT</a><a class="small">in other apps</a></div></div>
+    </div>
+  </div>
+  <div class="pane" data-g="settings" data-t="extension" data-label="Extension & data">
+    <div class="grid g-main-side">
+      <div class="yt">
+        <div><div class="player">YouTube video page</div><div style="font-weight:700;font-size:1.1rem;margin-top:12px">How I throw a 10 lb bowl (no wobble)</div>
+          <div class="bar" style="width:40%"></div><div class="bar" style="width:70%"></div><div class="bar" style="width:55%"></div></div>
+        <div class="panel">
+          <div class="ph"><div class="logo" style="width:22px;height:22px;font-size:.7rem;background:var(--on-accent);color:var(--accent)">IQ</div>open-IQ</div>
+          <div style="padding:12px;display:grid;gap:10px">
+            <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+              <div class="fact"><div class="k">Views / hour</div><div class="v">1,240</div></div>
+              <div class="fact"><div class="k">vs usual</div><div class="v"><span class="xn">×6.2</span></div></div>
+              <div class="fact"><div class="k">Engagement</div><div class="v">5.8%</div></div>
+              <div class="fact"><div class="k">Age</div><div class="v">3 days</div></div></div>
+            <div class="small"><b>Why ×6.2?</b> <span class="muted">182k views; this channel usually gets 29k.</span></div>
+            <div class="row"><span class="tag">pottery</span><span class="tag">big bowl</span><span class="tag">wheel throwing</span><span class="chip">Copy tags</span></div>
+            <div class="row"><button class="btn" style="flex:1">Save idea</button><button class="btn" style="flex:1">Track channel</button></div>
+          </div></div>
+      </div>
+      <div class="card"><h2>Extension settings</h2>
+        <div class="check"><div style="flex:1"><b>Show on video pages</b></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+        <div class="check"><div style="flex:1"><b>Show on search results</b></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+        <div class="check"><div style="flex:1"><b>Share page stats with the community</b><div class="small muted">Public numbers from pages you open (views, likes, upload date). Never private data, never YouTube Studio. Makes outliers and keyword data better for everyone.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+        <div class="field" style="margin-top:10px"><label>Server <span class="small muted">(change only if you host open-IQ yourself)</span></label><input class="input" value="https://open-iq.app"></div>
+        <h2 style="margin-top:18px">What your browser shared</h2><div class="out small muted">Sharing is off. Nothing has been sent.</div>
+        <div class="row" style="margin-top:14px"><button class="btn">Export my data</button><button class="btn" style="color:var(--neg)">Delete account</button></div></div>
+    </div>
+  </div>
+</section>
+
+    </main>
+  </div>
+</div>
+
+<!-- CONNECT FLOW -->
+<div class="modal-bg" id="connect" onclick="if(event.target===this)this.classList.remove('on')"><div class="modal">
+  <div class="steps"><i class="on"></i><i class="on"></i><i></i></div>
+  <div class="small muted">Step 2 of 3</div>
+  <h1 style="font-size:1.4rem;margin:4px 0 14px">Is this the right channel?</h1>
+  <div class="row" style="gap:14px;flex-wrap:nowrap"><div class="av" style="width:56px;height:56px;background:linear-gradient(135deg,#b45309,#78350f)"></div>
+    <div><b style="font-size:1.1rem">Clay at Night</b><div class="small muted">@clayatnight · 2.3k subscribers · 41 videos</div><div class="small muted">Channel ID UC7x…9Qa</div></div></div>
+  <div class="out" style="margin-top:16px">Not the one? Google's list sometimes shows a channel's <b>old name</b>. Go back and pick the account in the same position as in your YouTube channel list.</div>
+  <div class="check" style="border:0;margin-top:6px"><button class="toggle on" onclick="this.classList.toggle('on')"></button><div class="small">Also show my <b>revenue</b> (optional, view-only)</div></div>
+  <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" onclick="document.getElementById('connect').classList.remove('on')">Pick another</button><button class="btn pri" onclick="document.getElementById('connect').classList.remove('on')">Yes, connect</button></div>
+</div></div>
+
+<div class="hint">Prototype v2 · sample data · <a onclick="toggleTheme()">switch theme</a> · <a onclick="openConnect()">connect flow</a></div>
+
+<script>
+const I={
+ home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+ research:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/>',
+ channel:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
+ optimize:'<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',
+ competitors:'<circle cx="8" cy="9" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M14 15c3 0 8 1 8 5"/>',
+ coach:'<path d="M4 5h16v11H8l-4 4z"/>',
+ tools:'<path d="M14 7l3-3 3 3-3 3M4 20l9-9M15 13l5 5-2 2-5-5"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.5a7 7 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-.9a7 7 0 0 0 2 1.2L10 21h4l.5-2.5a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>'};
+const NAV=[['home','Home'],['research','Research'],['channel','My channel'],['optimize','Optimize video'],['competitors','Competitors'],['coach','Ask AI'],'-',['tools','Tools'],['settings','Settings']];
+document.getElementById('nav').innerHTML=NAV.map(n=>n==='-'?'<div class="sep"></div>':`<button class="nav" data-n="${n[0]}" onclick="go('${n[0]}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${I[n[0]]}</svg><span class="lbl">${n[1]}</span></button>`).join('');
+// tabs
+document.querySelectorAll('.tabs[data-g]').forEach(t=>{const g=t.dataset.g;t.innerHTML=[...document.querySelectorAll(`.pane[data-g="${g}"]`)].map(p=>`<button class="tab" data-t="${p.dataset.t}" onclick="tab('${g}','${p.dataset.t}')">${p.dataset.label}</button>`).join('');tab(g,document.querySelector(`.pane[data-g="${g}"]`).dataset.t)});
+function tab(g,t){document.querySelectorAll(`.pane[data-g="${g}"]`).forEach(p=>p.classList.toggle('on',p.dataset.t===t));document.querySelectorAll(`.tabs[data-g="${g}"] .tab`).forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
+function go(s,t){document.querySelectorAll('.screen').forEach(e=>e.classList.toggle('on',e.dataset.s===s));document.querySelectorAll('.nav[data-n]').forEach(e=>e.classList.toggle('on',e.dataset.n===s));if(t)tab(s,t);location.hash=s+(t?'/'+t:'');document.querySelector('.content').scrollTop=0}
+function toggleSide(){document.getElementById('app').classList.toggle('collapsed')}
+function toggleTheme(){const d=document.documentElement;d.dataset.theme=d.dataset.theme==='dark'?'light':'dark';localStorage.oiqTheme=d.dataset.theme}
+function openConnect(){document.getElementById('connect').classList.add('on')}
+document.documentElement.dataset.theme=localStorage.oiqTheme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const series=(n,base,vol,trend=0)=>Array.from({length:n},(_,i)=>Math.max(1,base*(1+trend*i/n)+(rnd()-.5)*vol*base));
+function spark(d,w=110,h=28,color='var(--accent)'){const mx=Math.max(...d),mn=Math.min(...d);const p=d.map((v,i)=>`${(i/(d.length-1)*w).toFixed(1)},${(h-2-(v-mn)/(mx-mn||1)*(h-4)).toFixed(1)}`).join(' ');return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${p}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round"/></svg>`}
+const G=['#0f766e,#134e4a','#b45309,#78350f','#57534e,#1c1917','#0e7490,#164e63','#a16207,#422006','#be123c,#4c0519','#4d7c0f,#1a2e05','#6d28d9,#2e1065','#c2410c,#431407','#0369a1,#082f49'];
+const thumb=(i,x,dur)=>`<div class="thumb" style="background:linear-gradient(135deg,${G[i%G.length]})">${x?`<span class="xn">×${x}</span>`:''}${dur===''?'':`<span class="dur">${dur||'12:40'}</span>`}</div>`;
+const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':Math.round(n)+'';
+const $=id=>document.getElementById(id);
+
+const OUT=[['I tried every trimming tool so you don’t have to','Clay Corner','14k',8.4,'211k','4 days',1820],['The bowl that broke my wheel','Mud & Fire','88k',6.1,'540k','6 days',3100],['Pottery for people with no patience','Studio Nine','3.2k',12.7,'96k','9 days',410],['Why your mugs crack in the kiln','Kiln Notes','41k',4.8,'302k','2 weeks',900],['Throwing a vase blindfolded','Wheel Life','220k',3.9,'1.4M','5 days',9800],['$5 glaze vs $50 glaze','Glaze Lab','9.8k',9.2,'188k','11 days',650],['Making 100 mugs in a day','Production Pots','61k',5.3,'720k','8 days',3600],['Beginner mistakes I still make','Quiet Wheel','1.1k',15.3,'38k','3 weeks',70],['Raku firing in my backyard','Ash & Ember','27k',7.0,'260k','12 days',840],['Fixing a cracked bowl with gold','Kintsugi Kim','150k',4.2,'1.1M','2 weeks',2900],['How long does clay really need to dry?','Clay Corner','14k',5.5,'131k','3 weeks',230],['Centering in 30 seconds','Mud & Fire','88k',3.4,'310k','4 weeks',400]];
+const vcard=(o,i)=>`<div class="vcard">${thumb(i,o[3])}<div class="t">${o[0]}</div><div class="small muted">${o[1]} · ${o[2]} subs</div><div class="small muted">${o[4]} views · ${o[5]} · ${fmt(o[6])} views/hour</div></div>`;
+
+// home
+$('homeChips').innerHTML=['Audit my channel','Ideas from my search terms','Why did my last video stall?'].map(c=>`<span class="chip">${c}</span>`).join('');
+const KPI=[['Views, 28 days','148,210','+12.4%',1],['Watch hours','6,930','+8.1%',1],['Subscribers','+612','−4.0%',0],['Avg view duration','6:42','+0:18',1],['Click rate (CTR)','5.6%','+0.4 pt',1]];
+const kpiHtml=k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="row between"><span class="small ${k[3]?'up':'down'}">${k[2]}</span>${spark(series(20,10,.5,k[3]?.4:-.2),80,24,k[3]?'var(--pos)':'var(--neg)')}</div></div>`;
+$('homeKpi').innerHTML=$('chKpi').innerHTML=KPI.map(kpiHtml).join('');
+$('earnKpi').innerHTML=[['Estimated revenue, 28d','$412.80','+9.2%',1],['RPM (you earn per 1,000 views)','$2.79','+0.11',1],['Monetized playbacks','61%','−2 pt',0]].map(kpiHtml).join('');
+$('ideas').innerHTML=[['Trimming a bowl in 10 minutes','“how to trim a bowl” brought you 2.1k views with no video aimed at it; top results are 2+ years old.'],['Glaze combos: 3 winners from 40 tests','“I tested X so you don’t have to” videos are at ×6–9 in your niche this month.'],['Beginner wheel setup under $300','Rising in your search terms (+64%); 7 of the top 20 results are from channels under 10k subs.']].map((x,i)=>`<div class="check"><div class="dot" style="background:var(--accent)">${i+1}</div><div style="flex:1"><b>${x[0]}</b><div class="small muted">${x[1]}</div></div><button class="btn" onclick="go('optimize')">Start</button></div>`).join('');
+const TERMS=[['how to trim a bowl',2140,'+38%','5:10','Trimming basics'],['wheel throwing for beginners',1610,'+12%','7:02','Centering for beginners'],['pottery glaze combinations',1180,'+64%','4:48','Glaze test tiles'],['quiet hands pottery',940,'+3%','9:15','—'],['centering clay',720,'−9%','3:55','Centering for beginners'],['leather hard clay',410,'+21%','6:01','Trimming basics']];
+const ch=t=>`<td class="num ${t[2][0]==='−'?'down':'up'}">${t[2]}</td>`;
+$('homeTerms').innerHTML=TERMS.slice(0,5).map(t=>`<tr><td>${t[0]}</td><td class="num">${t[1].toLocaleString()}</td>${ch(t)}</tr>`).join('');
+$('chTerms').innerHTML=TERMS.map(t=>`<tr><td>${t[0]}</td><td class="num">${t[1].toLocaleString()}</td>${ch(t)}<td class="num">${t[3]}</td><td class="muted">${t[4]}</td></tr>`).join('');
+$('homeOut').innerHTML=OUT.slice(0,4).map(vcard).join('');
+
+// research
+const KW=[['wheel throwing for beginners','6.1k–9.8k',48000,7,1610,.2],['pottery wheel for beginners','3.0k–5.2k',61000,4,0,.1],['how to center clay','2.4k–4.0k',39000,9,720,0],['how to trim a bowl','1.2k–2.6k',22000,11,2140,.3],['pottery glaze combinations','1.9k–3.4k',33000,8,1180,.7],['beginner pottery projects','0.9k–2.0k',18000,12,0,.4],['leather hard clay',null,null,10,410,.1],['electric vs kick wheel','0.5k–1.1k',27000,6,0,-.2],['hand building vs wheel','0.6k–1.3k',41000,5,0,0]];
+$('kwRows').innerHTML=KW.map((k,i)=>`<tr class="${i?'':'sel'}" onclick="kwSel(${i},this)"><td><b>${k[0]}</b></td><td>${spark(series(12,10,.4,k[5]),80,24)}</td><td class="num">${k[1]||'<span class="muted small">too few to estimate</span>'}</td><td class="num">${k[2]?fmt(k[2]):'—'}</td><td class="num">${k[3]} of 20</td><td class="num">${k[4]?k[4].toLocaleString():'<span class="muted">—</span>'}</td></tr>`).join('');
+function kwSel(i,tr){document.querySelectorAll('#kwRows tr').forEach(r=>r.classList.remove('sel'));if(tr)tr.classList.add('sel');const k=KW[i];
+ $('kwDetail').innerHTML=`<h2>${k[0]}</h2>
+ <div class="out" style="margin-bottom:12px"><b>${k[3]>=7?'Worth a try.':'Hard to break in.'}</b> ${k[3]>=7?`Small channels rank here (${k[3]} of 20) and the top videos are over a year old.`:`Only ${k[3]} of the top 20 are from small channels.`} ${k[4]?'YouTube already sends you viewers for it.':''}</div>
+ <div class="facts">
+ <div class="fact"><div class="k">Your views from this term, 28d <span class="badge b-real">REAL</span></div><div class="v">${k[4]?k[4].toLocaleString():'None yet'}</div></div>
+ <div class="fact"><div class="k">Searches per month <span class="badge b-est">ESTIMATE</span></div><div class="v">${k[1]||'Too few to estimate'}</div><div class="small muted">A range, because nobody outside YouTube knows the real number.</div></div>
+ <div class="fact"><div class="k">Interest over 12 months <span class="badge b-real">Trends</span></div>${spark(series(12,10,.4,k[5]),300,44)}</div>
+ <div class="fact"><div class="k">Top 20 videos right now <span class="badge b-real">REAL</span></div><div class="small" style="margin-top:4px">Usually <b>${k[2]?fmt(k[2]):'—'}</b> views · <b>${k[3]}</b> from channels under 10k subs · about <b>14 months</b> old</div></div></div>
+ <div class="row" style="margin-top:14px"><button class="btn pri" onclick="go('optimize')">Make a video</button><button class="btn">Save</button><button class="btn">Track rank <span class="later">soon</span></button></div>`}
+kwSel(0);
+$('outFilters').innerHTML=['Pottery ▾','Long videos ▾','×3 or more ▾','Last 30 days ▾','Any channel size ▾'].map(c=>`<span class="chip">${c}</span>`).join('');
+$('outGrid').innerHTML=OUT.map(vcard).join('');
+
+// channel
+$('rangeChips').innerHTML=['7 days','28 days','90 days','12 months'].map((c,i)=>`<span class="chip ${i==1?'on':''}">${c}</span>`).join('');
+(function(){const d=series(90,5000,.35,.5),mx=Math.max(...d)*1.1;const pts=d.map((v,i)=>`${(i/89*1000).toFixed(1)},${(240-v/mx*230).toFixed(1)}`);
+ const g=[60,120,180].map(y=>`<line x1="0" x2="1000" y1="${y}" y2="${y}" stroke="var(--border)" vector-effect="non-scaling-stroke"/>`).join('');
+ $('bigChart').innerHTML=`${g}<polygon points="0,240 ${pts.join(' ')} 1000,240" fill="var(--accent)" opacity=".12"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`})();
+(function(){const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],hrs=['0','3','6','9','12','15','18','21'];let h='<span></span>'+hrs.map(x=>`<span class="muted" style="text-align:center">${x}h</span>`).join('');
+ days.forEach((d,di)=>{h+=`<span class="muted">${d}</span>`;hrs.forEach((_,hi)=>{let v=[.05,.03,.08,.2,.35,.5,.6,.4][hi]+(di>4?.25:0)+(rnd()-.5)*.1;v=Math.max(.05,Math.min(1,v));h+=`<span style="height:18px;border-radius:3px;background:color-mix(in srgb,var(--accent) ${Math.round(v*100)}%,var(--surface-2))"></span>`})});$('heat').innerHTML=h})();
+$('attention').innerHTML=[['no','“Kiln day vlog” is at ×0.5 of your usual views','Click rate 2.1% vs your usual 5.6%. Try a new thumbnail or title.'],['no','3 videos have no end screen','They get 18% of your views. <a>Show them</a>'],['ok','Uploading every 6 days on average','Steady. Your best month had one every 5 days.']].map(c=>`<div class="check"><div class="dot ${c[0]}">${c[0]=='ok'?'✓':'!'}</div><div><b>${c[1]}</b><div class="small muted">${c[2]}</div></div></div>`).join('');
+const VIDS=[['Glaze test tiles, 40 combos','12.8k','42','0.9','4.7%','8:10'],['My studio tour (small garage)','31.2k','210','2.4','6.4%','6:55'],['Throwing a 5 lb bowl','19.0k','88','1.4','7.4%','7:30'],['Centering for beginners, slowly','58.6k','36','4.5','8.1%','9:02'],['Kiln day vlog','6.1k','12','0.5','2.1%','3:40'],['First upload: hello!','410','1',null,'3.0%','1:55']];
+$('chVids').innerHTML=VIDS.map((v,i)=>`<tr><td><div class="row" style="flex-wrap:nowrap"><div style="width:72px;flex:none">${thumb(i+2,null,'')}</div><span>${v[0]}</span></div></td><td class="num">${v[1]}</td><td class="num">${v[2]}</td><td class="num">${v[3]===null?'<span class="muted small">not enough videos yet</span>':+v[3]>=2?`<span class="xn">×${v[3]}</span>`:+v[3]<=.6?`<span class="down">×${v[3]}</span>`:'×'+v[3]}</td><td class="num">${v[4]}</td><td class="num">${v[5]}</td><td><button class="btn" onclick="go('optimize')">Optimize</button></td></tr>`).join('');
+$('earnRows').innerHTML=[['Centering for beginners, slowly','$141.20','$3.10'],['My studio tour (small garage)','$88.40','$2.65'],['Throwing a 5 lb bowl','$51.90','$2.48']].map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td></tr>`).join('');
+
+// optimize
+function checkTitle(){$('tLen').textContent=$('titleIn').value.length+' / 100'}
+$('titleAlts').innerHTML='<span class="badge b-ai">AI ideas</span>'+['How to trim a bowl (10-minute method)','Trim a bowl like a pro: beginner guide','Stop ruining your bowls when trimming'].map(t=>`<span class="chip" onclick="$('titleIn').value=this.textContent;checkTitle()">${t}</span>`).join('');
+$('tags').innerHTML=['how to trim a bowl','trimming pottery','trimming a bowl','pottery for beginners','foot ring','leather hard'].map(t=>`<span class="tag">${t} ✕</span>`).join('')+'<span class="chip">+ From my search terms</span>';
+$('checks').innerHTML=[[1,'Title has your main search term','“trim a bowl” brought you 2.1k views in 28 days.'],[1,'Title fits on phones','48 characters; nothing gets cut off.'],[1,'Title style matches niche hits','Outliers in pottery are 35–55 characters; 7 of 10 use a number.'],[0,'Search term in the first line of the description','Helps YouTube and viewers know the topic.'],[1,'Chapters are valid','Start at 00:00, 3 or more, each 10 s or longer.'],[1,'Custom thumbnail','Readable at small size: see preview.'],[0,'End screen','Add one to send viewers to your next video.'],[1,'Not too similar to your own videos','Closest: “Throwing a 5 lb bowl”.']].map(c=>`<div class="check"><div class="dot ${c[0]?'ok':'no'}">${c[0]?'✓':'!'}</div><div><b>${c[1]}</b><div class="small muted">${c[2]}</div></div></div>`).join('');
+$('feedPrev').innerHTML=[['You',3],['Competitor',0],['Competitor',1]].map((x,i)=>`<div class="vcard" style="${i?'opacity:.7':''}">${thumb(x[1],null,'10:04')}<div class="t">${i?OUT[i][0]:'Trimming a bowl in 10 minutes (beginner friendly)'}</div><div class="small muted">${i?OUT[i][1]:'Quiet Hands Pottery'} · ${x[0]}</div></div>`).join('')+'<div class="row" style="grid-column:1/-1"><span class="chip on">Home feed</span><span class="chip">Search</span><span class="chip">Suggested</span><span class="chip">Light / dark</span><span class="chip">+ Upload thumbnail to test</span></div>';
+
+// competitors
+const COMP=[['Clay Corner','14.2k',4,'12.1k',8.4],['Mud & Fire','88.0k',6,'61k',6.1],['Studio Nine','3.2k',3,'4.4k',12.7],['Kiln Notes','41.5k',2,'38k',4.8],['Glaze Lab','9.8k',5,'15k',9.2],['Ash & Ember','27.3k',3,'22k',7.0]];
+$('compRows').innerHTML=COMP.map((c,i)=>`<tr><td><div class="row" style="flex-wrap:nowrap"><div class="av" style="background:linear-gradient(135deg,${G[i]})"></div><b>${c[0]}</b></div></td><td class="num">${c[1]}</td><td>${spark(series(18,10,.5,.3),120,26)}</td><td class="num">${c[2]}</td><td class="num">${c[3]}</td><td><span class="xn">×${c[4]}</span> <span class="small muted">${OUT.find(o=>o[1]===c[0])?.[0]||''}</span></td></tr>`).join('');
+$('compFeed').innerHTML=OUT.slice(4,8).map((o,i)=>vcard(o,i+4)).join('');
+
+// tools
+$('tools').innerHTML=[
+ ['Tag finder','See the tags of any video.','<input class="input" placeholder="Paste a video link">','<span class="tag">pottery</span> <span class="tag">big bowl</span> <span class="tag">wheel throwing</span> <a class="small">Copy all</a>'],
+ ['Chapter checker','Will YouTube show your chapters?','<textarea class="input" rows="3">00:00 Intro\n00:08 Clay prep\n02:10 Centering</textarea>','<span class="down">✕ “Intro” is 8 s; chapters must be 10 s or longer.</span>'],
+ ['Transcript','Read or copy a video\'s captions. Runs in your browser.','<input class="input" placeholder="Paste a video link">','<span class="muted">Needs the extension.</span>'],
+ ['Earnings range','Rough earnings for any channel.','<div class="row"><input class="input" style="flex:1" placeholder="Channel link"><input class="input" style="width:110px" value="RPM $1–4"></div>','<b>$190 – $760</b> / month <span class="badge b-est">ESTIMATE</span><div class="small muted">190k views last 30 days × the RPM range you set. Not their real income.</div>'],
+ ['Engagement rate','Likes + comments ÷ views.','<div class="row"><input class="input" placeholder="Views" value="12,800"><input class="input" placeholder="Likes" value="640"><input class="input" placeholder="Comments" value="58"></div>','<b>5.5%</b>'],
+ ['Watch-time goal','How long until 4,000 watch hours?','<div class="row"><input class="input" value="6,930 h now"><input class="input" value="+230 h / week"></div>','<b>You passed it.</b> <span class="muted small">Next: Shorts views goal</span>']
+].map(t=>`<div class="card"><h2>${t[0]}</h2><p class="small muted" style="margin:-6px 0 10px">${t[1]}</p>${t[2]}<div class="out" style="margin-top:10px">${t[3]}</div></div>`).join('');
+
+// settings
+$('usage').innerHTML=[['Keyword reports',18,60],['AI quick actions',188,500],['AI chat messages',41,150],['Connected channels',2,3],['Tracked competitors',9,25]].map(u=>{const p=u[1]/u[2]*100;return `<div><div class="row between small"><span>${u[0]}</span><span class="muted">${u[1]} / ${u[2]}</span></div><div class="meter ${p>85?'warn':''}" style="margin-top:6px"><i style="width:${p}%"></i></div></div>`}).join('');
+$('plans').innerHTML=[['Free','$0',['Extension, all stats','1 channel','5 keyword reports','20 AI actions','3 competitors'],0],['Pro','$10 / month',['Everything in Free','3 channels','60 keyword reports','500 AI actions + 150 chats','25 competitors · full outlier pool'],1]].map(p=>`<div class="fact" style="${p[3]?'border-color:var(--accent)':''}"><div class="k"><b style="color:var(--text)">${p[0]}</b>${p[3]?'<span class="badge b-real">current</span>':''}</div><div class="v">${p[1]}</div><div class="small muted" style="margin-top:6px">${p[2].join('<br>')}</div></div>`).join('');
+
+const [s0,t0]=(location.hash||'#home').slice(1).split('/');go(s0,t0);
+</script>
+</body>
+</html>
