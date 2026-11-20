@@ -1,0 +1,25 @@
+/* Tokens from the design spec §15. */
+.oiq {
+  --bg: #ffffff; --surface: #f5f5f4; --text: #1c1917; --muted: #57534e; --border: #e7e5e4;
+  --accent: #0f766e; --on-accent: #ffffff; --hi: #b45309; --on-hi: #ffffff;
+  font: 13px/1.45 Roboto, Arial, system-ui, sans-serif;
+  color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; margin: 0 0 12px;
+}
+.oiq[data-theme='dark'] {
+  --bg: #161920; --surface: #1d2129; --text: #e7e7ea; --muted: #9ba1ad; --border: #262a33;
+  --accent: #2dd4bf; --on-accent: #042f2e; --hi: #f59e0b; --on-hi: #1c1300;
+}
+.head { background: var(--accent); color: var(--on-accent); padding: 8px 12px; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.body { padding: 12px; display: grid; gap: 10px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.k { color: var(--muted); font-size: 12px; }
+.v { font-weight: 700; font-size: 16px; margin-top: 2px; }
+.sfx { color: var(--muted); font-size: 11px; font-weight: 400; display: block; }
+.reason { color: var(--muted); font-size: 11px; font-weight: 400; display: block; }
+.xn { background: var(--hi); color: var(--on-hi); border-radius: 6px; padding: 1px 7px; }
+.why { font-size: 12px; } .why .m { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 2px 8px; font-size: 12px; }
+.err { color: var(--muted); }
