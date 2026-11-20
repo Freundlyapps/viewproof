@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import type { Scorecard } from '@open-iq/core';
+import type { Scorecard } from '@viewproof/core';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { renderPanel } from '../src/panel';
 
@@ -21,7 +21,7 @@ describe('renderPanel', () => {
   test('renders values and why-line', () => {
     renderPanel(host, { kind: 'ok', card });
     const t = text(host);
-    for (const s of ['open-IQ', 'Views / hour', '1,240', 'avg since upload', 'vs usual', '×3', 'Age', '3 days', 'Tags', 'pottery']) expect(t).toContain(s);
+    for (const s of ['ViewProof', 'Views / hour', '1,240', 'avg since upload', 'vs usual', '×3', 'Age', '3 days', 'Tags', 'pottery']) expect(t).toContain(s);
     expect(t).toContain('Why ×3? 90,000 views; this channel usually gets 30,000 (median of 5 earlier videos).');
     expect(t).toContain('Views / hour: 90,000 views ÷ 72 h since upload.');
   });
@@ -48,13 +48,13 @@ describe('renderPanel', () => {
   test('uses dark tokens when YouTube is dark', () => {
     document.documentElement.setAttribute('dark', '');
     renderPanel(host, { kind: 'ok', card });
-    expect(host.shadowRoot!.querySelector('.oiq')!.getAttribute('data-theme')).toBe('dark');
+    expect(host.shadowRoot!.querySelector('.vp')!.getAttribute('data-theme')).toBe('dark');
   });
 
   test('re-render replaces content, one shadow root', () => {
     renderPanel(host, { kind: 'ok', card });
     renderPanel(host, { kind: 'ok', card: { ...card, title: 'Second' } });
-    expect(host.shadowRoot!.querySelectorAll('.oiq')).toHaveLength(1);
+    expect(host.shadowRoot!.querySelectorAll('.vp')).toHaveLength(1);
     expect(text(host)).toContain('Second');
   });
 

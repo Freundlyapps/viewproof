@@ -1,4 +1,4 @@
-import { type FeedVideo, type ParseResult, parseChannelFeed } from '@open-iq/core';
+import { type FeedVideo, type ParseResult, parseChannelFeed } from '@viewproof/core';
 
 export const BASELINE_TTL_MS = 3_600_000;
 /** HTTP failures are remembered briefly so every click doesn't refetch. */

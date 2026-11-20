@@ -31,13 +31,13 @@ function watchPage(data: unknown): string {
   return `<!doctype html><html><body>
   <div id="movie_player"></div><div id="primary"></div><div id="secondary"><div>related videos</div></div>
   <script>
-    window.__oiq = ${JSON.stringify(data)};
-    document.getElementById('movie_player').getPlayerResponse = () => window.__oiq;
+    window.__vp = ${JSON.stringify(data)};
+    document.getElementById('movie_player').getPlayerResponse = () => window.__vp;
   </script></body></html>`;
 }
 
 async function launch(feedStatus: number): Promise<BrowserContext> {
-  const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'oiq-e2e-')), {
+  const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'vp-e2e-')), {
     channel: 'chromium',
     headless: true,
     args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`],
@@ -58,7 +58,7 @@ async function launch(feedStatus: number): Promise<BrowserContext> {
   return ctx;
 }
 
-const panel = (page: import('@playwright/test').Page) => page.locator('#open-iq-panel');
+const panel = (page: import('@playwright/test').Page) => page.locator('#viewproof-panel');
 
 test('shows ×N with its reason and VPH on a watch page', async () => {
   const ctx = await launch(200);
@@ -77,7 +77,7 @@ test('in-app navigation shows the new video, not the old one', async () => {
   await page.goto('https://www.youtube.com/watch?v=VIDEO000001');
   await expect(panel(page)).toContainText('First video', { timeout: 15_000 });
   await page.evaluate((next) => {
-    (window as unknown as { __oiq: unknown }).__oiq = next;
+    (window as unknown as { __vp: unknown }).__vp = next;
     history.pushState({}, '', '/watch?v=VIDEO000002');
     document.dispatchEvent(new Event('yt-navigate-finish'));
   }, player('VIDEO000002', 'Second video', 6000, 48));
@@ -104,7 +104,7 @@ test('navigating to a video whose channel feed hangs: old numbers vanish, new on
   await expect(panel(page)).toContainText('×3', { timeout: 15_000 });
   await page.evaluate((next) => {
     document.dispatchEvent(new Event('yt-navigate-start'));
-    (window as unknown as { __oiq: unknown }).__oiq = next;
+    (window as unknown as { __vp: unknown }).__vp = next;
     history.pushState({}, '', '/watch?v=VIDEO000003');
     document.dispatchEvent(new Event('yt-navigate-finish'));
   }, player('VIDEO000003', 'Third video', 4800, 48, HUNG_CHANNEL));

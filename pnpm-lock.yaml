@@ -20,7 +20,7 @@ importers:
 
   apps/extension:
     dependencies:
-      '@open-iq/core':
+      '@viewproof/core':
         specifier: workspace:*
         version: link:../../packages/core
     devDependencies:

@@ -1,4 +1,4 @@
-# open-IQ Phase 1 — roadmap of build plans
+# ViewProof Phase 1 — roadmap of build plans
 
 Phase 1 (spec §8 items 1–9c) spans several subsystems: extension, API, web app, keyword providers, AI, billing. It is split into plans that each ship working, testable software, in this order. Each plan gets its own detailed file when the previous one is merged, so later plans can use real interfaces instead of guessed ones.
 

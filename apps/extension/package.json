@@ -12,7 +12,7 @@
     "e2e": "wxt build && playwright test"
   },
   "dependencies": {
-    "@open-iq/core": "workspace:*"
+    "@viewproof/core": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",

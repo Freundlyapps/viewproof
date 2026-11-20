@@ -1,4 +1,4 @@
-import { MIN_DELTA_MINUTES, type ViewObservation, buildScorecard, parsePlayerResponse } from '@open-iq/core';
+import { MIN_DELTA_MINUTES, type ViewObservation, buildScorecard, parsePlayerResponse } from '@viewproof/core';
 import { type BaselineCache, getBaseline } from './baseline';
 import type { NavigationGuard } from './bridge';
 import type { PanelState } from './panel';

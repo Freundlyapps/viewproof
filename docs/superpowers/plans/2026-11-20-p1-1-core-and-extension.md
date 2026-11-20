@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node 24, pnpm 10, TypeScript (strict), Vitest (`pool: 'threads'`), happy-dom, fast-xml-parser, WXT, Playwright (Chromium) for the end-to-end check.
 
-**Spec:** `docs/superpowers/specs/2026-11-20-open-iq-design.md` (§7 scores, §10 privacy, D1, D4, §15 UI). Roadmap: `docs/superpowers/plans/2026-11-20-phase1-roadmap.md`.
+**Spec:** `docs/superpowers/specs/2026-11-20-viewproof-design.md` (§7 scores, §10 privacy, D1, D4, §15 UI). Roadmap: `docs/superpowers/plans/2026-11-20-phase1-roadmap.md`.
 
 **Out of scope here (later plans):** panels on channel and search pages, per-page-type toggles and the video checklist in the extension (plan 5, with the settings page); anything sent to a server.
 
@@ -73,7 +73,7 @@ apps/extension/
 - Create: `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `LICENSE`, `packages/core/{package.json,tsconfig.json,vitest.config.ts,src/index.ts}`, `packages/core/test/smoke.test.ts`
 
 **Interfaces:**
-- Produces: workspace package `@open-iq/core` (ESM, `exports: "./src/index.ts"` for workspace use); root scripts `pnpm test` (`pnpm -r test`), `pnpm typecheck` (`pnpm -r typecheck`).
+- Produces: workspace package `@viewproof/core` (ESM, `exports: "./src/index.ts"` for workspace use); root scripts `pnpm test` (`pnpm -r test`), `pnpm typecheck` (`pnpm -r typecheck`).
 
 - [ ] **Step 1:** Create root files. `pnpm-workspace.yaml` lists `packages/*` and `apps/*`. `tsconfig.base.json`: `strict: true`, `target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noUncheckedIndexedAccess: true`. `LICENSE`: full AGPL-3.0 text. Root `package.json`: `"private": true`, `"packageManager": "pnpm@10.4.1"`, `"engines": {"node": ">=24"}`.
 - [ ] **Step 2:** `packages/core/vitest.config.ts` with `test: { pool: 'threads' }`. Write `test/smoke.test.ts`: `expect(VERSION).toBe('0.0.0')` importing `VERSION` from `../src/index`.
@@ -102,7 +102,7 @@ export function median(xs: readonly number[]): number | null; // null for []
 ```
 
 - [ ] **Step 1: Failing tests** — `median([3,1,2]) === 2`; `median([1,2,3,4]) === 2.5`; `median([]) === null`; `noData('x')` deep-equals `{kind:'no_data', reason:'x'}`.
-- [ ] **Step 2:** Run `pnpm --filter @open-iq/core test`. Expected: FAIL (module missing).
+- [ ] **Step 2:** Run `pnpm --filter @viewproof/core test`. Expected: FAIL (module missing).
 - [ ] **Step 3:** Implement in `measured.ts`; re-export from `index.ts`.
 - [ ] **Step 4:** Run tests. Expected: PASS.
 - [ ] **Step 5:** Commit `feat(core): Measured type and median`.
@@ -208,7 +208,7 @@ export function parsePlayerResponse(raw: unknown): ParseResult<WatchVideo>;
   - player: `format` is `'short'` when `lengthSeconds <= 180` and the player data marks it a Short if such a field exists in the fixture; otherwise `'long'`. Note the field used in the test comment; if no reliable field exists, use `'unknown'` for videos ≤ 180 s.
 - [ ] **Step 3:** Run; expect FAIL.
 - [ ] **Step 4:** Implement both parsers. Never throw: wrap parsing and map any exception to `ok: false`.
-- [ ] **Step 5:** Run; expect PASS. Add `pnpm --filter @open-iq/core canary`: a script that fetches one real feed and exits non-zero if it parses to zero entries or any entry has `views === null` (manual use only; documents the parser-drift check from spec §11).
+- [ ] **Step 5:** Run; expect PASS. Add `pnpm --filter @viewproof/core canary`: a script that fetches one real feed and exits non-zero if it parses to zero entries or any entry has `views === null` (manual use only; documents the parser-drift check from spec §11).
 - [ ] **Step 6:** Commit `feat(core): RSS feed and player data parsers with fixtures`.
 
 ### Task 6: Scorecard
@@ -243,13 +243,13 @@ A failed baseline becomes `outlier = noData("Couldn't load this channel's recent
 - Consumes: `parsePlayerResponse` (5).
 - Produces:
 ```ts
-export const MSG = 'open-iq:player' as const;
+export const MSG = 'viewproof:player' as const;
 export interface PlayerMessage { type: typeof MSG; seq: number; url: string; payload: unknown }
 export function isPlayerMessage(e: MessageEvent): e is MessageEvent<PlayerMessage>; // same window, same origin, right shape
 export class NavigationGuard { next(url: string): number; isCurrent(seq: number, url: string): boolean }
 ```
 
-`wxt.config.ts`: manifest name "open-IQ", `host_permissions: ['https://www.youtube.com/*']`, `permissions: ['storage']`, no others. MAIN-world script (`world: 'MAIN'`, matches `https://www.youtube.com/*`, `runAt: 'document_idle'`): on load and on every `yt-navigate-finish` event, if `location.pathname === '/watch'`, read `document.getElementById('movie_player')?.getPlayerResponse?.()`; post `{type: MSG, seq, url: location.href, payload}`; retry up to 10 times at 300 ms while the payload's `videoDetails.videoId` differs from the `v` URL parameter (player data lags the URL after SPA navigation).
+`wxt.config.ts`: manifest name "ViewProof", `host_permissions: ['https://www.youtube.com/*']`, `permissions: ['storage']`, no others. MAIN-world script (`world: 'MAIN'`, matches `https://www.youtube.com/*`, `runAt: 'document_idle'`): on load and on every `yt-navigate-finish` event, if `location.pathname === '/watch'`, read `document.getElementById('movie_player')?.getPlayerResponse?.()`; post `{type: MSG, seq, url: location.href, payload}`; retry up to 10 times at 300 ms while the payload's `videoDetails.videoId` differs from the `v` URL parameter (player data lags the URL after SPA navigation).
 
 - [ ] **Step 1: Failing tests** — `accepts only same-window messages of the right shape` (wrong `source`, wrong `origin`, missing `type` → false); `ignores stale player data after navigation` (guard: `next('…v=A')` = 1, `next('…v=B')` = 2; `isCurrent(1, '…v=A')` false; `isCurrent(2,'…v=B')` true).
 - [ ] **Step 2:** Run `pnpm --filter extension test`; FAIL. **Step 3:** Implement. **Step 4:** PASS.
@@ -279,7 +279,7 @@ export function getBaseline(channelId: string, deps: { fetch: typeof fetch; now:
 export function renderPanel(host: HTMLElement, state: { kind: 'ok'; card: Scorecard } | { kind: 'error'; reason: string }): void;
 ```
 
-Panel copy (exact): title "open-IQ"; tiles "Views / hour", "vs usual", "Age", "Tags". VPH since-upload shows the suffix "avg since upload". ×N badge uses the amber token. Why-line: `Why ×{value}? {views} views; this channel usually gets {baselineMedian}.` plus ` (Shorts and long videos mixed)` when `mixedFormats`. No data: the tile shows "No data" and the reason underneath. Parse failure: "Couldn't read this page. YouTube may have changed something." Theme follows YouTube: dark tokens when `document.documentElement.hasAttribute('dark')`. Panel lives in a shadow root inserted at the top of `#secondary`; one host element, reused across navigations.
+Panel copy (exact): title "ViewProof"; tiles "Views / hour", "vs usual", "Age", "Tags". VPH since-upload shows the suffix "avg since upload". ×N badge uses the amber token. Why-line: `Why ×{value}? {views} views; this channel usually gets {baselineMedian}.` plus ` (Shorts and long videos mixed)` when `mixedFormats`. No data: the tile shows "No data" and the reason underneath. Parse failure: "Couldn't read this page. YouTube may have changed something." Theme follows YouTube: dark tokens when `document.documentElement.hasAttribute('dark')`. Panel lives in a shadow root inserted at the top of `#secondary`; one host element, reused across navigations.
 
 - [ ] **Step 1: Failing tests**
   - store: `keeps only the latest observation per video`; `evicts beyond MAX_VIDEOS` (record 2001 ids → the first is gone).

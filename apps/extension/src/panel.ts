@@ -1,4 +1,4 @@
-import type { Measured, Scorecard } from '@open-iq/core';
+import type { Measured, Scorecard } from '@viewproof/core';
 import css from './panel.css?raw';
 
 export type PanelState =
@@ -67,8 +67,8 @@ function content(state: PanelState): HTMLElement[] {
 /** Render into the host's shadow root (created once, reused across navigations). */
 export function renderPanel(host: HTMLElement, state: PanelState): void {
   const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
-  const box = el('div', 'oiq',
-    el('div', 'head', 'open-IQ', state.kind === 'ok' ? el('span', 'sfx', state.card.title) : null),
+  const box = el('div', 'vp',
+    el('div', 'head', 'ViewProof', state.kind === 'ok' ? el('span', 'sfx', state.card.title) : null),
     el('div', 'body', ...content(state)),
   );
   box.setAttribute('data-theme', document.documentElement.hasAttribute('dark') ? 'dark' : 'light');

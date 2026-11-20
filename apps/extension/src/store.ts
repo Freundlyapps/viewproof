@@ -1,4 +1,4 @@
-import type { ViewObservation } from '@open-iq/core';
+import type { ViewObservation } from '@viewproof/core';
 
 /** The user's own past sightings of a video's view count, kept only in this browser. */
 export interface ObservationStore {

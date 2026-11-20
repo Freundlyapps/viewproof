@@ -1,4 +1,4 @@
-# open-IQ
+# ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
 License: AGPL-3.0. Status: Phase 1, plan 1 of 8 (browser extension, no server yet).
@@ -15,7 +15,7 @@ Live and upcoming videos show "No data" with the reason instead of a misleading 
 
 ### Privacy
 
-The extension sends nothing to open-IQ or anyone else. It talks only to `www.youtube.com`: it reads the data the page already loaded and fetches the channel's public RSS feed without cookies. Your past view-count sightings are stored only in your browser (`chrome.storage.local`, the latest per video, up to 2,000 videos).
+The extension sends nothing to ViewProof or anyone else. It talks only to `www.youtube.com`: it reads the data the page already loaded and fetches the channel's public RSS feed without cookies. Your past view-count sightings are stored only in your browser (`chrome.storage.local`, the latest per video, up to 2,000 videos).
 
 ### Install from source
 
@@ -35,7 +35,7 @@ pnpm test                         # unit tests (core + extension)
 pnpm typecheck
 pnpm --filter extension exec playwright install chromium --no-shell   # once, for e2e
 pnpm --filter extension e2e       # builds and runs the extension against fake YouTube pages
-pnpm --filter @open-iq/core canary   # ONE real feed request: fails loudly if YouTube changed the feed format
+pnpm --filter @viewproof/core canary   # ONE real feed request: fails loudly if YouTube changed the feed format
 node apps/extension/e2e/live-check.mjs <outDir> <videoId>...   # manual check on real videos; one page load each
 ```
 

@@ -1,5 +1,5 @@
 /** Message posted by the MAIN-world script with the page's own player data. */
-export const MSG = 'open-iq:player' as const;
+export const MSG = 'viewproof:player' as const;
 
 export interface PlayerMessage {
   type: typeof MSG;

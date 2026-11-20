@@ -1,4 +1,4 @@
-# open-IQ — design
+# ViewProof — design
 
 Date: 2026-11-20. Status: draft for the owner's approval.
 Evidence base: research notes kept privately by the maintainers; numbers in parentheses such as (03) refer to them.

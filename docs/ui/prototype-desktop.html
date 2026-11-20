@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>open-IQ — desktop UI prototype v2</title>
+<title>ViewProof — desktop UI prototype v2</title>
 <style>
 :root{
   --bg:#FAFAF9; --surface:#FFFFFF; --surface-2:#F5F5F4; --text:#1C1917; --muted:#57534E; --border:#E7E5E4;
@@ -144,7 +144,7 @@ th .badge{margin-left:4px;vertical-align:1px}
 <body>
 <div class="app" id="app">
   <aside class="side">
-    <div class="brand"><div class="logo">IQ</div><span>open-IQ</span></div>
+    <div class="brand"><div class="logo">VP</div><span>ViewProof</span></div>
     <div id="nav"></div>
     <div class="grow"></div>
     <div class="side-card"><b style="color:var(--text)">Get the extension</b><br>Stats on every YouTube page. Free.<button class="btn pri" style="width:100%;margin-top:8px">Add to Chrome</button></div>
@@ -302,8 +302,8 @@ th .badge{margin-left:4px;vertical-align:1px}
       <div class="card"><h2>AI</h2>
         <div class="check"><div style="flex:1"><b>Included AI</b><div class="small muted">Nothing to set up. Uses your monthly AI allowance.</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
         <div class="check"><div style="flex:1"><b>Use my own key instead</b><div class="small muted">Claude, OpenAI, Gemini or OpenRouter. Stored encrypted. No limits.</div></div><button class="btn">Add key</button></div></div>
-      <div class="card"><h2>Use open-IQ inside Claude, ChatGPT and others</h2><p class="small muted" style="margin-top:-4px">Add this address as a connector (MCP). Your AI app can then search keywords, outliers and your channel stats.</p>
-        <div class="row"><input class="input" style="flex:1" value="https://open-iq.app/mcp" readonly><button class="btn">Copy</button></div>
+      <div class="card"><h2>Use ViewProof inside Claude, ChatGPT and others</h2><p class="small muted" style="margin-top:-4px">Add this address as a connector (MCP). Your AI app can then search keywords, outliers and your channel stats.</p>
+        <div class="row"><input class="input" style="flex:1" value="https://viewproof.app/mcp" readonly><button class="btn">Copy</button></div>
         <div class="row" style="margin-top:10px"><a class="small">How to add it in Claude</a><a class="small">in ChatGPT</a><a class="small">in other apps</a></div></div>
     </div>
   </div>
@@ -313,7 +313,7 @@ th .badge{margin-left:4px;vertical-align:1px}
         <div><div class="player">YouTube video page</div><div style="font-weight:700;font-size:1.1rem;margin-top:12px">How I throw a 10 lb bowl (no wobble)</div>
           <div class="bar" style="width:40%"></div><div class="bar" style="width:70%"></div><div class="bar" style="width:55%"></div></div>
         <div class="panel">
-          <div class="ph"><div class="logo" style="width:22px;height:22px;font-size:.7rem;background:var(--on-accent);color:var(--accent)">IQ</div>open-IQ</div>
+          <div class="ph"><div class="logo" style="width:22px;height:22px;font-size:.7rem;background:var(--on-accent);color:var(--accent)">VP</div>ViewProof</div>
           <div style="padding:12px;display:grid;gap:10px">
             <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
               <div class="fact"><div class="k">Views / hour</div><div class="v">1,240</div></div>
@@ -329,7 +329,7 @@ th .badge{margin-left:4px;vertical-align:1px}
         <div class="check"><div style="flex:1"><b>Show on video pages</b></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
         <div class="check"><div style="flex:1"><b>Show on search results</b></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
         <div class="check"><div style="flex:1"><b>Share page stats with the community</b><div class="small muted">Public numbers from pages you open (views, likes, upload date). Never private data, never YouTube Studio. Makes outliers and keyword data better for everyone.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-        <div class="field" style="margin-top:10px"><label>Server <span class="small muted">(change only if you host open-IQ yourself)</span></label><input class="input" value="https://open-iq.app"></div>
+        <div class="field" style="margin-top:10px"><label>Server <span class="small muted">(change only if you host ViewProof yourself)</span></label><input class="input" value="https://viewproof.app"></div>
         <h2 style="margin-top:18px">What your browser shared</h2><div class="out small muted">Sharing is off. Nothing has been sent.</div>
         <div class="row" style="margin-top:14px"><button class="btn">Export my data</button><button class="btn" style="color:var(--neg)">Delete account</button></div></div>
     </div>
@@ -371,9 +371,9 @@ document.querySelectorAll('.tabs[data-g]').forEach(t=>{const g=t.dataset.g;t.inn
 function tab(g,t){document.querySelectorAll(`.pane[data-g="${g}"]`).forEach(p=>p.classList.toggle('on',p.dataset.t===t));document.querySelectorAll(`.tabs[data-g="${g}"] .tab`).forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
 function go(s,t){document.querySelectorAll('.screen').forEach(e=>e.classList.toggle('on',e.dataset.s===s));document.querySelectorAll('.nav[data-n]').forEach(e=>e.classList.toggle('on',e.dataset.n===s));if(t)tab(s,t);location.hash=s+(t?'/'+t:'');document.querySelector('.content').scrollTop=0}
 function toggleSide(){document.getElementById('app').classList.toggle('collapsed')}
-function toggleTheme(){const d=document.documentElement;d.dataset.theme=d.dataset.theme==='dark'?'light':'dark';localStorage.oiqTheme=d.dataset.theme}
+function toggleTheme(){const d=document.documentElement;d.dataset.theme=d.dataset.theme==='dark'?'light':'dark';localStorage.vpTheme=d.dataset.theme}
 function openConnect(){document.getElementById('connect').classList.add('on')}
-document.documentElement.dataset.theme=localStorage.oiqTheme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+document.documentElement.dataset.theme=localStorage.vpTheme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
 
 let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const series=(n,base,vol,trend=0)=>Array.from({length:n},(_,i)=>Math.max(1,base*(1+trend*i/n)+(rnd()-.5)*vol*base));

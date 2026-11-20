@@ -3,10 +3,10 @@ import { handlePlayer } from '../src/flow';
 import { type PanelState, renderPanel } from '../src/panel';
 import { chromeStore } from '../src/store';
 
-const HOST_ID = 'open-iq-panel';
+const HOST_ID = 'viewproof-panel';
 const MOUNT_WAIT_MS = 10_000;
 
-/** Isolated world: turns the page's player data into the open-IQ panel. Talks only to youtube.com. */
+/** Isolated world: turns the page's player data into the ViewProof panel. Talks only to youtube.com. */
 export default defineContentScript({
   matches: ['https://www.youtube.com/*'],
   runAt: 'document_idle',
