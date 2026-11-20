@@ -1,4 +1,4 @@
-import { MSG, type PlayerMessage } from '../src/bridge';
+import { MSG, type PlayerMessage, readPlayer } from '../src/bridge';
 
 /**
  * Runs in the page's own JS world (MAIN) only to read the player data YouTube
@@ -13,22 +13,21 @@ export default defineContentScript({
     const RETRIES = 10;
     const DELAY_MS = 300;
 
-    const read = (): unknown => {
+    const get = (): unknown => {
       const player = document.getElementById('movie_player') as (HTMLElement & { getPlayerResponse?: () => unknown }) | null;
       return player?.getPlayerResponse?.();
     };
-    const idOf = (p: unknown): unknown => (p as { videoDetails?: { videoId?: unknown } } | undefined)?.videoDetails?.videoId;
 
     const publish = (attempt = 0, mySeq = ++seq) => {
       if (location.pathname !== '/watch') return;
       const wanted = new URLSearchParams(location.search).get('v');
-      const payload = read();
+      const read = readPlayer(get, wanted);
       // Player data lags the URL after in-app navigation; wait for it to catch up.
-      if (idOf(payload) !== wanted && attempt < RETRIES) {
+      if (read.payload === null && attempt < RETRIES) {
         setTimeout(() => mySeq === seq && publish(attempt + 1, mySeq), DELAY_MS);
         return;
       }
-      const msg: PlayerMessage = { type: MSG, seq: mySeq, url: location.href, payload: idOf(payload) === wanted ? payload : null };
+      const msg: PlayerMessage = { type: MSG, seq: mySeq, url: location.href, ...read };
       window.postMessage(msg, location.origin);
     };
 

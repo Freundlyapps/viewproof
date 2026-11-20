@@ -78,4 +78,11 @@ describe('parsePlayerResponse', () => {
     delete raw.microformat.playerMicroformatRenderer.canonicalUrl;
     expect(parsePlayerResponse(raw)).toMatchObject({ ok: true, value: { format: 'unknown' } });
   });
+
+  test('upcoming premiere without a view count parses as upcoming with views null', () => {
+    const raw = fx('player-watch.json');
+    raw.videoDetails.isUpcoming = true;
+    delete raw.videoDetails.viewCount;
+    expect(parsePlayerResponse(raw)).toMatchObject({ ok: true, value: { isUpcoming: true, views: null } });
+  });
 });

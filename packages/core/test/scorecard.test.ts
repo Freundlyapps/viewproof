@@ -15,7 +15,7 @@ const NOW = '2026-11-20T12:00:00Z';
 describe('buildScorecard', () => {
   test('combines scores', () => {
     const c = buildScorecard({ video, previous: null, baseline: { ok: true, value: baseline }, now: NOW });
-    expect(c).toMatchObject({ platform: 'youtube', videoId: 'vid00000001', title: 'T', ageHours: 48, tags: ['a', 'b'] });
+    expect(c).toMatchObject({ platform: 'youtube', videoId: 'vid00000001', title: 'T', age: { kind: 'value', value: 48 }, tags: ['a', 'b'] });
     expect(c.vph).toMatchObject({ kind: 'value', value: 2000 });
     expect(c.outlier).toMatchObject({ kind: 'value', value: 3.2 });
   });
@@ -36,5 +36,17 @@ describe('buildScorecard', () => {
     const c = buildScorecard({ video: { ...video, isLive: true }, previous: null, baseline: { ok: true, value: baseline }, now: NOW });
     expect(c.vph).toEqual({ kind: 'no_data', reason: 'Live or upcoming video' });
     expect(c.outlier).toEqual({ kind: 'no_data', reason: 'Live or upcoming video' });
+  });
+
+  test('scheduled premiere: age says not published yet, never negative', () => {
+    const c = buildScorecard({ video: { ...video, isUpcoming: true, views: null, publishedAt: '2026-11-21T08:00:00Z' }, previous: null, baseline: { ok: true, value: baseline }, now: NOW });
+    expect(c.age).toEqual({ kind: 'no_data', reason: 'Not published yet' });
+    expect(c.vph.kind).toBe('no_data');
+  });
+
+  test('missing view count on a published video never reaches the scores', () => {
+    const c = buildScorecard({ video: { ...video, views: null }, previous: null, baseline: { ok: true, value: baseline }, now: NOW });
+    expect(c.vph).toEqual({ kind: 'no_data', reason: 'View count not shown' });
+    expect(c.outlier).toEqual({ kind: 'no_data', reason: 'View count not shown' });
   });
 });

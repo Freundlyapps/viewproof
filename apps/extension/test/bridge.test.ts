@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { MSG, NavigationGuard, isPlayerMessage } from '../src/bridge';
+import { MSG, NavigationGuard, isPlayerMessage, readPlayer } from '../src/bridge';
 
 const win = {} as Window;
 const ev = (data: unknown, over: Partial<{ source: unknown; origin: string }> = {}) =>
@@ -27,5 +27,18 @@ describe('NavigationGuard', () => {
     expect(g.isCurrent(a, 'https://www.youtube.com/watch?v=A')).toBe(false);
     expect(g.isCurrent(b, 'https://www.youtube.com/watch?v=B')).toBe(true);
     expect(g.isCurrent(b, 'https://www.youtube.com/watch?v=C')).toBe(false);
+  });
+});
+
+describe('readPlayer', () => {
+  test('a throwing player API becomes a reason, not an exception', () => {
+    expect(readPlayer(() => { throw new Error('boom'); }, 'A')).toEqual({ payload: null, reason: "YouTube's player data could not be read (boom)" });
+  });
+  test('player data for another video is reported as not updated', () => {
+    expect(readPlayer(() => ({ videoDetails: { videoId: 'B' } }), 'A')).toEqual({ payload: null, reason: 'Player data did not update for this video' });
+  });
+  test('matching player data passes through', () => {
+    const p = { videoDetails: { videoId: 'A' } };
+    expect(readPlayer(() => p, 'A')).toEqual({ payload: p });
   });
 });

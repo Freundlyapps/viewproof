@@ -1,7 +1,10 @@
 import type { Measured, Scorecard } from '@open-iq/core';
 import css from './panel.css?raw';
 
-export type PanelState = { kind: 'ok'; card: Scorecard } | { kind: 'error'; reason: string };
+export type PanelState =
+  | { kind: 'ok'; card: Scorecard; outlierPending?: boolean }
+  | { kind: 'loading' }
+  | { kind: 'error'; reason: string };
 
 const num = new Intl.NumberFormat('en-US');
 
@@ -29,6 +32,7 @@ function age(hours: number): string {
 }
 
 function content(state: PanelState): HTMLElement[] {
+  if (state.kind === 'loading') return [el('div', 'err', 'Loading…')];
   if (state.kind === 'error') {
     return [el('div', 'err', "Couldn't read this page. YouTube may have changed something."), el('div', 'reason', state.reason)];
   }
@@ -36,16 +40,25 @@ function content(state: PanelState): HTMLElement[] {
   const out: HTMLElement[] = [
     el('div', 'tiles',
       measuredTile('Views / hour', card.vph, (v) => num.format(v), (m) => (m.inputs.mode === 'since_upload' ? 'avg since upload' : 'since your last visit')),
-      measuredTile('vs usual', card.outlier, (v) => el('span', 'xn', `×${v}`), () => null),
-      tile('Age', age(card.ageHours), null),
+      state.outlierPending
+        ? tile('vs usual', 'Loading…', null)
+        : measuredTile('vs usual', card.outlier, (v) => el('span', 'xn', `×${v}`), () => null),
+      measuredTile('Age', card.age, (h) => age(h), () => null),
       tile('Tags', String(card.tags.length), null),
     ),
   ];
-  if (card.outlier.kind === 'value') {
+  if (card.vph.kind === 'value') {
+    const i = card.vph.inputs;
+    const how = i.mode === 'delta'
+      ? `+${num.format(Number(i.viewDelta))} views over ${i.hours} h between your visits.`
+      : `${num.format(Number(i.views))} views ÷ ${num.format(Math.round(Number(i.hours)))} h since upload.`;
+    out.push(el('div', 'why', 'Views / hour: ', el('span', 'm', how)));
+  }
+  if (!state.outlierPending && card.outlier.kind === 'value') {
     const i = card.outlier.inputs;
     const mixed = i.mixedFormats === true ? ' (Shorts and long videos mixed)' : '';
     out.push(el('div', 'why', `Why ×${card.outlier.value}? `,
-      el('span', 'm', `${num.format(Number(i.views))} views; this channel usually gets ${num.format(Number(i.baselineMedian))}.${mixed}`)));
+      el('span', 'm', `${num.format(Number(i.views))} views; this channel usually gets ${num.format(Number(i.baselineMedian))} (median of ${i.baselineCount} earlier videos).${mixed}`)));
   }
   if (card.tags.length) out.push(el('div', 'tags', ...card.tags.map((t) => el('span', 'tag', t))));
   return out;

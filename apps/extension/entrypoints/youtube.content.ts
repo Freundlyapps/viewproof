@@ -23,9 +23,13 @@ export default defineContentScript({
 
     window.addEventListener('message', (e) => {
       if (!isPlayerMessage(e, window, location.origin)) return;
-      handlePlayer(e.data, deps).catch((err: unknown) =>
-        deps.render({ kind: 'error', reason: err instanceof Error ? err.message : 'unexpected error' }),
-      );
+      void handlePlayer(e.data, deps); // handles its own errors, and only for the current video
+    });
+
+    // The moment navigation starts, the old video's numbers must go.
+    document.addEventListener('yt-navigate-start', () => {
+      const host = document.getElementById(HOST_ID);
+      if (host) renderPanel(host, { kind: 'loading' });
     });
 
     // Hide the panel on pages that are not videos.

@@ -6,7 +6,8 @@ export interface WatchVideo {
   videoId: string;
   channelId: string;
   title: string;
-  views: number;
+  /** null only for scheduled premieres, which have no count yet. */
+  views: number | null;
   lengthSeconds: number;
   publishedAt: string;
   tags: string[];
@@ -35,8 +36,6 @@ export function parsePlayerResponse(raw: unknown): ParseResult<WatchVideo> {
     if (!vd) return { ok: false, reason: 'player data has no videoDetails' };
     const videoId = str(vd.videoId);
     if (!videoId) return { ok: false, reason: 'videoDetails.videoId missing' };
-    const viewCount = str(vd.viewCount);
-    if (!viewCount || !/^\d+$/.test(viewCount)) return { ok: false, reason: 'videoDetails.viewCount missing' };
     const mf = obj(obj(root?.microformat)?.playerMicroformatRenderer);
     const publishedAt = str(mf?.publishDate) ?? str(mf?.uploadDate);
     if (!publishedAt || Number.isNaN(Date.parse(publishedAt))) {
@@ -47,6 +46,9 @@ export function parsePlayerResponse(raw: unknown): ParseResult<WatchVideo> {
     const live = obj(mf?.liveBroadcastDetails);
     const isLive = vd.isLive === true || live?.isLiveNow === true;
     const isUpcoming = vd.isUpcoming === true || (!!live && live.isLiveNow !== true && !str(live.endTimestamp));
+    const viewCount = str(vd.viewCount);
+    const hasCount = !!viewCount && /^\d+$/.test(viewCount);
+    if (!hasCount && !isUpcoming) return { ok: false, reason: 'videoDetails.viewCount missing' };
     const tags = Array.isArray(vd.keywords) ? vd.keywords.filter((k): k is string => typeof k === 'string') : [];
     return {
       ok: true,
@@ -55,7 +57,7 @@ export function parsePlayerResponse(raw: unknown): ParseResult<WatchVideo> {
         videoId,
         channelId,
         title: str(vd.title) ?? '',
-        views: Number(viewCount),
+        views: hasCount ? Number(viewCount) : null,
         lengthSeconds: Number(str(vd.lengthSeconds) ?? 0),
         publishedAt,
         tags,

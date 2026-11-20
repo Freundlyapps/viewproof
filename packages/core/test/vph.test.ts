@@ -44,4 +44,22 @@ describe('viewsPerHour', () => {
     const r = viewsPerHour({ previous: null, current: { views: 500, at: '2026-11-20T12:00:00Z' }, publishedAt: '2026-11-20T11:40:00Z' });
     expect(r.kind).toBe('no_data');
   });
+
+  test('visits under an hour apart fall back', () => {
+    const r = viewsPerHour({
+      previous: { views: 40000, at: '2026-11-20T11:30:00Z' },
+      current: { views: 48000, at: '2026-11-20T12:00:00Z' },
+      publishedAt: PUB,
+    });
+    expect(r).toMatchObject({ kind: 'value', value: 1000, inputs: { mode: 'since_upload' } });
+  });
+
+  test('an unchanged count falls back instead of showing 0', () => {
+    const r = viewsPerHour({
+      previous: { views: 48000, at: '2026-11-20T09:00:00Z' },
+      current: { views: 48000, at: '2026-11-20T12:00:00Z' },
+      publishedAt: PUB,
+    });
+    expect(r).toMatchObject({ kind: 'value', value: 1000, inputs: { mode: 'since_upload' } });
+  });
 });

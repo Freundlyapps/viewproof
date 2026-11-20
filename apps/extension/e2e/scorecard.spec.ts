@@ -9,10 +9,11 @@ import { fileURLToPath } from 'node:url';
 const EXT = fileURLToPath(new URL('../.output/chrome-mv3', import.meta.url));
 const CHANNEL = 'UCfixturechannel000000';
 const HOUR = 3_600_000;
+const HUNG_CHANNEL = 'UChungchannel0000000000';
 
-function player(videoId: string, title: string, views: number, hoursAgo: number) {
+function player(videoId: string, title: string, views: number, hoursAgo: number, channelId = CHANNEL) {
   return {
-    videoDetails: { videoId, title, channelId: CHANNEL, viewCount: String(views), lengthSeconds: '600', keywords: ['pottery', 'bowl'], isLiveContent: false },
+    videoDetails: { videoId, title, channelId, viewCount: String(views), lengthSeconds: '600', keywords: ['pottery', 'bowl'], isLiveContent: false },
     microformat: { playerMicroformatRenderer: { publishDate: new Date(Date.now() - hoursAgo * HOUR).toISOString(), canonicalUrl: `https://www.youtube.com/watch?v=${videoId}` } },
   };
 }
@@ -44,6 +45,7 @@ async function launch(feedStatus: number): Promise<BrowserContext> {
   await ctx.route('https://www.youtube.com/**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/feeds/videos.xml') {
+      if (url.searchParams.get('channel_id') === HUNG_CHANNEL) return; // never answers
       return feedStatus === 200
         ? route.fulfill({ status: 200, contentType: 'application/xml', body: feed() })
         : route.fulfill({ status: feedStatus, body: '' });
@@ -92,5 +94,25 @@ test('feed failure: ×N explains, other stats still show', async () => {
   await expect(panel(page)).toContainText('No data', { timeout: 15_000 });
   await expect(panel(page)).toContainText('HTTP 404');
   await expect(panel(page)).toContainText('1,250');
+  await ctx.close();
+});
+
+test('navigating to a video whose channel feed hangs: old numbers vanish, new ones show, ×N times out', async () => {
+  const ctx = await launch(200);
+  const page = await ctx.newPage();
+  await page.goto('https://www.youtube.com/watch?v=VIDEO000001');
+  await expect(panel(page)).toContainText('×3', { timeout: 15_000 });
+  await page.evaluate((next) => {
+    document.dispatchEvent(new Event('yt-navigate-start'));
+    (window as unknown as { __oiq: unknown }).__oiq = next;
+    history.pushState({}, '', '/watch?v=VIDEO000003');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  }, player('VIDEO000003', 'Third video', 4800, 48, HUNG_CHANNEL));
+  await expect(panel(page)).toContainText('Third video', { timeout: 10_000 });
+  await expect(panel(page)).not.toContainText('First video');
+  await expect(panel(page)).not.toContainText('×3');
+  await expect(panel(page)).toContainText('100'); // 4,800 views ÷ 48 h
+  await expect(panel(page)).toContainText('Loading');
+  await expect(panel(page)).toContainText('Timed out loading the channel feed', { timeout: 15_000 });
   await ctx.close();
 });

@@ -6,6 +6,8 @@ export interface PlayerMessage {
   seq: number;
   url: string;
   payload: unknown;
+  /** Why payload is null, when the page script knows. */
+  reason?: string;
 }
 
 /** Same window, same origin, right shape — anything else on window.postMessage is ignored. */
@@ -36,4 +38,17 @@ export class NavigationGuard {
   isCurrent(seq: number, url: string): boolean {
     return seq === this.seq && this.videoId !== null && videoIdFromUrl(url) === this.videoId;
   }
+}
+
+/** Read the player's data for `wantedId` without ever throwing into the page. */
+export function readPlayer(get: () => unknown, wantedId: string | null): { payload: unknown; reason?: string } {
+  let payload: unknown;
+  try {
+    payload = get();
+  } catch (e) {
+    return { payload: null, reason: `YouTube's player data could not be read (${e instanceof Error ? e.message : 'error'})` };
+  }
+  const id = (payload as { videoDetails?: { videoId?: unknown } } | null | undefined)?.videoDetails?.videoId;
+  if (id !== wantedId) return { payload: null, reason: 'Player data did not update for this video' };
+  return { payload };
 }

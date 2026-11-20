@@ -65,4 +65,20 @@ describe('outlierScore', () => {
   test('zero median', () => {
     expect(outlierScore({ video: video(90000), baseline: feed([0, 0, 0, 0, 0]) }).kind).toBe('no_data');
   });
+
+  test('old video with no earlier feed entries is no_data, not compared to newer uploads', () => {
+    const newer = feed([60000, 60000, 60000, 60000, 60000, 60000], 'long', 1);
+    const r = outlierScore({ video: { ...video(3000000), publishedAt: '2022-01-01T00:00:00Z' }, baseline: newer });
+    expect(r).toEqual({ kind: 'no_data', reason: "No earlier videos in the channel's public feed (it lists only the latest 15 uploads)" });
+  });
+
+  test('unknown video type is named as the reason', () => {
+    const r = outlierScore({ video: video(90000, { format: 'unknown' }), baseline: feed([10000, 20000, 30000, 40000, 50000]) });
+    expect(r).toEqual({ kind: 'no_data', reason: 'Video type (Short or long) unknown' });
+  });
+
+  test('tiny ratios keep two significant figures instead of rounding to 0', () => {
+    const r = outlierScore({ video: video(900), baseline: feed([1e6, 1e6, 1e6, 1e6, 1e6]) });
+    expect(r).toMatchObject({ kind: 'value', value: 0.0009 });
+  });
 });

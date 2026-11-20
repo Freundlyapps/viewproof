@@ -27,8 +27,9 @@ describe('handlePlayer', () => {
   test('renders a scorecard for the current video', async () => {
     const d = deps();
     await handlePlayer({ url: URL_A, payload: player }, d);
-    expect(d.render).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(d.render).mock.calls[0]![0]).toMatchObject({ kind: 'ok', card: { videoId: ID } });
+    const last = vi.mocked(d.render).mock.calls.at(-1)![0];
+    expect(last).toMatchObject({ kind: 'ok', card: { videoId: ID } });
+    expect(last).not.toHaveProperty('outlierPending', true);
   });
 
   test('renders an error state for unreadable player data', async () => {
@@ -41,24 +42,52 @@ describe('handlePlayer', () => {
     let url = URL_A;
     const d = deps({ currentUrl: () => url, fetch: vi.fn(async () => { url = 'https://www.youtube.com/watch?v=OTHERVIDEO1'; return new Response(feedXml); }) });
     await handlePlayer({ url: URL_A, payload: player }, d);
-    expect(d.render).not.toHaveBeenCalled();
+    // Only the immediate (pre-feed) render happened; the late feed result was dropped.
+    expect(vi.mocked(d.render).mock.calls.every((c) => c[0].kind === 'ok' && c[0].outlierPending === true)).toBe(true);
   });
 
-  test('keeps the older observation when visits are under 10 minutes apart', async () => {
+  test('keeps the older observation when visits are under an hour apart', async () => {
     let t = Date.parse('2026-11-20T12:00:00Z');
     const d = deps({ now: () => t });
     await handlePlayer({ url: URL_A, payload: player }, d);
-    t += 5 * 60_000;
+    t += 30 * 60_000;
     await handlePlayer({ url: URL_A, payload: player }, d);
     expect(await d.store.getLatest(ID)).toEqual({ views: Number(player.videoDetails.viewCount), at: '2026-11-20T12:00:00.000Z' });
-    t += 10 * 60_000;
+    t += 40 * 60_000;
     await handlePlayer({ url: URL_A, payload: player }, d);
-    expect((await d.store.getLatest(ID))!.at).toBe('2026-11-20T12:15:00.000Z');
+    expect((await d.store.getLatest(ID))!.at).toBe('2026-11-20T13:10:00.000Z');
+  });
+
+  test('shows the new video immediately, before the channel feed arrives', async () => {
+    const d = deps({ fetch: vi.fn(() => new Promise<Response>(() => {})) as unknown as typeof fetch });
+    void handlePlayer({ url: URL_A, payload: player }, d);
+    await vi.waitFor(() => expect(d.render).toHaveBeenCalled());
+    const first = vi.mocked(d.render).mock.calls.at(-1)![0];
+    expect(first).toMatchObject({ kind: 'ok', outlierPending: true, card: { videoId: ID } });
+  });
+
+  test('the reason from the page script is shown when player data is missing', async () => {
+    const d = deps();
+    await handlePlayer({ url: URL_A, payload: null, reason: 'Player data did not update for this video' }, d);
+    expect(vi.mocked(d.render).mock.calls[0]![0]).toEqual({ kind: 'error', reason: 'Player data did not update for this video' });
+  });
+
+  test('an unexpected failure for an old video does not overwrite the new one', async () => {
+    let url = URL_A;
+    const d = deps({
+      currentUrl: () => url,
+      fetch: vi.fn(async () => { url = 'https://www.youtube.com/watch?v=OTHERVIDEO1'; return new Response(feedXml); }),
+      // Throws after the user has already moved on to another video.
+      cache: { get: () => undefined, set: () => { throw new Error('boom'); } } as unknown as Map<string, never>,
+    });
+    await handlePlayer({ url: URL_A, payload: player }, d);
+    const states = vi.mocked(d.render).mock.calls.map((c) => c[0].kind);
+    expect(states).not.toContain('error');
   });
 
   test('a storage failure still renders', async () => {
     const d = deps({ store: { getLatest: async () => { throw new Error('quota'); }, record: async () => { throw new Error('quota'); } } });
     await handlePlayer({ url: URL_A, payload: player }, d);
-    expect(vi.mocked(d.render).mock.calls[0]![0]).toMatchObject({ kind: 'ok' });
+    expect(vi.mocked(d.render).mock.calls.at(-1)![0]).toMatchObject({ kind: 'ok' });
   });
 });
