@@ -5,3 +5,4 @@ export * from './types';
 export * from './outlier';
 export * from './feed';
 export * from './player';
+export * from './scorecard';
