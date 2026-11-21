@@ -12,7 +12,7 @@ const client = (impl: (url: string, init?: RequestInit) => Promise<Response>) =>
 describe('authUrl', () => {
   test('asks for sign-in and read-only channel scopes, offline access, PKCE', () => {
     const { g } = client(async () => json({}));
-    const u = new URL(g.authUrl({ state: 'st', challenge: 'ch', wantRevenue: false, chooseAccount: false }));
+    const u = new URL(g.authUrl({ state: 'st', challenge: 'ch', wantRevenue: false, chooseAccount: false, consent: true }));
     expect(u.origin + u.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
     const scopes = u.searchParams.get('scope')!.split(' ');
     for (const s of [...SCOPES.signIn, ...SCOPES.channel]) expect(scopes).toContain(s);
@@ -28,9 +28,15 @@ describe('authUrl', () => {
   });
   test('revenue scope only when asked; chooser when asked', () => {
     const { g } = client(async () => json({}));
-    const u = new URL(g.authUrl({ state: 's', challenge: 'c', wantRevenue: true, chooseAccount: true }));
+    const u = new URL(g.authUrl({ state: 's', challenge: 'c', wantRevenue: true, chooseAccount: true, consent: true }));
     expect(u.searchParams.get('scope')).toContain(SCOPES.revenue);
     expect(u.searchParams.get('prompt')).toBe('consent select_account');
+  });
+  test('a plain returning sign-in only asks to choose the account', () => {
+    const { g } = client(async () => json({}));
+    const u = new URL(g.authUrl({ state: 's', challenge: 'c', wantRevenue: false, chooseAccount: false, consent: false }));
+    expect(u.searchParams.get('prompt')).toBe('select_account');
+    expect(u.searchParams.get('access_type')).toBe('offline');
   });
 });
 

@@ -4,7 +4,7 @@ import type { GoogleClient } from '../src/google';
 export function fakeGoogle(over: Partial<GoogleClient> = {}): GoogleClient & { calls: string[] } {
   const calls: string[] = [];
   const base: GoogleClient = {
-    authUrl: (a) => `https://accounts.google.com/o/oauth2/v2/auth?state=${a.state}`,
+    authUrl: (a) => `https://accounts.google.com/o/oauth2/v2/auth?state=${a.state}&consent=${a.consent ? 1 : 0}`,
     exchangeCode: async () => ({ kind: 'failed', reason: 'not configured in this test' }),
     refresh: async () => ({ kind: 'failed', reason: 'not configured in this test' }),
     myChannels: async () => ({ kind: 'failed', reason: 'not configured in this test' }),

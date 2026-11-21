@@ -111,9 +111,9 @@ describe('sign-in', () => {
     expect(g.calls).toContain('revoke');
   });
 
-  test('no refresh token', async () => {
+  test('no refresh token even after asking for consent', async () => {
     const { app, g } = setup({ exchangeCode: async () => tokens({ refreshToken: null, idClaims: { sub: 'g-nort' } }) });
-    const { state } = await start(app);
+    const { state } = await start(app, '?consent=1');
     expect(await readText(await callback(app, `state=${state}&code=c`))).toContain("Google didn't give us lasting access. Please start again.");
     expect(await pendingCount('g-nort')).toBe(0);
     expect(g.calls).toContain('revoke');

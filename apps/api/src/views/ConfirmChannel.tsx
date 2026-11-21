@@ -2,6 +2,7 @@ import type { PendingConnectionRow } from '@viewproof/db';
 import { Layout } from './Layout';
 
 const num = new Intl.NumberFormat('en-US');
+const plural = (n: number, word: string) => `${num.format(n)} ${word}${n === 1 ? '' : 's'}`;
 
 export function ConfirmChannel(props: { p: PendingConnectionRow; revenue: boolean }) {
   const { p } = props;
@@ -15,8 +16,8 @@ export function ConfirmChannel(props: { p: PendingConnectionRow; revenue: boolea
           <div>
             <b>{p.title || 'Untitled channel'}</b>
             <div class="muted small">
-              {[p.handle, p.subscriber_count === null ? 'Subscriber count hidden' : `${num.format(p.subscriber_count)} subscribers`,
-                p.video_count === null ? 'Video count not shown' : `${num.format(p.video_count)} videos`].filter(Boolean).join(' · ')}
+              {[p.handle, p.subscriber_count === null ? 'Subscriber count hidden' : plural(p.subscriber_count, 'subscriber'),
+                p.video_count === null ? 'Video count not shown' : plural(p.video_count, 'video')].filter(Boolean).join(' · ')}
             </div>
             <div class="muted small">Channel ID {p.channel_id}</div>
           </div>

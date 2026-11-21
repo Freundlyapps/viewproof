@@ -35,12 +35,15 @@ export function authRoutes(app: Hono, deps: Deps): void {
     const state = randomToken();
     const { verifier, challenge } = await pkcePair();
     const wantRevenue = c.req.query('revenue') === '1';
+    const chooseAccount = c.req.query('choose') === '1';
+    // Only a plain signed-out sign-in skips the permission screen; connecting always needs lasting access.
+    const consent = session !== null || chooseAccount || wantRevenue || c.req.query('consent') === '1';
     await deps.db
-      .prepare('INSERT INTO oauth_states (state, code_verifier, user_id, want_revenue, created_at) VALUES (?, ?, ?, ?, ?)')
-      .bind(state, verifier, session?.userId ?? null, wantRevenue ? 1 : 0, new Date(deps.now()).toISOString())
+      .prepare('INSERT INTO oauth_states (state, code_verifier, user_id, want_revenue, prompt_consent, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(state, verifier, session?.userId ?? null, wantRevenue ? 1 : 0, consent ? 1 : 0, new Date(deps.now()).toISOString())
       .run();
     setCookie(c, stateCookie(deps), state, { httpOnly: true, secure: deps.config.secureCookies, sameSite: 'Lax', path: '/', maxAge: STATE_TTL_MS / 1000 });
-    return c.redirect(deps.google.authUrl({ state, challenge, wantRevenue, chooseAccount: c.req.query('choose') === '1' }), 302);
+    return c.redirect(deps.google.authUrl({ state, challenge, wantRevenue, chooseAccount, consent }), 302);
   });
 
   app.get('/auth/google/callback', async (c) => {
@@ -50,9 +53,9 @@ export function authRoutes(app: Hono, deps: Deps): void {
     if (!state || bound !== state) return expired(c); // not this browser's sign-in: don't consume it
 
     const row = await deps.db
-      .prepare('DELETE FROM oauth_states WHERE state = ? RETURNING code_verifier, user_id, created_at')
+      .prepare('DELETE FROM oauth_states WHERE state = ? RETURNING code_verifier, user_id, want_revenue, prompt_consent, created_at')
       .bind(state)
-      .first<{ code_verifier: string; user_id: string | null; created_at: string }>();
+      .first<{ code_verifier: string; user_id: string | null; want_revenue: number; prompt_consent: number; created_at: string }>();
     if (!row || deps.now() - Date.parse(row.created_at) > STATE_TTL_MS) return expired(c);
     const session = await readSession(c, deps);
     if (row.user_id && session?.userId !== row.user_id) return expired(c);
@@ -80,18 +83,32 @@ export function authRoutes(app: Hono, deps: Deps): void {
         'ViewProof needs permission to view your YouTube channel and its analytics. Please start again and keep both boxes ticked.', 400,
         `Missing: ${missing.map((s) => SCOPE_NAMES[s] ?? s).join(', ')}.${revoked || channel ? '' : ` ${BY_HAND}`}`);
     }
-    if (!tokens.refreshToken) {
-      await release();
-      return problem(c, 'Sign-in incomplete', "Google didn't give us lasting access. Please start again.");
-    }
     if (listed && 'kind' in listed) {
       return problem(c, 'Sign-in failed', `Google sign-in failed: ${listed.kind === 'revoked' ? 'access was refused' : listed.reason}.`);
     }
-    const enc = await encryptSecret(tokens.refreshToken, deps.config.tokenKey);
-    const nowIso = new Date(deps.now()).toISOString();
     const owner = channel
       ? await deps.db.prepare('SELECT user_id FROM channels WHERE channel_id = ?').bind(channel.channelId).first<{ user_id: string }>()
       : null;
+
+    if (!tokens.refreshToken) {
+      // Google gives lasting access only with the permission screen. A returning sign-in skips it;
+      // that's fine when we already hold access for this channel, or the identity has an account.
+      const known = owner?.user_id ?? (!channel && !session
+        ? (await deps.db.prepare('SELECT id FROM users WHERE google_sub = ?').bind(tokens.idClaims.sub).first<{ id: string }>())?.id
+        : undefined);
+      if (known) {
+        if (session && session.userId !== known) {
+          return problem(c, 'Already connected', 'This channel is already connected to another ViewProof account.', 409);
+        }
+        if (!session) await createSession(c, deps, known);
+        return c.redirect('/account', 302);
+      }
+      if (!row.prompt_consent) return c.redirect(`/auth/google/start?consent=1${row.want_revenue ? '&revenue=1' : ''}`, 302);
+      await release();
+      return problem(c, 'Sign-in incomplete', "Google didn't give us lasting access. Please start again.");
+    }
+    const enc = await encryptSecret(tokens.refreshToken, deps.config.tokenKey);
+    const nowIso = new Date(deps.now()).toISOString();
 
     // Who is this? A signed-in browser stays who it is. Signed out: the channel's owner, else the Google identity.
     let userId = session?.userId ?? null;

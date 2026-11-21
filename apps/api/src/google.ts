@@ -24,7 +24,8 @@ export interface MyChannel {
 export type GoogleError = { kind: 'revoked' } | { kind: 'failed'; reason: string };
 
 export interface GoogleClient {
-  authUrl(a: { state: string; challenge: string; wantRevenue: boolean; chooseAccount: boolean }): string;
+  /** consent=false only for a plain returning sign-in: Google then skips the permission screen it already has. */
+  authUrl(a: { state: string; challenge: string; wantRevenue: boolean; chooseAccount: boolean; consent: boolean }): string;
   exchangeCode(code: string, verifier: string): Promise<TokenSet | GoogleError>;
   refresh(refreshToken: string): Promise<{ accessToken: string } | GoogleError>;
   myChannels(accessToken: string): Promise<MyChannel[] | GoogleError>;
@@ -73,7 +74,7 @@ export function httpGoogleClient(
   };
 
   return {
-    authUrl({ state, challenge, wantRevenue, chooseAccount }) {
+    authUrl({ state, challenge, wantRevenue, chooseAccount, consent }) {
       const scopes = [...SCOPES.signIn, ...SCOPES.channel, ...(wantRevenue ? [SCOPES.revenue] : [])];
       const q = new URLSearchParams({
         client_id: cfg.clientId,
@@ -82,7 +83,7 @@ export function httpGoogleClient(
         scope: scopes.join(' '),
         access_type: 'offline',
         include_granted_scopes: 'false',
-        prompt: chooseAccount ? 'consent select_account' : 'consent',
+        prompt: !consent ? 'select_account' : chooseAccount ? 'consent select_account' : 'consent',
         state,
         code_challenge: challenge,
         code_challenge_method: 'S256',
