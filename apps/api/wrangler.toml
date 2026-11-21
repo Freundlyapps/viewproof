@@ -1,0 +1,14 @@
+name = "viewproof-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-15"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "viewproof"
+database_id = "local"
+migrations_dir = "../../packages/db/migrations"
+
+[vars]
+APP_URL = "http://localhost:8787"
+SELF_HOSTED = "false"
