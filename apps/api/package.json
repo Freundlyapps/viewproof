@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "hono": "^4.13.19",
-    "@viewproof/db": "workspace:*"
+    "@viewproof/db": "workspace:*",
+    "@viewproof/core": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.23.0",

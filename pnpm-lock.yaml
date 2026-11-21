@@ -20,6 +20,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@viewproof/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@viewproof/db':
         specifier: workspace:*
         version: link:../../packages/db

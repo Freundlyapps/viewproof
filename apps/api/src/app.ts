@@ -4,6 +4,7 @@ import type { GoogleClient } from './google';
 import type { YouTubeClient } from './youtube';
 import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
+import { channelRoutes } from './routes/channel';
 import { connectRoutes } from './routes/connect';
 import { readSession } from './session';
 import { Home } from './views/Home';
@@ -40,5 +41,6 @@ export function createApp(deps: Deps): Hono {
   authRoutes(app, deps);
   connectRoutes(app, deps);
   accountRoutes(app, deps);
+  channelRoutes(app, deps);
   return app;
 }
