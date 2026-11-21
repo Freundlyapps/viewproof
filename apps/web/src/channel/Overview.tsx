@@ -3,7 +3,8 @@ import type { ChannelInfo } from '../api';
 import { useApi } from '../useApi';
 import { Badge } from '../ui/Badge';
 import { ErrorNote } from '../ui/ErrorNote';
-import { fmt } from '../ui/format';
+import { CoverageNote, previousLabel } from '../ui/CoverageNote';
+import { RANGE_LABEL, fmt } from '../ui/format';
 import { Attention } from './Attention';
 import { BestTime } from './BestTime';
 import { DailyChart } from './DailyChart';
@@ -11,15 +12,19 @@ import { Kpi } from './Kpi';
 import { useRange } from './RangeChips';
 
 export function Kpis(props: { data: OverviewData }) {
-  const { totals, range } = props.data;
+  const { totals, range, coverage } = props.data;
+  const prev = previousLabel(coverage, RANGE_LABEL[range] ?? range);
   return (
+    <>
+    <CoverageNote c={coverage} />
     <div className="grid g-kpi">
-      <Kpi id="kpi-views" label="Views" pair={totals.views} range={range} format={fmt.count} />
-      <Kpi id="kpi-watch" label="Watch time" pair={totals.watchMinutes} range={range} format={fmt.hours} />
-      <Kpi id="kpi-avg" label="Average view duration" pair={totals.averageViewDuration} range={range} format={fmt.duration} />
-      <Kpi id="kpi-subs" label="Subscribers gained" pair={totals.subscribersGained} range={range} format={fmt.count} />
-      <Kpi id="kpi-lost" label="Subscribers lost" pair={totals.subscribersLost} range={range} format={fmt.count} />
+      <Kpi id="kpi-views" label="Views" pair={totals.views} previousLabel={prev} format={fmt.count} />
+      <Kpi id="kpi-watch" label="Watch time" pair={totals.watchMinutes} previousLabel={prev} format={fmt.hours} />
+      <Kpi id="kpi-avg" label="Average view duration" pair={totals.averageViewDuration} previousLabel={prev} format={fmt.duration} />
+      <Kpi id="kpi-subs" label="Subscribers gained" pair={totals.subscribersGained} previousLabel={prev} format={fmt.count} />
+      <Kpi id="kpi-lost" label="Subscribers lost" pair={totals.subscribersLost} previousLabel={prev} format={fmt.count} />
     </div>
+    </>
   );
 }
 

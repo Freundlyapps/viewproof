@@ -2,8 +2,9 @@ import type { Earnings } from '@viewproof/core';
 import type { ChannelInfo } from '../api';
 import { useApi } from '../useApi';
 import { Badge } from '../ui/Badge';
+import { CoverageNote, previousLabel } from '../ui/CoverageNote';
 import { ErrorNote } from '../ui/ErrorNote';
-import { fmt } from '../ui/format';
+import { RANGE_LABEL, fmt } from '../ui/format';
 import { Value } from '../ui/Value';
 import { Kpi } from './Kpi';
 import { useRange } from './RangeChips';
@@ -26,12 +27,14 @@ export function EarningsTab(props: { channel: ChannelInfo }) {
   if (e.status === 'not_available') {
     return <div className="card"><h2>Revenue isn't available for this channel</h2><p className="small muted">{e.reason}</p></div>;
   }
+  const prev = previousLabel(e.coverage, RANGE_LABEL[e.range] ?? e.range);
   return (
     <>
+      <CoverageNote c={e.coverage} />
       <div className="grid g-kpi">
-        <Kpi id="kpi-revenue" label="Estimated revenue" pair={e.totals.estimatedRevenue} range={e.range} format={fmt.usd} badge="est" />
-        <Kpi id="kpi-cpm" label="Playback-based CPM" pair={e.totals.playbackBasedCpm} range={e.range} format={fmt.usd} badge="est" />
-        <Kpi id="kpi-playbacks" label="Monetized playbacks" pair={e.totals.monetizedPlaybacks} range={e.range} format={fmt.count} />
+        <Kpi id="kpi-revenue" label="Estimated revenue" pair={e.totals.estimatedRevenue} previousLabel={prev} format={fmt.usd} badge="est" />
+        <Kpi id="kpi-cpm" label="Playback-based CPM" pair={e.totals.playbackBasedCpm} previousLabel={prev} format={fmt.usd} badge="est" />
+        <Kpi id="kpi-playbacks" label="Monetized playbacks" pair={e.totals.monetizedPlaybacks} previousLabel={prev} format={fmt.count} />
       </div>
       <div className="card">
         <h2>Top earning videos <Badge kind="est" /></h2>

@@ -30,13 +30,17 @@ const v = (value: number) => ({ kind: 'value', value, formula: 'YouTube Analytic
 const nd = (reason: string) => ({ kind: 'no_data', reason });
 export const measured = { v, nd };
 export const pair = (c: number, p: number) => ({ current: v(c), previous: v(p) });
+export const cov = (days = 28, rangeDays = 28, dataThrough: string | null = '2026-11-21') => ({
+  period: { start: '2026-10-25', end: dataThrough ?? '2026-11-21', prevStart: '2026-09-27', prevEnd: '2026-10-24' }, dataThrough, days, rangeDays,
+});
 export const overview = (over: Record<string, unknown> = {}) => ({
+  coverage: cov(),
   channelId: 'UCaaa', range: '28d', period: { start: '2026-10-25', end: '2026-11-21', prevStart: '2026-09-27', prevEnd: '2026-10-24' },
   dataThrough: '2026-11-18',
   totals: { views: pair(1234, 2000), watchMinutes: pair(120, 90), averageViewDuration: pair(205, 190), subscribersGained: pair(12, 8), subscribersLost: pair(2, 3) },
   daily: [{ date: '2026-11-16', views: 40 }, { date: '2026-11-17', views: 60 }, { date: '2026-11-18', views: 50 }],
   fetchedAt: '2026-11-21T12:00:00Z', ...over,
 });
-export const videos = (list: unknown[] = []) => ({ range: '28d', dataThrough: null, videos: list, fetchedAt: '2026-11-21T12:00:00Z' });
+export const videos = (list: unknown[] = [], coverage = cov()) => ({ range: '28d', dataThrough: coverage.dataThrough, coverage, videos: list, fetchedAt: '2026-11-21T12:00:00Z' });
 export const uploadTimes = (list: unknown[] = []) => ({ uploads: list, fetchedAt: '2026-11-21T12:00:00Z' });
-export const searchTerms = (terms: unknown[] = [], note: string | null = null) => ({ range: '28d', terms, note, fetchedAt: '2026-11-21T12:00:00Z' });
+export const searchTerms = (terms: unknown[] = [], note: string | null = null, coverage = cov()) => ({ range: '28d', coverage, terms, note, fetchedAt: '2026-11-21T12:00:00Z' });

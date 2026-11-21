@@ -1,6 +1,6 @@
 /** JSON shapes of the /api/channels/:id/* endpoints, shared by the Worker and the web app. */
 import type { Measured } from './measured';
-import type { RangeKey, periodFor } from './period';
+import type { Coverage, RangeKey, periodFor } from './period';
 
 export type ApiErrorCode = 'signed_out' | 'not_found' | 'reconnect' | 'gone' | 'google_failed';
 export interface ApiError { error: ApiErrorCode; message: string }
@@ -17,6 +17,8 @@ export interface Overview {
   dataThrough: string | null;
   totals: { views: Pair; watchMinutes: Pair; averageViewDuration: Pair; subscribersGained: Pair; subscribersLost: Pair };
   daily: { date: string; views: number }[];
+  /** Which days the comparison covers (YouTube lags, so often fewer than the range). */
+  coverage: Coverage;
   fetchedAt: string;
 }
 
@@ -31,7 +33,7 @@ export interface VideoRow {
   watchMinutes: Measured<number>;
   averageViewDuration: Measured<number>;
 }
-export interface Videos { range: RangeKey; dataThrough: string | null; videos: VideoRow[]; fetchedAt: string }
+export interface Videos { range: RangeKey; dataThrough: string | null; coverage: Coverage; videos: VideoRow[]; fetchedAt: string }
 
 export interface SearchTerm {
   term: string;
@@ -41,7 +43,7 @@ export interface SearchTerm {
   /** The video (of the period's top 10) that got the most views from this term, if any. */
   topVideo: { videoId: string; title: string } | null;
 }
-export interface SearchTerms { range: RangeKey; terms: SearchTerm[]; note: string | null; fetchedAt: string }
+export interface SearchTerms { range: RangeKey; coverage: Coverage; terms: SearchTerm[]; note: string | null; fetchedAt: string }
 
 export type Earnings =
   | { status: 'not_granted' }
@@ -49,6 +51,7 @@ export type Earnings =
   | {
       status: 'ok';
       range: RangeKey;
+      coverage: Coverage;
       totals: { estimatedRevenue: Pair; playbackBasedCpm: Pair; monetizedPlaybacks: Pair };
       topVideos: { videoId: string; title: string; estimatedRevenue: number; playbackBasedCpm: Measured<number> }[];
       fetchedAt: string;

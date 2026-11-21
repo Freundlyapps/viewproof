@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test } from 'vitest';
 import { App } from '../src/App';
-import { ME, channel, measured, mockApi, pair, searchTerms, videos } from './fake-api';
+import { ME, channel, cov, measured, mockApi, pair, searchTerms, videos } from './fake-api';
 
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
 const base = (over: Record<string, unknown>) => ({ '/api/me': ME, '/api/channels': [channel()], ...over });
@@ -75,7 +75,7 @@ describe('earnings tab', () => {
 
   test('ok: estimated revenue labelled ESTIMATE, CPM, playbacks, top videos, month-end note', async () => {
     mockApi(base({ '/api/channels/row1/earnings': {
-      status: 'ok', range: '28d', fetchedAt: 'x',
+      status: 'ok', range: '28d', coverage: cov(), fetchedAt: 'x',
       totals: { estimatedRevenue: pair(412.8, 378), playbackBasedCpm: pair(5.9, 5.5), monetizedPlaybacks: pair(61000, 58000) },
       topVideos: [{ videoId: 'v1', title: 'Centering', estimatedRevenue: 141.2, playbackBasedCpm: measured.v(6.1) }],
     } }));

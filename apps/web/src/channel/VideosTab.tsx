@@ -1,6 +1,7 @@
 import type { Videos } from '@viewproof/core';
 import type { ChannelInfo } from '../api';
 import { useApi } from '../useApi';
+import { CoverageNote } from '../ui/CoverageNote';
 import { ErrorNote } from '../ui/ErrorNote';
 import { fmt } from '../ui/format';
 import { Value } from '../ui/Value';
@@ -11,8 +12,10 @@ export function VideosTab(props: { channel: ChannelInfo }) {
   const r = useApi<Videos>(`/api/channels/${props.channel.id}/videos?range=${range}`);
   if (r.state === 'loading') return <p className="empty">Loading…</p>;
   if (r.state === 'error') return <ErrorNote error={r.error} />;
-  if (r.data.videos.length === 0) return <p className="empty">No uploads yet.</p>;
+  if (r.data.videos.length === 0) return <><CoverageNote c={r.data.coverage} /><p className="empty">No uploads yet.</p></>;
   return (
+    <>
+    <CoverageNote c={r.data.coverage} />
     <div className="card" style={{ padding: 0, overflow: 'auto' }}>
       <table>
         <thead><tr><th>Video</th><th className="num">Views</th><th className="num">Watch time</th><th className="num">Avg view</th><th className="num">Lifetime views</th><th /></tr></thead>
@@ -35,5 +38,6 @@ export function VideosTab(props: { channel: ChannelInfo }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { type Earnings, type Measured, type Overview, type SearchTerm, type SearchTerms, type UploadTimes, type Pair, type RangeKey, type VideoRow, type Videos, noData, parseRange, periodFor, value } from '@viewproof/core';
+import { type Coverage, type Earnings, type Measured, type Overview, type SearchTerm, type SearchTerms, type UploadTimes, type Pair, type RangeKey, type VideoRow, type Videos, coverage, noData, parseRange, periodFor, todayPacific, value } from '@viewproof/core';
 import type { ChannelRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
@@ -15,7 +15,8 @@ const NO_VIDEO_ROW = "YouTube reported no row for this video in these dates (no 
 type Json = (c: Context, body: unknown, status: number) => Response;
 const json: Json = (c, body, status) => c.json(body as object, status as 200);
 
-export const today = (deps: Deps) => new Date(deps.now()).toISOString().slice(0, 10);
+/** Today in YouTube Analytics' time zone (Pacific). */
+export const today = (deps: Deps) => todayPacific(deps.now());
 export const yt = (n: number, inputs: Record<string, string | number> = {}): Measured<number> => value(n, SOURCE, inputs);
 
 /** Error from Google while serving a channel endpoint → JSON response (revoked also marks the channel). */
@@ -57,26 +58,34 @@ export function pair(cur: Record<string, number> | null, prev: Record<string, nu
   return { current: m(cur), previous: m(prev) };
 }
 
+/** Views per day for the range, and which days YouTube has filled (cached; every tab uses it). */
+async function dailyFor(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<{ daily: { date: string; views: number }[]; coverage: Coverage } | GoogleError> {
+  return cached(deps, a.channel.id, `daily:${range}:${today(deps)}`, REPORT_TTL_MS, async () => {
+    const p = periodFor(range, today(deps));
+    const d = await deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: ['views'], dimensions: ['day'], sort: 'day' });
+    if (isErr(d)) return d;
+    const di = d.columns.indexOf('day');
+    const vi = d.columns.indexOf('views');
+    const daily = di < 0 || vi < 0 ? [] : d.rows.map((r) => ({ date: String(r[di]), views: Number(r[vi]) })).filter((x) => Number.isFinite(x.views));
+    return { daily, coverage: coverage(range, today(deps), daily.at(-1)?.date ?? null) };
+  });
+}
+
 async function loadOverview(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Overview | GoogleError> {
-  const p = periodFor(range, today(deps));
-  const q = (o: Omit<ReportQuery, 'startDate' | 'endDate'>, start: string, end: string) => deps.youtube.report(a.accessToken, { startDate: start, endDate: end, ...o });
-  const [cur, prev, daily] = await Promise.all([
-    q({ metrics: TOTAL_METRICS }, p.start, p.end),
-    q({ metrics: TOTAL_METRICS }, p.prevStart, p.prevEnd),
-    q({ metrics: ['views'], dimensions: ['day'], sort: 'day' }, p.start, p.end),
-  ]);
-  for (const r of [cur, prev, daily]) if (isErr(r)) return r;
-  const c = firstRow(cur as Report);
-  const pr = firstRow(prev as Report);
-  const d = daily as Report;
-  const di = d.columns.indexOf('day');
-  const vi = d.columns.indexOf('views');
-  const days = d.rows.map((r) => ({ date: String(r[di]), views: Number(r[vi]) }));
+  const d = await dailyFor(deps, a, range);
+  if (isErr(d)) return d;
+  const p = d.coverage.period;
+  const q = (start: string, end: string) => deps.youtube.report(a.accessToken, { startDate: start, endDate: end, metrics: TOTAL_METRICS });
+  const [cur, prev] = await Promise.all([q(p.start, p.end), q(p.prevStart, p.prevEnd)]);
+  if (isErr(cur)) return cur;
+  if (isErr(prev)) return prev;
+  const c = firstRow(cur);
+  const pr = firstRow(prev);
   return {
     channelId: a.channel.channel_id,
     range,
     period: p,
-    dataThrough: days.at(-1)?.date ?? null,
+    dataThrough: d.coverage.dataThrough,
     totals: {
       views: pair(c, pr, 'views'),
       watchMinutes: pair(c, pr, 'estimatedMinutesWatched'),
@@ -84,7 +93,8 @@ async function loadOverview(deps: Deps, a: ChannelAccess, range: RangeKey): Prom
       subscribersGained: pair(c, pr, 'subscribersGained'),
       subscribersLost: pair(c, pr, 'subscribersLost'),
     },
-    daily: days,
+    daily: d.daily,
+    coverage: d.coverage,
     fetchedAt: new Date(deps.now()).toISOString(),
   };
 }
@@ -95,12 +105,15 @@ export function uploadsOf(deps: Deps, a: ChannelAccess) {
 }
 
 async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Videos | GoogleError> {
-  const p = periodFor(range, today(deps));
-  const [ups, rep] = await Promise.all([
-    uploadsOf(deps, a),
-    deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration'], dimensions: ['video'], sort: '-views', maxResults: 200 }),
-  ]);
+  const [ups, d] = await Promise.all([uploadsOf(deps, a), dailyFor(deps, a, range)]);
   if (isErr(ups)) return ups;
+  if (isErr(d)) return d;
+  const p = d.coverage.period;
+  // Ask about exactly the uploads shown (YouTube accepts a list of video ids), not its top videos overall.
+  const rep = ups.length === 0 ? { columns: [], rows: [] } : await deps.youtube.report(a.accessToken, {
+    startDate: p.start, endDate: p.end, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration'], dimensions: ['video'],
+    filters: `video==${ups.map((u) => u.videoId).join(',')}`, sort: '-views', maxResults: 200,
+  });
   if (isErr(rep)) return rep;
   const byVideo = new Map(rep.rows.map((r) => [String(r[rep.columns.indexOf('video')]), r]));
   const col = (r: (string | number)[] | undefined, name: string): Measured<number> => {
@@ -115,7 +128,7 @@ async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promis
       views: col(r, 'views'), watchMinutes: col(r, 'estimatedMinutesWatched'), averageViewDuration: col(r, 'averageViewDuration'),
     };
   });
-  return { range, dataThrough: null, videos, fetchedAt: new Date(deps.now()).toISOString() };
+  return { range, dataThrough: d.coverage.dataThrough, coverage: d.coverage, videos, fetchedAt: new Date(deps.now()).toISOString() };
 }
 
 /** GET handler: access → cached load → JSON, with Google errors mapped. */
@@ -154,7 +167,9 @@ async function titles(deps: Deps, a: ChannelAccess): Promise<Map<string, string>
 }
 
 async function loadSearchTerms(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<SearchTerms | GoogleError> {
-  const p = periodFor(range, today(deps));
+  const d = await dailyFor(deps, a, range);
+  if (isErr(d)) return d;
+  const p = d.coverage.period;
   const [cur, prev, top] = await Promise.all([
     terms(deps, a, p.start, p.end),
     terms(deps, a, p.prevStart, p.prevEnd),
@@ -185,13 +200,15 @@ async function loadSearchTerms(deps: Deps, a: ChannelAccess, range: RangeKey): P
       topVideo: b ? { videoId: b.videoId, title: names.get(b.videoId) ?? b.videoId } : null,
     };
   });
-  return { range, terms: list, note: list.length ? null : NO_TERMS, fetchedAt: new Date(deps.now()).toISOString() };
+  return { range, coverage: d.coverage, terms: list, note: list.length ? null : NO_TERMS, fetchedAt: new Date(deps.now()).toISOString() };
 }
 
 const REVENUE_METRICS = ['estimatedRevenue', 'playbackBasedCpm', 'monetizedPlaybacks'];
 
 async function loadEarnings(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Earnings | GoogleError> {
-  const p = periodFor(range, today(deps));
+  const d = await dailyFor(deps, a, range);
+  if (isErr(d)) return d;
+  const p = d.coverage.period;
   const [cur, prev, top] = await Promise.all([
     deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: REVENUE_METRICS }),
     deps.youtube.report(a.accessToken, { startDate: p.prevStart, endDate: p.prevEnd, metrics: REVENUE_METRICS }),
@@ -207,6 +224,7 @@ async function loadEarnings(deps: Deps, a: ChannelAccess, range: RangeKey): Prom
   return {
     status: 'ok',
     range,
+    coverage: d.coverage,
     totals: { estimatedRevenue: pair(c, pr, 'estimatedRevenue'), playbackBasedCpm: pair(c, pr, 'playbackBasedCpm'), monetizedPlaybacks: pair(c, pr, 'monetizedPlaybacks') },
     topVideos: rowsBy(top as Report, 'video').map(({ key, o }) => ({
       videoId: key, title: names.get(key) ?? key, estimatedRevenue: Number(o.estimatedRevenue),

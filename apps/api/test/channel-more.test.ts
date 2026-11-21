@@ -31,6 +31,7 @@ describe('search terms', () => {
       uploads: async () => [up('v1', 'Trim a bowl'), up('v2', 'Glaze tests')],
       report: async (_t, q) => {
         const cols = ['insightTrafficSourceDetail', 'views', 'estimatedMinutesWatched'];
+        if (q.dimensions?.[0] === 'day') return { columns: ['day', 'views'], rows: [['2026-11-21', 1]] };
         if (q.dimensions?.[0] === 'video') return { columns: ['video', 'views'], rows: [['v1', 90], ['v2', 40]] };
         if (q.filters?.includes('video==v1')) return { columns: cols, rows: [['how to trim a bowl', 50, 200], ['glaze', 1, 2]] };
         if (q.filters?.includes('video==v2')) return { columns: cols, rows: [['glaze', 30, 90]] };
@@ -45,6 +46,7 @@ describe('search terms', () => {
       { term: 'kiln', views: 5, watchMinutes: 9, previousViews: { kind: 'no_data', reason: "Not in YouTube's top 25 for the previous period" }, topVideo: null },
     ]);
     expect(r.note).toBeNull();
+    expect(r.coverage).toMatchObject({ dataThrough: '2026-11-21', days: 28, rangeDays: 28 });
     const main = reports(youtube).find((q) => q.startDate === '2026-10-25' && q.dimensions?.[0] === 'insightTrafficSourceDetail' && q.filters === 'insightTrafficSourceType==YT_SEARCH');
     expect(main).toMatchObject({ sort: '-views', maxResults: 25, metrics: ['views', 'estimatedMinutesWatched'] });
     expect(reports(youtube).find((q) => q.dimensions?.[0] === 'video')).toMatchObject({ sort: '-views', maxResults: 10 });
@@ -58,6 +60,21 @@ describe('search terms', () => {
   });
 });
 
+describe('lagging data', () => {
+  test('search terms and earnings compare only the days YouTube has filled', async () => {
+    const { cookie, row } = await connected('cm-lag', 'UCcmlag', true);
+    const { app, youtube } = appWith({ report: async (_t, q) => (q.dimensions?.[0] === 'day' ? { columns: ['day', 'views'], rows: [['2026-11-17', 3], ['2026-11-18', 4]] } : { columns: [], rows: [] }) });
+    const t = await getJson<SearchTerms>(app, `/api/channels/${row.id}/search-terms?range=7d`, cookie);
+    expect(t.coverage).toMatchObject({ dataThrough: '2026-11-18', days: 4, rangeDays: 7 });
+    const main = reports(youtube).filter((q) => q.filters === 'insightTrafficSourceType==YT_SEARCH').map((q) => [q.startDate, q.endDate]);
+    expect(main).toEqual(expect.arrayContaining([['2026-11-15', '2026-11-18'], ['2026-11-11', '2026-11-14']]));
+    const e = await getJson<Earnings>(app, `/api/channels/${row.id}/earnings?range=7d`, cookie);
+    if (e.status !== 'ok') throw new Error(e.status);
+    expect(e.coverage.days).toBe(4);
+    expect(reports(youtube).filter((q) => q.metrics.includes('monetizedPlaybacks')).map((q) => [q.startDate, q.endDate])).toEqual(expect.arrayContaining([['2026-11-15', '2026-11-18'], ['2026-11-11', '2026-11-14']]));
+  });
+});
+
 describe('earnings', () => {
   test('without revenue access: not_granted and no Google call', async () => {
     const { cookie, row } = await connected('cm-nogrant', 'UCcmnogrant');
@@ -68,7 +85,7 @@ describe('earnings', () => {
 
   test('forbidden revenue: not_available with YouTube’s reason', async () => {
     const { cookie, row } = await connected('cm-forbid', 'UCcmforbid', true);
-    const r = await getJson<Earnings>(appWith({ report: async () => ({ kind: 'forbidden', reason: 'The channel is not part of the YouTube Partner Program.' }) }).app, `/api/channels/${row.id}/earnings`, cookie);
+    const r = await getJson<Earnings>(appWith({ report: async (_t, q) => (q.dimensions?.[0] === 'day' ? { columns: ['day', 'views'], rows: [['2026-11-21', 1]] } : { kind: 'forbidden', reason: 'The channel is not part of the YouTube Partner Program.' }) }).app, `/api/channels/${row.id}/earnings`, cookie);
     expect(r).toEqual({ status: 'not_available', reason: 'The channel is not part of the YouTube Partner Program.' });
   });
 
@@ -78,6 +95,7 @@ describe('earnings', () => {
       uploads: async () => [up('v1', 'Centering')],
       report: async (_t, q) => {
         const m = ['estimatedRevenue', 'playbackBasedCpm', 'monetizedPlaybacks'];
+        if (q.dimensions?.[0] === 'day') return { columns: ['day', 'views'], rows: [['2026-11-21', 1]] };
         if (q.dimensions?.[0] === 'video') return { columns: ['video', 'estimatedRevenue', 'playbackBasedCpm'], rows: [['v1', 141.2, 6.1]] };
         return q.startDate === '2026-10-25' ? { columns: m, rows: [[412.8, 5.9, 61000]] } : { columns: m, rows: [[378, 5.5, 58000]] };
       },
@@ -89,6 +107,7 @@ describe('earnings', () => {
     expect(r.totals.monetizedPlaybacks.current).toMatchObject({ kind: 'value', value: 61000 });
     expect(r.topVideos).toEqual([{ videoId: 'v1', title: 'Centering', estimatedRevenue: 141.2, playbackBasedCpm: expect.objectContaining({ kind: 'value', value: 6.1 }) }]);
     expect(reports(youtube).find((q) => q.dimensions?.[0] === 'video')).toMatchObject({ sort: '-estimatedRevenue', maxResults: 10 });
+    expect(r.coverage).toMatchObject({ dataThrough: '2026-11-21', days: 28 });
   });
 });
 

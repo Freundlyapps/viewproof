@@ -11,9 +11,10 @@ export function BestTime(props: { youtubeChannelId: string; data: UploadTimes })
   const max = Math.max(1, ...grid.counts.flat());
   const sorted = [...props.data.uploads].sort((a, b) =>
     (b.firstWeekViews.kind === 'value' ? b.firstWeekViews.value : -1) - (a.firstWeekViews.kind === 'value' ? a.firstWeekViews.value : -1));
+  const empty = props.data.uploads.length === 0;
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: `40px repeat(${grid.blocks.length},1fr)`, gap: 3, fontSize: '.75rem' }} aria-label="Your uploads by weekday and time">
+      {empty ? null : <div style={{ display: 'grid', gridTemplateColumns: `40px repeat(${grid.blocks.length},1fr)`, gap: 3, fontSize: '.75rem' }} aria-label="Your uploads by weekday and time">
         <span />
         {grid.blocks.map((b) => <span key={b} className="muted" style={{ textAlign: 'center' }}>{b}</span>)}
         {grid.days.map((d, di) => [
@@ -22,9 +23,9 @@ export function BestTime(props: { youtubeChannelId: string; data: UploadTimes })
             <span key={`${d}${bi}`} title={`${n} upload${n === 1 ? '' : 's'}`} style={{ height: 18, borderRadius: 3, background: n ? `color-mix(in srgb,var(--accent) ${Math.round((n / max) * 100)}%,var(--surface-2))` : 'var(--surface-2)' }} />
           )),
         ])}
-      </div>
+      </div>}
       <p className="small muted" style={{ margin: '10px 0' }}>
-        Shaded by how many of your last {props.data.uploads.length} uploads (10+ days old) you posted then, in your time zone. YouTube's API doesn't share when your viewers are online. YouTube Studio shows it:{' '}
+        {empty ? '' : `Shaded by how many of your last ${props.data.uploads.length} uploads (10+ days old) you posted then, in your time zone. `}YouTube's API doesn't share when your viewers are online. YouTube Studio shows it:{' '}
         <a href={`https://studio.youtube.com/channel/${props.youtubeChannelId}/analytics/tab-audience/period-default`} target="_blank" rel="noreferrer">Open the audience chart in YouTube Studio</a>
       </p>
       {sorted.length === 0 ? <p className="empty">No uploads older than 10 days yet.</p> : null}
