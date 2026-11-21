@@ -8,10 +8,12 @@ import { fileURLToPath } from 'node:url';
 
 const EXT = fileURLToPath(new URL('../.output/chrome-mv3', import.meta.url));
 const [outDir, ...ids] = process.argv.slice(2);
+// Chromium 159+ ignores --load-extension: keep extensions enabled and load the build through the DevTools protocol.
 const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'vp-live-')), {
   channel: 'chromium', headless: true, viewport: { width: 1400, height: 900 },
-  args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`],
+  args: ['--enable-unsafe-extension-debugging'], ignoreDefaultArgs: ['--disable-extensions'],
 });
+await (await ctx.browser().newBrowserCDPSession()).send('Extensions.loadUnpacked', { path: EXT });
 // Decline-all consent cookie so EU visitors land on the video, not the consent page.
 await ctx.addCookies([{ name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' }]);
 const page = await ctx.newPage();

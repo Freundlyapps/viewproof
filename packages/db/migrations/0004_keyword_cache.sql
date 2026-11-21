@@ -1,4 +1,4 @@
--- Keyword estimates from a licensed vendor (spec §6 S5): shared across users, kept 30 days.
+-- Keyword trends from an optional vendor (Google Trends via DataForSEO): shared across users, kept 30 days.
 -- Not tied to a user or channel; holds no personal data.
 CREATE TABLE keyword_cache (
   keyword TEXT NOT NULL,

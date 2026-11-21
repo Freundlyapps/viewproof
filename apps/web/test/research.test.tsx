@@ -9,9 +9,9 @@ import { fakeExtension, fixtureSnapshot } from './fake-extension';
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
 const KW = 'pottery wheel for beginners';
 const at = (q = KW) => `/research/keywords?q=${encodeURIComponent(q)}`;
-const off = { status: 'off', reason: 'Estimated volume needs a keyword data provider; none is configured.' };
+const off = { status: 'off', reason: 'YouTube search interest is optional and not configured on this server.' };
 const yourTerms = (terms: unknown[] = [], note: string | null = null) => ({ keyword: KW, coverage: cov(90, 90), terms, note, fetchedAt: '2026-11-21T12:00:00Z' });
-const api = (over: Record<string, unknown> = {}) => mockApi({ '/api/me': ME, '/api/channels/row1/keyword-terms': yourTerms(), '/api/keywords/estimate': off, '/api/channels': [channel()], ...over });
+const api = (over: Record<string, unknown> = {}) => mockApi({ '/api/me': ME, '/api/channels/row1/keyword-terms': yourTerms(), '/api/keywords/trends': off, '/api/channels': [channel()], ...over });
 
 let ext: ReturnType<typeof fakeExtension> | null = null;
 afterEach(() => { ext?.remove(); ext = null; });
@@ -97,15 +97,17 @@ describe('research', () => {
     expect(await screen.findByText('Connect a channel to see which of your real search terms match.')).toBeTruthy();
   });
 
-  test('estimate off shows reason; ok shows ESTIMATE label and volume', async () => {
+  test('trends off shows reason; ok shows the label, peak and a table', async () => {
     api();
     const first = renderAt(at());
     expect(await screen.findByText(off.reason)).toBeTruthy();
     first.unmount();
-    api({ '/api/keywords/estimate': { status: 'ok', provider: 'DataForSEO', label: 'Estimate — clickstream panel, not YouTube data', keyword: KW, country: 'US', volume: { kind: 'value', value: 12345, formula: 'f', inputs: {} }, monthly: [{ month: '2026-10', volume: 12000 }], interest: [], fetchedAt: '2026-11-21T12:00:00Z' } });
+    api({ '/api/keywords/trends': { status: 'ok', provider: 'DataForSEO', label: 'Relative YouTube search interest from Google Trends (via DataForSEO), 100 = peak week. Not a number of searches; not YouTube API data.', keyword: KW, country: 'US', interest: [{ date: '2026-01-04', value: 40 }, { date: '2026-01-11', value: 100 }, { date: '2026-01-18', value: 70 }], note: null, fetchedAt: '2026-11-21T12:00:00Z' } });
     renderAt(at());
-    expect(await screen.findByText('12,345')).toBeTruthy();
-    expect(screen.getByText('Estimate — clickstream panel, not YouTube data')).toBeTruthy();
+    expect(await screen.findByText(/Not a number of searches/)).toBeTruthy();
+    expect(screen.getByText('Peak: week of 2026-01-11 (100)')).toBeTruthy();
+    expect(within(screen.getByRole('table', { name: 'YouTube search interest by week' })).getAllByRole('row')).toHaveLength(4);
+    expect(screen.queryByText(/monthly searches/i)).toBeNull();
   });
 
   test('no data anywhere line', async () => {
@@ -121,7 +123,7 @@ describe('research', () => {
     await userEvent.type(await screen.findByLabelText('Keyword'), 'kiln');
     await userEvent.selectOptions(screen.getByLabelText('Country'), 'DE');
     await userEvent.click(screen.getByRole('button', { name: 'Get report' }));
-    await waitFor(() => expect(seen).toContain('/api/keywords/estimate?q=kiln&country=DE'));
+    await waitFor(() => expect(seen).toContain('/api/keywords/trends?q=kiln&country=DE'));
     expect(JSON.parse(localStorage.getItem('vp-keywords') ?? '[]')).toEqual(['kiln']);
   });
 });
@@ -136,8 +138,8 @@ describe('review fixes', () => {
   }, 15_000);
 });
 
-test('a failed interest series says why', async () => {
-  api({ '/api/keywords/estimate': { status: 'ok', provider: 'DataForSEO', label: 'Estimate — clickstream panel, not YouTube data', keyword: KW, country: 'US', volume: { kind: 'value', value: 5, formula: 'f', inputs: {} }, monthly: [], interest: [], interestError: 'DataForSEO: Internal error.', fetchedAt: '2026-11-21T12:00:00Z' } });
+test('too little Trends data says so', async () => {
+  api({ '/api/keywords/trends': { status: 'ok', provider: 'DataForSEO', label: 'L', keyword: KW, country: 'US', interest: [], note: 'Google Trends has too little YouTube search data for this keyword.', fetchedAt: '2026-11-21T12:00:00Z' } });
   renderAt(at());
-  expect(await screen.findByText('YouTube search interest: no data (DataForSEO: Internal error.)')).toBeTruthy();
+  expect(await screen.findByText('Google Trends has too little YouTube search data for this keyword.')).toBeTruthy();
 });

@@ -8,7 +8,7 @@ export interface Env {
   TOKEN_KEY: string;
   /** Built web app (apps/web/dist), see wrangler.toml [assets]. */
   ASSETS?: Fetcher;
-  /** Optional keyword vendor (spec §6 S5); estimates stay off unless DATAFORSEO_DISPLAY_OK=yes. */
+  /** Optional YouTube search interest via DataForSEO Google Trends; off unless DATAFORSEO_DISPLAY_OK=yes. */
   DATAFORSEO_LOGIN?: string;
   DATAFORSEO_PASSWORD?: string;
   DATAFORSEO_DISPLAY_OK?: string;

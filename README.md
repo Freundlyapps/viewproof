@@ -56,7 +56,9 @@ Run it locally: set up `apps/api` (see [apps/api/README.md](apps/api/README.md))
 - **Top results on YouTube** (REAL): search for the keyword on YouTube with the extension installed. The extension reads the results page you see, and the report shows facts about it: median views, median upload age, how many results are from the last 3 months, how many have under 10,000 views, how many different channels there are, and whether one channel holds several spots. A short plain-language summary quotes those numbers. Channel sizes aren't on YouTube's search page, so they show "No data" for now.
 - **YouTube suggestions** (REAL): YouTube's own autocomplete for the keyword, grouped into related searches, questions and matching phrases, in YouTube's order.
 - **Your search terms** (REAL): the real searches that brought viewers to your channel (YouTube Analytics, your top 25 over 90 days) that contain the keyword.
-- **Estimated monthly searches** (ESTIMATE): only when a keyword data vendor is configured. The DataForSEO adapter (clickstream volume plus Google Trends for YouTube search) is labelled "Estimate — clickstream panel, not YouTube data" and is off unless `DATAFORSEO_DISPLAY_OK=yes` (see [apps/api/README.md](apps/api/README.md)). YouTube doesn't publish search volume; every tool's volume is an estimate.
+- **YouTube search interest** (optional, RELATIVE): weekly interest over the last 12 months from Google Trends' YouTube search filter, through DataForSEO. 100 is the peak week. It is not a number of searches. It is shown only when a server has DataForSEO configured and `DATAFORSEO_DISPLAY_OK=yes` (see [apps/api/README.md](apps/api/README.md)).
+
+ViewProof shows no "monthly searches" number. YouTube publishes search volume to no one, and every tool's figure is a model built from clickstream or Google web-search data.
 
 The report reads the extension through a small script on ViewProof's own pages. The store build runs it only on `viewproof.app`. For a local server (`http://localhost:8787`), load the development build instead: run `pnpm --filter extension build:dev`, then load `apps/extension/.output/chrome-mv3-dev`.
 

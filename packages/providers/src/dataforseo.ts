@@ -1,64 +1,42 @@
-import { type KeywordEstimate, noData, normalizeKeyword, value } from '@viewproof/core';
-import { ESTIMATE_LABEL, type KeywordProvider } from './keyword-provider';
+import type { KeywordTrends } from '@viewproof/core';
+import { type KeywordProvider, TRENDS_LABEL } from './keyword-provider';
 
-const BASE = 'https://api.dataforseo.com/v3/keywords_data';
+const URL_TRENDS = 'https://api.dataforseo.com/v3/keywords_data/google_trends/explore/live';
 const OK = 20000;
+const TOO_LITTLE = 'Google Trends has too little YouTube search data for this keyword.';
 type Obj = Record<string, any>;
-type Answer = { ok: true; result: Obj } | { ok: false; reason: string };
 
 /**
- * DataForSEO: clickstream monthly volume (bulk_search_volume) + Google Trends with YouTube search (explore, type youtube).
- * Response paths follow the documented examples (test/fixtures). Absent fields are no_data, never a default.
+ * DataForSEO Google Trends explore with `type: youtube` (YouTube search), past 12 months — one call per keyword.
+ * Response paths follow the documented example (test/fixtures/dfs-trends.json). DataForSEO sells no YouTube search volume.
  */
 export function dataForSeoProvider(fetchFn: typeof fetch, creds: { login: string; password: string }, now: () => number = () => Date.now()): KeywordProvider {
   const auth = `Basic ${btoa(`${creds.login}:${creds.password}`)}`;
-  async function post(path: string, body: unknown): Promise<Answer> {
-    let res: Response;
-    let json: Obj | null;
-    try {
-      res = await fetchFn(`${BASE}/${path}`, { method: 'POST', headers: { Authorization: auth, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      json = (await res.json().catch(() => null)) as Obj | null;
-    } catch (e) {
-      return { ok: false, reason: `DataForSEO: ${e instanceof Error ? e.message : 'network error'}` };
-    }
-    if (!res.ok || !json || json.status_code !== OK) return { ok: false, reason: `DataForSEO: ${json?.status_message ?? `HTTP ${res.status}`}` };
-    const task = json.tasks?.[0];
-    if (!task || task.status_code !== OK) return { ok: false, reason: `DataForSEO: ${task?.status_message ?? 'no task in the answer'}` };
-    return { ok: true, result: task.result?.[0] ?? {} };
-  }
-
   return {
     name: 'DataForSEO',
-    async estimate(keyword, country): Promise<KeywordEstimate> {
-      const [vol, tr] = await Promise.all([
-        post('clickstream_data/bulk_search_volume/live', [{ keywords: [keyword], location_code: country.locationCode }]),
-        post('google_trends/explore/live', [{ keywords: [keyword], location_code: country.locationCode, type: 'youtube', time_range: 'past_12_months' }]),
-      ]);
-      if (!vol.ok) return { status: 'failed', reason: vol.reason };
-      // Only the row for this keyword; another keyword's volume is never shown in its place.
-      const item = (vol.result.items as Obj[] | undefined)?.find((i) => typeof i.keyword === 'string' && normalizeKeyword(i.keyword) === normalizeKeyword(keyword));
-      const sv = item?.search_volume;
-      const monthly = Array.isArray(item?.monthly_searches)
-        ? (item.monthly_searches as Obj[]).filter((m) => typeof m.search_volume === 'number' && typeof m.year === 'number' && typeof m.month === 'number')
-          .map((m) => ({ month: `${m.year}-${String(m.month).padStart(2, '0')}`, volume: m.search_volume as number }))
-        : [];
-      const graph = tr.ok ? (tr.result.items as Obj[] | undefined)?.find((i) => i.type === 'google_trends_graph') : undefined;
+    async trends(keyword, country): Promise<KeywordTrends> {
+      let res: Response;
+      let json: Obj | null;
+      try {
+        res = await fetchFn(URL_TRENDS, {
+          method: 'POST', headers: { Authorization: auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ keywords: [keyword], location_code: country.locationCode, type: 'youtube', time_range: 'past_12_months' }]),
+        });
+        json = (await res.json().catch(() => null)) as Obj | null;
+      } catch (e) {
+        return { status: 'failed', reason: `DataForSEO: ${e instanceof Error ? e.message : 'network error'}` };
+      }
+      if (!res.ok || !json || json.status_code !== OK) return { status: 'failed', reason: `DataForSEO: ${json?.status_message ?? `HTTP ${res.status}`}` };
+      const task = json.tasks?.[0];
+      if (!task || task.status_code !== OK) return { status: 'failed', reason: `DataForSEO: ${task?.status_message ?? 'no task in the answer'}` };
+      const graph = (task.result?.[0]?.items as Obj[] | undefined)?.find((i) => i.type === 'google_trends_graph');
       const interest = Array.isArray(graph?.data)
         ? (graph.data as Obj[]).filter((d) => !d.missing_data && typeof d.values?.[0] === 'number' && typeof d.date_from === 'string')
           .map((d) => ({ date: d.date_from as string, value: d.values[0] as number }))
         : [];
       return {
-        status: 'ok',
-        provider: 'DataForSEO',
-        label: ESTIMATE_LABEL,
-        keyword,
-        country: country.code,
-        volume: !item ? noData(vol.result.items?.length ? 'DataForSEO returned no row for this keyword' : 'DataForSEO has no volume for this keyword')
-          : typeof sv === 'number' ? value(sv, 'DataForSEO clickstream monthly average', { keyword, location_code: country.locationCode }) : noData('DataForSEO has no volume for this keyword'),
-        monthly,
-        interest,
-        interestError: tr.ok ? null : tr.reason,
-        fetchedAt: new Date(now()).toISOString(),
+        status: 'ok', provider: 'DataForSEO', label: TRENDS_LABEL, keyword, country: country.code,
+        interest, note: interest.length ? null : TOO_LITTLE, fetchedAt: new Date(now()).toISOString(),
       };
     },
   };

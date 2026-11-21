@@ -16,7 +16,7 @@ export interface Deps {
   config: Config;
   google: GoogleClient;
   youtube: YouTubeClient;
-  /** Keyword estimates (vendor or "off"). */
+  /** Optional keyword trends (vendor or "off"). */
   keywords: KeywordProvider;
   now: () => number;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
