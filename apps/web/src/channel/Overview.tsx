@@ -56,7 +56,7 @@ export function OverviewTab(props: { channel: ChannelInfo }) {
   return (
     <>
       <Kpis data={ov.data} />
-      <div className="card"><h2>Views per day <Badge kind="real" /></h2><DailyChart daily={ov.data.daily} dataThrough={ov.data.dataThrough} /></div>
+      <div className="card"><h2>Views per day <Badge kind="real" /></h2><DailyChart daily={ov.data.daily} dataThrough={ov.data.dataThrough} start={ov.data.coverage.period.start} /></div>
       <div className="grid g-2">
         <div className="card">
           <h2>When you post <Badge kind="real">your uploads</Badge></h2>

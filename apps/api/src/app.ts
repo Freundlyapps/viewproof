@@ -44,14 +44,15 @@ export function createApp(deps: Deps): Hono {
   app.get('/', async (c) => ((await readSession(c, deps)) ? c.redirect('/app', 302) : c.html(Home({ signedIn: false }))));
 
   // The React app (apps/web, built to apps/web/dist/app). Unknown /app paths are app routes → index.html;
-  // missing files under /app/assets/ stay 404 so a broken build is visible.
+  // missing files stay 404 so a broken build is visible.
   app.get('/app/*', async (c) => serveApp(c.req.raw, c.req.path));
   app.get('/app', async (c) => serveApp(c.req.raw, c.req.path));
   async function serveApp(req: Request, path: string): Promise<Response> {
     if (!deps.assets) return new Response(NO_BUILD, { status: 503 });
     if (path !== '/app' && path !== '/app/') {
       const file = await deps.assets.fetch(req);
-      if (file.ok || path.startsWith('/app/assets/')) return file;
+      // A path naming a file (has an extension) that isn't there is a 404; only app routes get index.html.
+      if (file.ok || path.startsWith('/app/assets/') || /\.[^/]+$/.test(path)) return file;
     }
     const index = await deps.assets.fetch(new Request(new URL('/app/index.html', req.url)));
     return index.ok ? index : new Response(NO_BUILD, { status: 503 });

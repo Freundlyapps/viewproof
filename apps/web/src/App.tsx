@@ -1,4 +1,5 @@
 import { type ReactElement, useEffect, useState } from 'react';
+import { API_OK } from './useApi';
 import { Route, Routes } from 'react-router';
 import { type ChannelInfo, type Me, getJson, isApiError } from './api';
 import { Settings } from './Settings';
@@ -28,6 +29,21 @@ export function App() {
     });
     return () => { live = false; };
   }, []);
+
+  // A channel shown as "Reconnect needed" that answers again is cleared by the server; reload the list to show it.
+  const ready = state.kind === 'ready' ? state : null;
+  useEffect(() => {
+    if (!ready || ready.channels.every((c) => c.status === 'active')) return;
+    const onOk = (e: Event) => {
+      const id = /^\/api\/channels\/([^/?]+)\//.exec(String((e as CustomEvent).detail))?.[1];
+      if (!id || ready.channels.find((c) => c.id === id)?.status !== 'reconnect') return;
+      void getJson<ChannelInfo[]>('/api/channels').then((channels) => {
+        if (!isApiError(channels)) setState({ ...ready, channels });
+      });
+    };
+    window.addEventListener(API_OK, onOk);
+    return () => window.removeEventListener(API_OK, onOk);
+  }, [ready]);
 
   if (state.kind === 'loading') return <p className="muted" style={{ padding: 24 }}>Loading…</p>;
   if (state.kind === 'signed_out') return <SignIn />;

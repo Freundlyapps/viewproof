@@ -1,10 +1,11 @@
 /** Main navigation (spec §15). `soon` items are not built yet and open a page saying what they will do. */
-export interface NavItem { to: string; label: string; icon: string; soon?: string }
+/** `section`: highlight the item on every path under it (My channel has sub-tabs). */
+export interface NavItem { to: string; label: string; icon: string; soon?: string; section?: string }
 
 export const NAV: (NavItem | '-')[] = [
   { to: '/', label: 'Home', icon: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
   { to: '/research', label: 'Research', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3', soon: 'Keyword reports and outliers in your niche: real facts about the top results, estimates labelled as estimates.' },
-  { to: '/channel/overview', label: 'My channel', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
+  { to: '/channel/overview', section: '/channel', label: 'My channel', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
   { to: '/optimize', label: 'Optimize video', icon: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z', soon: "Check a video's title, description and tags against your real search terms, then copy them into YouTube Studio." },
   { to: '/competitors', label: 'Competitors', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8', soon: 'Track up to 25 channels: their new uploads, top videos and growth over time.' },
   { to: '/ai', label: 'Ask AI', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', soon: 'Ask about your channel; every answer says which data it used. Use the included AI or your own key.' },

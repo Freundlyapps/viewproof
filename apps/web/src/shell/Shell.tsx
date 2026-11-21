@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
 import type { ChannelInfo, Me } from '../api';
 import { type Theme, applyTheme, initialTheme } from '../theme';
 import { NAV } from './nav';
@@ -18,6 +18,8 @@ export function Shell(props: { me: Me; channels: ChannelInfo[]; current: Channel
     setTheme(t);
   };
   const { current } = props;
+  const { pathname } = useLocation();
+  const inSection = (section?: string) => !!section && (pathname === section || pathname.startsWith(`${section}/`));
   return (
     <div className={`app${collapsed ? ' collapsed' : ''}`}>
       <aside className="side">
@@ -25,7 +27,7 @@ export function Shell(props: { me: Me; channels: ChannelInfo[]; current: Channel
         <nav aria-label="Main">
           {NAV.map((n, i) =>
             n === '-' ? <div className="sep" key={`sep${i}`} /> : (
-              <NavLink key={n.to} to={n.to} end={n.to === '/'} data-label={n.label} className={({ isActive }) => `nav${isActive ? ' on' : ''}`}>
+              <NavLink key={n.to} to={n.to} end={n.to === '/'} data-label={n.label} className={({ isActive }) => `nav${isActive || inSection(n.section) ? ' on' : ''}`}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d={n.icon} /></svg>
                 <span className="lbl">{n.label}</span>
                 {n.soon ? <span className="later lbl">soon</span> : null}

@@ -2,7 +2,7 @@ import { type Coverage, type Earnings, type Measured, type Overview, type Search
 import type { ChannelRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
-import { type ChannelAccess, REVOKED_REASON, accessFor, cached, ownedChannel } from '../channel-data';
+import { type AccessError, type ChannelAccess, REVOKED_REASON, type Ttl, accessFor, cached, markActive, ownedChannel, peek } from '../channel-data';
 import { type GoogleError, SCOPES } from '../google';
 import { readSession } from '../session';
 import type { Report, ReportQuery } from '../youtube';
@@ -28,16 +28,14 @@ export async function googleFailure(c: Context, deps: Deps, ch: ChannelRow, e: G
   return json(c, { error: 'google_failed', message: e.reason }, 502);
 }
 
-/** Session → own channel → fresh access, or the JSON error for whichever step failed. */
-export async function channelAccess(c: Context, deps: Deps): Promise<ChannelAccess | Response> {
+/** Session → the signed-in user's channel, or the JSON error. */
+async function channelOf(c: Context, deps: Deps): Promise<ChannelRow | Response> {
   const s = await readSession(c, deps);
   if (!s) return json(c, { error: 'signed_out', message: 'Sign in first.' }, 401);
   const ch = await ownedChannel(deps, s.userId, c.req.param('id') ?? '');
-  if (!ch) return json(c, { error: 'not_found', message: 'Channel not found.' }, 404);
-  const a = await accessFor(deps, ch);
-  if ('error' in a) return json(c, a, a.error === 'google_failed' ? 502 : 409);
-  return a;
+  return ch ?? json(c, { error: 'not_found', message: 'Channel not found.' }, 404);
 }
+const accessError = (c: Context, a: AccessError) => json(c, a, a.error === 'google_failed' ? 502 : 409);
 
 const ERROR_KINDS = ['revoked', 'failed', 'forbidden'];
 /** A Google error (Measured values also have `kind`, so check the value). */
@@ -131,19 +129,32 @@ async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promis
   return { range, dataThrough: d.coverage.dataThrough, coverage: d.coverage, videos, fetchedAt: new Date(deps.now()).toISOString() };
 }
 
-/** GET handler: access → cached load → JSON, with Google errors mapped. */
+/**
+ * GET handler: channel → cached answer (no Google call) → else fresh access → load → JSON, with Google errors mapped.
+ * Cached answers are only served for channels in good standing, so a broken connection still shows.
+ */
 export function serve<T>(
   deps: Deps, key: (range: RangeKey, c: Context) => string, load: (deps: Deps, a: ChannelAccess, range: RangeKey, c: Context) => Promise<T | GoogleError>,
-  ttl = REPORT_TTL_MS, before?: (c: Context, a: ChannelAccess) => Response | null,
+  ttl: Ttl<T> = REPORT_TTL_MS, before?: (c: Context, ch: ChannelRow) => Response | null,
 ) {
   return async (c: Context) => {
-    const a = await channelAccess(c, deps);
-    if (a instanceof Response) return a;
-    const early = before?.(c, a);
-    if (early) return early;
+    const ch = await channelOf(c, deps);
+    if (ch instanceof Response) return ch;
     const range = parseRange(c.req.query('range'));
-    const r = await cached(deps, a.channel.id, key(range, c), ttl, () => load(deps, a, range, c));
-    if (isErr(r)) return googleFailure(c, deps, a.channel, r);
+    const k = key(range, c);
+    if (ch.status === 'active') {
+      const early = before?.(c, ch);
+      if (early) return early;
+      const hit = await peek(deps, ch.id, k, ttl);
+      if (hit !== undefined) return c.json(hit as object);
+    }
+    const a = await accessFor(deps, ch);
+    if ('error' in a) return accessError(c, a);
+    const early = before?.(c, ch);
+    if (early) return early;
+    const r = await cached(deps, ch.id, k, ttl, () => load(deps, a, range, c));
+    if (isErr(r)) return googleFailure(c, deps, ch, r);
+    if (ch.status === 'reconnect') await markActive(deps, ch);
     return c.json(r as object);
   };
 }
@@ -152,6 +163,7 @@ const YT_SEARCH = 'insightTrafficSourceType==YT_SEARCH';
 const NOT_IN_PREV = "Not in YouTube's top 25 for the previous period";
 const NO_TERMS = "YouTube lists search terms only once enough people searched; it doesn't publish the threshold.";
 const FIRST_WEEK_TTL_MS = 30 * 86_400_000;
+const NOT_AVAILABLE_TTL_MS = 30 * 60_000;
 const DAY_MS = 86_400_000;
 
 const terms = (deps: Deps, a: ChannelAccess, start: string, end: string, video?: string) =>
@@ -240,9 +252,12 @@ async function loadUploadTimes(deps: Deps, a: ChannelAccess): Promise<UploadTime
   const ripe = ups.filter((u) => deps.now() - Date.parse(u.publishedAt) >= 10 * DAY_MS).slice(0, 20);
   const out: UploadTimes['uploads'] = [];
   for (const u of ripe) {
-    const start = u.publishedAt.slice(0, 10);
+    // YouTube's days are Pacific, so the first week starts on the Pacific date of publishing.
+    const start = todayPacific(Date.parse(u.publishedAt));
     const end = new Date(Date.parse(`${start}T00:00:00Z`) + 6 * DAY_MS).toISOString().slice(0, 10);
-    const fw = await cached(deps, a.channel.id, `fw:${u.videoId}`, FIRST_WEEK_TTL_MS, async () => {
+    // A real count is final; "no views yet" may just be YouTube's delay, so ask again after 6 hours.
+    const ttl = (m: Measured<number>) => (m.kind === 'value' ? FIRST_WEEK_TTL_MS : REPORT_TTL_MS);
+    const fw = await cached(deps, a.channel.id, `fw:${u.videoId}`, ttl, async (): Promise<Measured<number> | GoogleError> => {
       const r = await deps.youtube.report(a.accessToken, { startDate: start, endDate: end, metrics: ['views'], filters: `video==${u.videoId}` });
       if (isErr(r)) return r;
       const row = firstRow(r);
@@ -257,8 +272,9 @@ async function loadUploadTimes(deps: Deps, a: ChannelAccess): Promise<UploadTime
 export function channelRoutes(app: Hono, deps: Deps): void {
   app.get('/api/channels/:id/search-terms', serve(deps, (r) => `terms:${r}:${today(deps)}`, loadSearchTerms));
   app.get('/api/channels/:id/upload-times', serve(deps, () => `upload-times:${today(deps)}`, (d, a) => loadUploadTimes(d, a)));
-  app.get('/api/channels/:id/earnings', serve(deps, (r) => `earnings:${r}:${today(deps)}`, loadEarnings, REPORT_TTL_MS, (c, a) =>
-    a.channel.scopes.split(' ').includes(SCOPES.revenue) ? null : c.json({ status: 'not_granted' } satisfies Earnings)));
+  app.get('/api/channels/:id/earnings', serve(deps, (r) => `earnings:${r}:${today(deps)}`, loadEarnings,
+    (e) => (e.status === 'not_available' ? NOT_AVAILABLE_TTL_MS : REPORT_TTL_MS), (c, ch) =>
+    ch.scopes.split(' ').includes(SCOPES.revenue) ? null : c.json({ status: 'not_granted' } satisfies Earnings)));
   app.get('/api/channels/:id/overview', serve(deps, (r) => `overview:${r}:${today(deps)}`, loadOverview));
   app.get('/api/channels/:id/videos', serve(deps, (r) => `videos:${r}:${today(deps)}`, loadVideos));
 }

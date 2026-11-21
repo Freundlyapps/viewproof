@@ -37,15 +37,45 @@ export async function accessFor(deps: Deps, ch: ChannelRow): Promise<ChannelAcce
 const isGoogleError = (x: unknown): x is GoogleError =>
   !!x && typeof x === 'object' && typeof (x as { kind?: unknown }).kind === 'string' && ['revoked', 'failed', 'forbidden'].includes((x as { kind: string }).kind);
 
-/** Read-through cache in D1. Errors are returned but never stored. */
-export async function cached<T>(deps: Deps, channelId: string, key: string, ttlMs: number, load: () => Promise<T | GoogleError>): Promise<T | GoogleError> {
+/** How long a cached body stays fresh: fixed, or chosen per body (e.g. shorter for "no data yet"). */
+export type Ttl<T> = number | ((body: T) => number);
+const ttlOf = <T>(ttl: Ttl<T>, body: T) => (typeof ttl === 'number' ? ttl : ttl(body));
+
+/** The cached body if still fresh, else undefined. */
+export async function peek<T>(deps: Deps, channelId: string, key: string, ttl: Ttl<T>): Promise<T | undefined> {
   const row = await deps.db.prepare('SELECT * FROM report_cache WHERE channel_id = ? AND key = ?').bind(channelId, key).first<ReportCacheRow>();
-  if (row && deps.now() - Date.parse(row.fetched_at) < ttlMs) return JSON.parse(row.body) as T;
-  const fresh = await load();
-  if (isGoogleError(fresh)) return fresh;
+  if (!row) return undefined;
+  const body = JSON.parse(row.body) as T;
+  return deps.now() - Date.parse(row.fetched_at) < ttlOf(ttl, body) ? body : undefined;
+}
+
+/** Loads in progress in this isolate, so concurrent requests for the same key share one Google call. */
+const inFlight = new Map<string, Promise<unknown>>();
+
+/** Read-through cache in D1. Errors are returned but never stored. */
+export async function cached<T>(deps: Deps, channelId: string, key: string, ttl: Ttl<T>, load: () => Promise<T | GoogleError>): Promise<T | GoogleError> {
+  const hit = await peek(deps, channelId, key, ttl);
+  if (hit !== undefined) return hit;
+  const id = `${channelId}\u0000${key}`;
+  const running = inFlight.get(id) as Promise<T | GoogleError> | undefined;
+  if (running) return running;
+  const p = (async () => {
+    const fresh = await load();
+    if (isGoogleError(fresh)) return fresh;
+    await deps.db
+      .prepare('INSERT INTO report_cache (channel_id, key, body, fetched_at) VALUES (?, ?, ?, ?) ON CONFLICT(channel_id, key) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at')
+      .bind(channelId, key, JSON.stringify(fresh), new Date(deps.now()).toISOString())
+      .run();
+    return fresh;
+  })().finally(() => inFlight.delete(id));
+  inFlight.set(id, p);
+  return p;
+}
+
+/** YouTube answered with this channel's access again: clear a "Reconnect needed" status. */
+export async function markActive(deps: Deps, ch: ChannelRow): Promise<void> {
   await deps.db
-    .prepare('INSERT INTO report_cache (channel_id, key, body, fetched_at) VALUES (?, ?, ?, ?) ON CONFLICT(channel_id, key) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at')
-    .bind(channelId, key, JSON.stringify(fresh), new Date(deps.now()).toISOString())
+    .prepare("UPDATE channels SET status = 'active', status_reason = NULL, last_verified_at = ? WHERE id = ? AND status = 'reconnect'")
+    .bind(new Date(deps.now()).toISOString(), ch.id)
     .run();
-  return fresh;
 }
