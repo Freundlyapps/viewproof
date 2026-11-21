@@ -10,6 +10,7 @@ import { SignIn } from './shell/SignIn';
 import { Soon } from './shell/Soon';
 import { HomePage } from './home/Home';
 import { MyChannel } from './channel/MyChannel';
+import { Research } from './research/Research';
 
 const CHANNEL_KEY = 'vp-channel';
 type State = { kind: 'loading' } | { kind: 'signed_out' } | { kind: 'error'; message: string } | { kind: 'ready'; me: Me; channels: ChannelInfo[] };
@@ -59,6 +60,7 @@ export function App() {
     <Shell me={state.me} channels={state.channels} current={current} onSwitch={onSwitch}>
       <Routes>
         <Route path="/" element={needsChannel(<HomePage channel={current!} />)} />
+        <Route path="/research/:tab?" element={<Research channel={current} />} />
         <Route path="/channel/:tab?" element={needsChannel(<MyChannel channel={current!} />)} />
         <Route path="/settings/*" element={<Settings />} />
         {NAV.flatMap((n) => (n !== '-' && n.soon ? [<Route key={n.to} path={`${n.to}/*`} element={<Soon title={n.label} text={n.soon} />} />] : []))}
