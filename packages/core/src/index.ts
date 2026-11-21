@@ -8,3 +8,5 @@ export * from './player';
 export * from './scorecard';
 export * from './period';
 export * from './api-types';
+export * from './attention';
+export * from './upload-grid';
