@@ -14,12 +14,20 @@ export interface Deps {
   now: () => number;
 }
 
+function originOf(h: string | undefined): string | null {
+  try {
+    return h ? new URL(h).origin : null;
+  } catch {
+    return null;
+  }
+}
+
 export function createApp(deps: Deps): Hono {
   const app = new Hono();
 
   // Forms post with the browser's Origin header; anything else changing state is refused.
   app.use('*', async (c, next) => {
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && c.req.header('origin') !== deps.config.appUrl) {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && originOf(c.req.header('origin')) !== deps.config.appOrigin) {
       return c.text('Request blocked (wrong origin)', 403);
     }
     await next();

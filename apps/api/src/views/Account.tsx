@@ -7,7 +7,7 @@ const STATUS = {
   gone: { label: 'No longer exists', cls: 'badge warn' },
 } as const;
 
-export function Account(props: { user: UserRow; channels: ChannelRow[]; max: number; selfHosted: boolean; connected?: string }) {
+export function Account(props: { user: UserRow; channels: ChannelRow[]; max: number; selfHosted: boolean; byHand?: boolean; connected?: string }) {
   const { user, channels, max } = props;
   const usage = props.selfHosted ? 'Self-hosted · no limits' : `${user.plan === 'pro' ? 'Pro' : 'Free'} plan · ${channels.length} of ${max} channel${max === 1 ? '' : 's'}`;
   return (
@@ -16,6 +16,7 @@ export function Account(props: { user: UserRow; channels: ChannelRow[]; max: num
         <h1>Your account</h1>
         <p class="muted small">{user.email ?? 'No email shared'} · {usage}</p>
         {props.connected ? <div class="note">Connected ✓ You can check or remove it here any time.</div> : null}
+        {props.byHand ? <div class="note">Channel removed. Its stored Google access couldn't be read, so please remove ViewProof by hand at myaccount.google.com/connections.</div> : null}
 
         {channels.length === 0 ? <p>No channel connected yet.</p> : null}
         {channels.map((ch) => (

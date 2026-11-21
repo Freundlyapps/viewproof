@@ -4,6 +4,8 @@ import type { Deps } from './app';
 import { randomToken, sha256Hex } from './crypto';
 
 export const SESSION_COOKIE = 'vp_session';
+/** On https the cookie gets the __Host- prefix: Secure, Path=/, no Domain, so no subdomain can plant one. */
+export const sessionCookieName = (deps: Deps) => (deps.config.secureCookies ? `__Host-${SESSION_COOKIE}` : SESSION_COOKIE);
 export const SESSION_DAYS = 30;
 const DAY_MS = 86_400_000;
 
@@ -11,11 +13,12 @@ const DAY_MS = 86_400_000;
 export async function createSession(c: Context, deps: Deps, userId: string): Promise<void> {
   const id = randomToken();
   const now = deps.now();
+  await deps.db.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(new Date(now).toISOString()).run();
   await deps.db
     .prepare('INSERT INTO sessions (id_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
     .bind(await sha256Hex(id), userId, new Date(now).toISOString(), new Date(now + SESSION_DAYS * DAY_MS).toISOString())
     .run();
-  setCookie(c, SESSION_COOKIE, id, {
+  setCookie(c, sessionCookieName(deps), id, {
     httpOnly: true,
     secure: deps.config.secureCookies,
     sameSite: 'Lax',
@@ -25,7 +28,7 @@ export async function createSession(c: Context, deps: Deps, userId: string): Pro
 }
 
 export async function readSession(c: Context, deps: Deps): Promise<{ userId: string } | null> {
-  const id = getCookie(c, SESSION_COOKIE);
+  const id = getCookie(c, sessionCookieName(deps));
   if (!id) return null;
   const hash = await sha256Hex(id);
   const row = await deps.db.prepare('SELECT user_id, expires_at FROM sessions WHERE id_hash = ?').bind(hash).first<{ user_id: string; expires_at: string }>();
@@ -38,7 +41,7 @@ export async function readSession(c: Context, deps: Deps): Promise<{ userId: str
 }
 
 export async function clearSession(c: Context, deps: Deps): Promise<void> {
-  const id = getCookie(c, SESSION_COOKIE);
+  const id = getCookie(c, sessionCookieName(deps));
   if (id) await deps.db.prepare('DELETE FROM sessions WHERE id_hash = ?').bind(await sha256Hex(id)).run();
-  deleteCookie(c, SESSION_COOKIE, { path: '/', secure: deps.config.secureCookies });
+  deleteCookie(c, sessionCookieName(deps), { path: '/', secure: deps.config.secureCookies });
 }

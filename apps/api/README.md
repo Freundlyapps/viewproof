@@ -5,7 +5,7 @@ Sign in with Google, connect a YouTube channel (view-only), see its status, expo
 ## Run it locally / self-host
 
 1. **Google OAuth client.** In Google Cloud Console: enable *YouTube Data API v3* and *YouTube Analytics API*; in *Google Auth Platform* set up the app (External), add the scopes `openid`, `email`, `profile`, `youtube.readonly`, `yt-analytics.readonly` (and `yt-analytics-monetary.readonly` if you want revenue), then *Clients → Create client → Web application* with the redirect URI `http://localhost:8787/auth/google/callback`.
-2. **Settings.** Copy `.dev.vars.example` to `.dev.vars` (git-ignored) and fill in the client ID and secret. Generate `TOKEN_KEY` with `openssl rand -base64 32`. Self-hosters can set `SELF_HOSTED = "true"` in `wrangler.toml` to remove the channel limit.
+2. **Settings.** Copy `.dev.vars.example` to `.dev.vars` (git-ignored) and fill in the client ID and secret. Generate `TOKEN_KEY` with `openssl rand -base64 32`. Self-hosters can set `SELF_HOSTED = "true"` in `wrangler.toml` to remove the channel limit. Set `APP_URL` to the exact public address people open (behind a proxy, the proxy's https address): form posts from any other origin are refused.
 3. **Database.** `pnpm --filter api db:migrate:local`
 4. **Start.** `pnpm --filter api dev`, then open http://localhost:8787
 

@@ -59,9 +59,9 @@ describe('confirm', () => {
     const first = await signIn({ sub: 'c-recon', channel: channelFixture({ channelId: 'UCrecon' }) });
     await post(first.app, '/connect/confirm', first.cookie, { id: first.pendingId });
     await env.DB.prepare("UPDATE channels SET status = 'reconnect' WHERE channel_id = 'UCrecon'").run();
+    // Reconnecting your own channel needs no second confirmation: the callback refreshes it directly.
     const again = await signIn({ sub: 'c-recon', channel: channelFixture({ channelId: 'UCrecon' }), cookie: first.cookie });
-    const res = await post(again.app, '/connect/confirm', first.cookie, { id: again.pendingId });
-    expect(res.headers.get('location')).toBe('/account?connected=UCrecon');
+    expect(again.callback.headers.get('location')).toBe('/account?connected=UCrecon');
     expect((await channelRows('UCrecon')).results).toEqual([expect.objectContaining({ status: 'active' })]);
   });
 
@@ -87,11 +87,13 @@ describe('confirm', () => {
   test('channel connected to another account is refused', async () => {
     const a = await signIn({ sub: 'c-first', channel: channelFixture({ channelId: 'UCshared' }) });
     await post(a.app, '/connect/confirm', a.cookie, { id: a.pendingId });
-    const b = await signIn({ sub: 'c-second', channel: channelFixture({ channelId: 'UCshared' }) });
-    const res = await post(b.app, '/connect/confirm', b.cookie, { id: b.pendingId });
-    expect(await readText(res)).toContain('This channel is already connected to another ViewProof account.');
+    const own = await signIn({ sub: 'c-second', channel: channelFixture({ channelId: 'UCsecondown' }) });
+    await post(own.app, '/connect/confirm', own.cookie, { id: own.pendingId });
+    // signed in as c-second, a Google identity that manages UCshared too
+    const b = await signIn({ sub: 'c-second-brand', channel: channelFixture({ channelId: 'UCshared' }), cookie: own.cookie });
+    expect(await readText(b.callback)).toContain('This channel is already connected to another ViewProof account.');
     expect((await channelRows('UCshared')).results).toEqual([expect.objectContaining({ status: 'active' })]);
-    expect(b.google.calls).toContain('revoke');
+    expect(b.google.calls).not.toContain('revoke'); // revoking would break the first account's connection
   });
 });
 

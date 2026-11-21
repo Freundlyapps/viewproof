@@ -1,7 +1,7 @@
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
-import { decryptSecret } from '../crypto';
+import { releaseGrant, tryDecrypt } from '../grants';
 import { maxChannels } from '../plans';
 import { clearSession, readSession } from '../session';
 import { Account } from '../views/Account';
@@ -26,7 +26,9 @@ async function checkChannel(deps: Deps, ch: ChannelRow): Promise<void> {
       .bind(...(verified ? [status, reason, new Date(deps.now()).toISOString(), ch.id] : [status, reason, ch.id]))
       .run();
 
-  const token = await deps.google.refresh(await decryptSecret(ch.refresh_token_enc, deps.config.tokenKey));
+  const stored = await tryDecrypt(deps, ch.refresh_token_enc);
+  if (!stored) return void (await set('reconnect', "Stored access can't be read; reconnect", true));
+  const token = await deps.google.refresh(stored);
   if ('kind' in token) {
     return void (await (token.kind === 'revoked'
       ? set('reconnect', 'Google access was removed or expired', true)
@@ -46,12 +48,12 @@ async function checkChannel(deps: Deps, ch: ChannelRow): Promise<void> {
     .run();
 }
 
-export async function revokeAndDelete(deps: Deps, ch: ChannelRow): Promise<void> {
-  try {
-    await deps.google.revoke(await decryptSecret(ch.refresh_token_enc, deps.config.tokenKey));
-  } finally {
-    await deps.db.prepare('DELETE FROM channels WHERE id = ?').bind(ch.id).run();
-  }
+/** Delete a channel and revoke its access. Returns false when the stored token couldn't be read (revoke by hand). */
+export async function revokeAndDelete(deps: Deps, ch: ChannelRow): Promise<boolean> {
+  const token = await tryDecrypt(deps, ch.refresh_token_enc);
+  await deps.db.prepare('DELETE FROM channels WHERE id = ?').bind(ch.id).run();
+  if (token) await deps.google.revoke(token);
+  return token !== null;
 }
 
 export function accountRoutes(app: Hono, deps: Deps): void {
@@ -60,7 +62,8 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     const u = s && (await user(deps, s.userId));
     if (!u) return c.redirect('/auth/google/start', 302);
     const connected = c.req.query('connected');
-    return c.html(Account({ user: u, channels: await channelsOf(deps, u.id), max: maxChannels(u.plan, deps.config.selfHosted), selfHosted: deps.config.selfHosted, ...(connected ? { connected } : {}) }));
+    const byHand = c.req.query('note') === 'revoke-by-hand';
+    return c.html(Account({ user: u, channels: await channelsOf(deps, u.id), max: maxChannels(u.plan, deps.config.selfHosted), selfHosted: deps.config.selfHosted, byHand, ...(connected ? { connected } : {}) }));
   });
 
   app.post('/channels/:id/check', async (c) => {
@@ -77,8 +80,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     if (!s) return c.redirect('/auth/google/start', 302);
     const ch = await ownChannel(deps, c.req.param('id'), s.userId);
     if (!ch) return notFound(c);
-    await revokeAndDelete(deps, ch);
-    return c.redirect('/account', 302);
+    return c.redirect((await revokeAndDelete(deps, ch)) ? '/account' : '/account?note=revoke-by-hand', 302);
   });
 
   app.get('/api/me', async (c) => {
@@ -111,6 +113,12 @@ export function accountRoutes(app: Hono, deps: Deps): void {
         platform: ch.platform, channelId: ch.channel_id, title: ch.title, handle: ch.handle, status: ch.status, statusReason: ch.status_reason,
         connectedAt: ch.connected_at, lastVerifiedAt: ch.last_verified_at, permissions: ch.scopes.split(' '),
       })),
+      pendingConnections: (await deps.db.prepare('SELECT * FROM pending_connections WHERE user_id = ?').bind(u.id).all<PendingConnectionRow>()).results.map((p) => ({
+        channelId: p.channel_id, title: p.title, handle: p.handle, permissions: p.scopes.split(' '), createdAt: p.created_at,
+      })),
+      sessions: (await deps.db.prepare('SELECT created_at, expires_at FROM sessions WHERE user_id = ? ORDER BY created_at').bind(u.id).all<{ created_at: string; expires_at: string }>()).results.map((x) => ({
+        createdAt: x.created_at, expiresAt: x.expires_at,
+      })),
     };
     c.header('content-disposition', 'attachment; filename="viewproof-export.json"');
     return c.json(body);
@@ -123,25 +131,25 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       c.status(400);
       return c.html(Message({ title: 'Not deleted', text: 'Type "delete" to confirm.', action: { href: '/account', label: 'Back to your account' } }));
     }
-    // Give back Google access first, then remove everything; rows cascade from users.
-    for (const ch of await channelsOf(deps, s.userId)) {
-      await deps.google.revoke(await decryptSecret(ch.refresh_token_enc, deps.config.tokenKey));
-    }
+    // Read every stored token first, remove all rows in one transaction, then give back Google access.
+    const channels = await channelsOf(deps, s.userId);
     const pending = (await deps.db.prepare('SELECT * FROM pending_connections WHERE user_id = ?').bind(s.userId).all<PendingConnectionRow>()).results;
-    for (const p of pending) {
-      try {
-        await deps.google.revoke(await decryptSecret(p.refresh_token_enc, deps.config.tokenKey));
-      } catch {
-        // unreadable pending token: nothing to revoke
-      }
-    }
+    const channelTokens = await Promise.all(channels.map((ch) => tryDecrypt(deps, ch.refresh_token_enc)));
+    const pendingTokens = await Promise.all(pending.map((p) => tryDecrypt(deps, p.refresh_token_enc)));
     await clearSession(c, deps);
     await deps.db.batch([
+      deps.db.prepare('DELETE FROM oauth_states WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM pending_connections WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM channels WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);
-    return c.html(Message({ title: 'Account deleted', text: 'Your account and all its data were deleted.', action: { href: '/', label: 'Home' } }));
+    for (const t of channelTokens) if (t) await deps.google.revoke(t);
+    for (const [i, t] of pendingTokens.entries()) if (t) await releaseGrant(deps, t, pending[i]!.channel_id);
+    const unreadable = [...channelTokens, ...pendingTokens].some((t) => t === null);
+    return c.html(Message({
+      title: 'Account deleted', text: 'Your account and all its data were deleted.', action: { href: '/', label: 'Home' },
+      ...(unreadable ? { detail: "Some stored Google access couldn't be read, so please remove ViewProof by hand at myaccount.google.com/connections." } : {}),
+    }));
   });
 }

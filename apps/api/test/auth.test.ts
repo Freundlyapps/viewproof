@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { SCOPES, type GoogleClient, type MyChannel, type TokenSet } from '../src/google';
 import { fakeGoogle } from './fake-google';
-import { addUser, cookieFrom, makeDeps, readText } from './helpers';
+import { addUser, cookieFrom, makeDeps, mergeCookies, readText } from './helpers';
 
 const ALL = [...SCOPES.signIn, ...SCOPES.channel];
 const CHANNEL: MyChannel = { channelId: 'UCqhp', title: 'Quiet Hands Pottery', handle: '@quiethands', avatarUrl: 'https://yt3.ggpht.com/a.jpg', subscriberCount: 12345, videoCount: 41 };
@@ -14,11 +14,14 @@ function setup(google: Partial<GoogleClient> = {}, now?: () => number) {
   const deps = makeDeps({ google: g, ...(now ? { now } : {}) });
   return { app: createApp(deps), g };
 }
+let lastJar = '';
 async function start(app: ReturnType<typeof createApp>, query = '', cookie?: string) {
   const res = await app.request(`/auth/google/start${query}`, { headers: cookie ? { cookie } : {} });
-  return { res, state: new URL(res.headers.get('location')!).searchParams.get('state')! };
+  lastJar = mergeCookies(cookie, res);
+  return { res, state: new URL(res.headers.get('location')!).searchParams.get('state')!, jar: lastJar };
 }
-const callback = (app: ReturnType<typeof createApp>, q: string) => app.request(`/auth/google/callback?${q}`);
+/** Callback from the same browser that started (carries the start cookies) unless a jar is given. */
+const callback = (app: ReturnType<typeof createApp>, q: string, jar = lastJar) => app.request(`/auth/google/callback?${q}`, { headers: jar ? { cookie: jar } : {} });
 const pendingCount = async (sub: string) =>
   (await env.DB.prepare('SELECT COUNT(*) AS n FROM pending_connections p JOIN users u ON u.id = p.user_id WHERE u.google_sub = ?').bind(sub).first<{ n: number }>())!.n;
 
@@ -60,10 +63,10 @@ describe('sign-in', () => {
     await addUser('signed1');
     const { app: a0 } = setup({ exchangeCode: async () => tokens({ idClaims: { sub: 'sub-signed1' } }) });
     const first = await start(a0);
-    const cookie = cookieFrom(await callback(a0, `state=${first.state}&code=c`));
+    const cookie = mergeCookies(first.jar, await callback(a0, `state=${first.state}&code=c`));
     const { app } = setup({ exchangeCode: async () => tokens({ idClaims: { sub: 'brand-account-sub' } }) });
-    const { state } = await start(app, '', cookie);
-    await callback(app, `state=${state}&code=c2`);
+    const { state, jar } = await start(app, '', cookie);
+    await callback(app, `state=${state}&code=c2`, jar);
     expect(await env.DB.prepare('SELECT id FROM users WHERE google_sub = ?').bind('brand-account-sub').first()).toBeNull();
     expect(await pendingCount('sub-signed1')).toBe(2);
   });
