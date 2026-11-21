@@ -15,3 +15,8 @@ export async function addUser(id: string, plan = 'free') {
 export function cookieFrom(res: Response): string {
   return (res.headers.get('set-cookie') ?? '').split(';')[0]!;
 }
+
+/** Page text with HTML entities decoded, so assertions match what a person reads. */
+export async function readText(res: Response): Promise<string> {
+  return (await res.text()).replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
