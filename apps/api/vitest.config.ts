@@ -18,6 +18,7 @@ export default defineConfig(async () => {
         },
       }),
     ],
-    test: { setupFiles: ['./test/setup.ts'] },
+    // One worker: parallel workerd start-ups crash (socket hang up) on the WSL /mnt/f mount.
+    test: { setupFiles: ['./test/setup.ts'], maxWorkers: 1, fileParallelism: false },
   };
 });

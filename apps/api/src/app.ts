@@ -11,7 +11,15 @@ export interface Deps {
 
 export function createApp(deps: Deps): Hono {
   const app = new Hono();
+
+  // Forms post with the browser's Origin header; anything else changing state is refused.
+  app.use('*', async (c, next) => {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && c.req.header('origin') !== deps.config.appUrl) {
+      return c.text('Request blocked (wrong origin)', 403);
+    }
+    await next();
+  });
+
   app.get('/health', (c) => c.json({ ok: true }));
-  void deps;
   return app;
 }
