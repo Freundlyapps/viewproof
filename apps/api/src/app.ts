@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
 import type { YouTubeClient } from './youtube';
+import type { KeywordProvider } from '@viewproof/providers';
+import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
 import { channelRoutes } from './routes/channel';
@@ -14,6 +16,8 @@ export interface Deps {
   config: Config;
   google: GoogleClient;
   youtube: YouTubeClient;
+  /** Keyword estimates (vendor or "off"). */
+  keywords: KeywordProvider;
   now: () => number;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
   assets?: { fetch(req: Request): Promise<Response> };
@@ -61,5 +65,6 @@ export function createApp(deps: Deps): Hono {
   connectRoutes(app, deps);
   accountRoutes(app, deps);
   channelRoutes(app, deps);
+  keywordRoutes(app, deps);
   return app;
 }

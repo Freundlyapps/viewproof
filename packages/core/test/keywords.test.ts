@@ -125,3 +125,11 @@ describe('keywords and suggestions', () => {
     expect(g.questions).toEqual(['how pottery wheel works']);
   });
 });
+
+describe('containsKeyword', () => {
+  test('whole words only', async () => {
+    const { containsKeyword } = await import('../src/keywords');
+    expect(containsKeyword('how to trim a bowl', 'Trim  Bowl')).toBe(true);
+    expect(containsKeyword('bowl trimming tool', 'trim bowl')).toBe(false);
+  });
+});

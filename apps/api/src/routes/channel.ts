@@ -1,4 +1,4 @@
-import { type Coverage, type Earnings, type Measured, type Overview, type SearchTerm, type SearchTerms, type UploadTimes, type Pair, type RangeKey, type VideoRow, type Videos, coverage, noData, parseRange, periodFor, todayPacific, value } from '@viewproof/core';
+import { type Coverage, type Earnings, type Measured, type Overview, type SearchTerm, type SearchTerms, type UploadTimes, type Pair, type RangeKey, type VideoRow, type Videos, type YourTerms, containsKeyword, coverage, noData, parseRange, periodFor, todayPacific, value } from '@viewproof/core';
 import type { ChannelRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
@@ -6,6 +6,7 @@ import { type AccessError, type ChannelAccess, REVOKED_REASON, type Ttl, accessF
 import { type GoogleError, SCOPES } from '../google';
 import { readSession } from '../session';
 import type { Report, ReportQuery } from '../youtube';
+import { BAD_KEYWORD, keywordParam } from './keywords';
 
 export const REPORT_TTL_MS = 6 * 3_600_000;
 const SOURCE = 'YouTube Analytics';
@@ -136,6 +137,8 @@ async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promis
 export function serve<T>(
   deps: Deps, key: (range: RangeKey, c: Context) => string, load: (deps: Deps, a: ChannelAccess, range: RangeKey, c: Context) => Promise<T | GoogleError>,
   ttl: Ttl<T> = REPORT_TTL_MS, before?: (c: Context, ch: ChannelRow) => Response | null,
+  /** Shape the (cached) body for this request, e.g. filter it. */
+  shape: (body: T, c: Context) => unknown = (b) => b,
 ) {
   return async (c: Context) => {
     const ch = await channelOf(c, deps);
@@ -146,7 +149,7 @@ export function serve<T>(
       const early = before?.(c, ch);
       if (early) return early;
       const hit = await peek(deps, ch.id, k, ttl);
-      if (hit !== undefined) return c.json(hit as object);
+      if (hit !== undefined) return c.json(shape(hit, c) as object);
     }
     const a = await accessFor(deps, ch);
     if ('error' in a) return accessError(c, a);
@@ -155,7 +158,7 @@ export function serve<T>(
     const r = await cached(deps, ch.id, k, ttl, () => load(deps, a, range, c));
     if (isErr(r)) return googleFailure(c, deps, ch, r);
     if (ch.status === 'reconnect') await markActive(deps, ch);
-    return c.json(r as object);
+    return c.json(shape(r as T, c) as object);
   };
 }
 
@@ -269,6 +272,12 @@ async function loadUploadTimes(deps: Deps, a: ChannelAccess): Promise<UploadTime
   return { uploads: out, fetchedAt: new Date(deps.now()).toISOString() };
 }
 
+const NO_MATCH = "None of your channel's top 25 search terms (last 90 days) contains this keyword.";
+function matchingTerms(t: SearchTerms, keyword: string, deps: Deps): YourTerms {
+  const terms = t.terms.filter((x) => containsKeyword(x.term, keyword));
+  return { keyword, coverage: t.coverage, terms, note: terms.length ? null : t.note ?? NO_MATCH, fetchedAt: new Date(deps.now()).toISOString() };
+}
+
 export function channelRoutes(app: Hono, deps: Deps): void {
   app.get('/api/channels/:id/search-terms', serve(deps, (r) => `terms:${r}:${today(deps)}`, loadSearchTerms));
   app.get('/api/channels/:id/upload-times', serve(deps, () => `upload-times:${today(deps)}`, (d, a) => loadUploadTimes(d, a)));
@@ -276,5 +285,8 @@ export function channelRoutes(app: Hono, deps: Deps): void {
     (e) => (e.status === 'not_available' ? NOT_AVAILABLE_TTL_MS : REPORT_TTL_MS), (c, ch) =>
     ch.scopes.split(' ').includes(SCOPES.revenue) ? null : c.json({ status: 'not_granted' } satisfies Earnings)));
   app.get('/api/channels/:id/overview', serve(deps, (r) => `overview:${r}:${today(deps)}`, loadOverview));
+  // The creator's real search terms containing a keyword: the cached 90-day search terms, filtered.
+  app.get('/api/channels/:id/keyword-terms', (c) => (keywordParam(c) ? keywordTerms(c) : c.json(BAD_KEYWORD, 400)));
+  const keywordTerms = serve(deps, () => `terms:90d:${today(deps)}`, (d, a) => loadSearchTerms(d, a, '90d'), REPORT_TTL_MS, undefined, (t, c) => matchingTerms(t, keywordParam(c)!, deps));
   app.get('/api/channels/:id/videos', serve(deps, (r) => `videos:${r}:${today(deps)}`, loadVideos));
 }

@@ -1,0 +1,10 @@
+-- Keyword estimates from a licensed vendor (spec §6 S5): shared across users, kept 30 days.
+-- Not tied to a user or channel; holds no personal data.
+CREATE TABLE keyword_cache (
+  keyword TEXT NOT NULL,
+  country TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  body TEXT NOT NULL,
+  fetched_at TEXT NOT NULL,
+  PRIMARY KEY (keyword, country, provider)
+);

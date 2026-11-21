@@ -138,6 +138,12 @@ export function parseSuggestions(text: string): string[] | null {
   }
 }
 
+/** True when every word of the keyword appears as a whole word in the text. */
+export function containsKeyword(text: string, keyword: string): boolean {
+  const have = new Set(normalizeKeyword(text).split(' '));
+  return normalizeKeyword(keyword).split(' ').filter(Boolean).every((w) => have.has(w));
+}
+
 export interface KeywordSuggestions { related: string[]; questions: string[]; matching: string[] }
 export const QUESTION_PREFIXES = ['how', 'what', 'why'] as const;
 const QUESTION_START = /^(how|what|why|when|where|who|can|is|does|do|should|which)\b/;
@@ -145,7 +151,6 @@ const QUESTION_START = /^(how|what|why|when|where|who|can|is|does|do|should|whic
 /** Related (plain query), questions, and matching (contains every keyword word) — de-duplicated, YouTube's order. */
 export function groupSuggestions(keyword: string, lists: { prefix: string; items: string[] }[]): KeywordSuggestions {
   const kw = normalizeKeyword(keyword);
-  const words = kw.split(' ').filter(Boolean);
   const uniq = (xs: string[]) => [...new Set(xs.map(normalizeKeyword))].filter((x) => x && x !== kw);
   const plain = lists.filter((l) => l.prefix === '').flatMap((l) => l.items);
   const all = lists.flatMap((l) => l.items);
@@ -154,7 +159,7 @@ export function groupSuggestions(keyword: string, lists: { prefix: string; items
   return {
     related: uniq(plain),
     questions,
-    matching: uniq(all.filter((s) => { const n = ` ${normalizeKeyword(s)} `; return words.every((w) => n.includes(` ${w} `) || n.includes(w)); })),
+    matching: uniq(all.filter((s) => containsKeyword(s, kw))),
   };
 }
 
@@ -224,3 +229,6 @@ export function factsSummary(f: TopResultsFacts): string[] {
   if (f.under10kViews.kind === 'value' && f.under10kViews.value >= 5) out.push(`${f.under10kViews.value} of the top ${n} have under 10,000 views — smaller videos do rank here.`);
   return out;
 }
+
+/** A search the user made on YouTube, as read from the page by the extension; kept only in that browser. */
+export interface KeywordSnapshot { query: string; capturedAt: string; page: SearchPage }
