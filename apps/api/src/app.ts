@@ -4,6 +4,8 @@ import type { GoogleClient } from './google';
 import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
 import { connectRoutes } from './routes/connect';
+import { readSession } from './session';
+import { Home } from './views/Home';
 
 export interface Deps {
   db: D1Database;
@@ -24,6 +26,7 @@ export function createApp(deps: Deps): Hono {
   });
 
   app.get('/health', (c) => c.json({ ok: true }));
+  app.get('/', async (c) => c.html(Home({ signedIn: (await readSession(c, deps)) !== null })));
   authRoutes(app, deps);
   connectRoutes(app, deps);
   accountRoutes(app, deps);

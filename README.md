@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1, plan 1 of 8 (browser extension, no server yet).
+License: AGPL-3.0. Status: Phase 1 — plan 1 (browser extension) and plan 2 (server: Google sign-in, channel connect, account) of 8.
 
 ## The browser extension (Chrome, Edge)
 
@@ -45,4 +45,6 @@ Keep live checks to a handful of requests; never loop them.
 
 - `packages/core`: scores and parsers shared by every part (views per hour, outlier ×N, feed and player parsers).
 - `apps/extension`: the browser extension (WXT, Manifest V3).
+- `apps/api`: the server (Cloudflare Worker, Hono, D1): sign-in, channel connect, account. See [apps/api/README.md](apps/api/README.md).
+- `packages/db`: database migrations.
 - `docs/`: design spec, UI prototype and build plans.
