@@ -1,9 +1,9 @@
-import type { ChannelRow, UserRow } from '@viewproof/db';
+import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
 import { decryptSecret } from '../crypto';
 import { maxChannels } from '../plans';
-import { readSession } from '../session';
+import { clearSession, readSession } from '../session';
 import { Account } from '../views/Account';
 import { Message } from '../views/Message';
 
@@ -98,5 +98,50 @@ export function accountRoutes(app: Hono, deps: Deps): void {
         status: ch.status, statusReason: ch.status_reason, connectedAt: ch.connected_at, lastVerifiedAt: ch.last_verified_at,
       })),
     );
+  });
+
+  app.get('/account/export', async (c) => {
+    const s = await readSession(c, deps);
+    const u = s && (await user(deps, s.userId));
+    if (!u) return c.redirect('/auth/google/start', 302);
+    const body = {
+      exportedAt: new Date(deps.now()).toISOString(),
+      user: { email: u.email, name: u.name, plan: u.plan, createdAt: u.created_at },
+      channels: (await channelsOf(deps, u.id)).map((ch) => ({
+        platform: ch.platform, channelId: ch.channel_id, title: ch.title, handle: ch.handle, status: ch.status, statusReason: ch.status_reason,
+        connectedAt: ch.connected_at, lastVerifiedAt: ch.last_verified_at, permissions: ch.scopes.split(' '),
+      })),
+    };
+    c.header('content-disposition', 'attachment; filename="viewproof-export.json"');
+    return c.json(body);
+  });
+
+  app.post('/account/delete', async (c) => {
+    const s = await readSession(c, deps);
+    if (!s) return c.redirect('/auth/google/start', 302);
+    if (String((await c.req.parseBody()).confirm ?? '').trim().toLowerCase() !== 'delete') {
+      c.status(400);
+      return c.html(Message({ title: 'Not deleted', text: 'Type "delete" to confirm.', action: { href: '/account', label: 'Back to your account' } }));
+    }
+    // Give back Google access first, then remove everything; rows cascade from users.
+    for (const ch of await channelsOf(deps, s.userId)) {
+      await deps.google.revoke(await decryptSecret(ch.refresh_token_enc, deps.config.tokenKey));
+    }
+    const pending = (await deps.db.prepare('SELECT * FROM pending_connections WHERE user_id = ?').bind(s.userId).all<PendingConnectionRow>()).results;
+    for (const p of pending) {
+      try {
+        await deps.google.revoke(await decryptSecret(p.refresh_token_enc, deps.config.tokenKey));
+      } catch {
+        // unreadable pending token: nothing to revoke
+      }
+    }
+    await clearSession(c, deps);
+    await deps.db.batch([
+      deps.db.prepare('DELETE FROM pending_connections WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM channels WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
+    ]);
+    return c.html(Message({ title: 'Account deleted', text: 'Your account and all its data were deleted.', action: { href: '/', label: 'Home' } }));
   });
 }
