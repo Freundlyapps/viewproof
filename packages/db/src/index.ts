@@ -12,3 +12,4 @@ export interface ChannelRow {
   scopes: string; refresh_token_enc: string; status: ChannelStatus; status_reason: string | null; connected_at: string; last_verified_at: string;
 }
 export interface ReportCacheRow { channel_id: string; key: string; body: string; fetched_at: string }
+export interface KeywordCacheRow { keyword: string; country: string; provider: string; body: string; fetched_at: string }

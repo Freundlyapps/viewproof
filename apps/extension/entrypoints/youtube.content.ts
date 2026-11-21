@@ -2,6 +2,7 @@ import { isPlayerMessage, NavigationGuard } from '../src/bridge';
 import { handlePlayer } from '../src/flow';
 import { type PanelState, renderPanel } from '../src/panel';
 import { chromeStore } from '../src/store';
+import { isSearchMessage, searchStore } from '../src/search';
 
 const HOST_ID = 'viewproof-panel';
 const MOUNT_WAIT_MS = 10_000;
@@ -20,6 +21,15 @@ export default defineContentScript({
       currentUrl: () => location.href,
       render: (state: PanelState) => void mount().then((host) => host && renderPanel(host, state)),
     };
+
+    // Searches the user makes on YouTube are kept in this browser so the ViewProof web app can show their facts.
+    const searches = searchStore(browser.storage.local);
+    window.addEventListener('message', (e) => {
+      if (!isSearchMessage(e, window, location.origin)) return;
+      void searches.save(e.data.url, e.data.response, Date.now()).then((r) => {
+        if (typeof r === 'object') console.warn('[ViewProof]', r.error);
+      });
+    });
 
     window.addEventListener('message', (e) => {
       if (!isPlayerMessage(e, window, location.origin)) return;

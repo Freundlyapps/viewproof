@@ -26,6 +26,9 @@ importers:
       '@viewproof/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@viewproof/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       hono:
         specifier: ^4.13.19
         version: 4.13.19
@@ -112,6 +115,12 @@ importers:
         version: 5.12.1
 
   packages/db: {}
+
+  packages/providers:
+    dependencies:
+      '@viewproof/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

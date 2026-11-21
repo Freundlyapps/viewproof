@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1 — plans 1–3 of 8 done: browser extension; server with Google sign-in and channel connect; web app with My channel.
+License: AGPL-3.0. Status: Phase 1 — plans 1–4 of 8 done: browser extension; server with Google sign-in and channel connect; web app with My channel; keyword research.
 
 ## The browser extension (Chrome, Edge)
 
@@ -15,7 +15,7 @@ Live and upcoming videos show "No data" with the reason instead of a misleading 
 
 ### Privacy
 
-The extension sends nothing to ViewProof or anyone else. It talks only to `www.youtube.com`: it reads the data the page already loaded and fetches the channel's public RSS feed without cookies. Your past view-count sightings are stored only in your browser (`chrome.storage.local`, the latest per video, up to 2,000 videos).
+The extension sends nothing to the ViewProof server or anyone else. It talks only to YouTube: it reads the data the page already loaded, fetches the channel's public RSS feed without cookies, and, when you open a keyword report, asks YouTube's autocomplete (`suggestqueries-clients6.youtube.com`, at most 60 requests an hour, paused for 24 hours if YouTube refuses). Your past view-count sightings and the searches you make on YouTube (the first results page, up to 50 searches for 30 days; filtered searches are skipped) are stored only in your browser (`chrome.storage.local`). The ViewProof web page open in the same browser can read them through a small script the extension runs on ViewProof's own pages; nothing is uploaded.
 
 ### Install from source
 
@@ -49,11 +49,23 @@ Every number is YouTube's own value, labelled REAL (or ESTIMATE for revenue), wi
 
 Run it locally: set up `apps/api` (see [apps/api/README.md](apps/api/README.md)), then `pnpm dev` and open http://localhost:8787/app.
 
+## Keyword research
+
+**Research → Keywords** builds a report for a keyword from separate, labelled sources. It never shows a single 0–100 score, and a keyword nobody has data for says "No data", never a number.
+
+- **Top results on YouTube** (REAL): search for the keyword on YouTube with the extension installed. The extension reads the results page you see, and the report shows facts about it: median views, median upload age, how many results are from the last 3 months, how many have under 10,000 views, how many different channels there are, and whether one channel holds several spots. A short plain-language summary quotes those numbers. Channel sizes aren't on YouTube's search page, so they show "No data" for now.
+- **YouTube suggestions** (REAL): YouTube's own autocomplete for the keyword, grouped into related searches, questions and matching phrases, in YouTube's order.
+- **Your search terms** (REAL): the real searches that brought viewers to your channel (YouTube Analytics, your top 25 over 90 days) that contain the keyword.
+- **Estimated monthly searches** (ESTIMATE): only when a keyword data vendor is configured. The DataForSEO adapter (clickstream volume plus Google Trends for YouTube search) is labelled "Estimate — clickstream panel, not YouTube data" and is off unless `DATAFORSEO_DISPLAY_OK=yes` (see [apps/api/README.md](apps/api/README.md)). YouTube doesn't publish search volume; every tool's volume is an estimate.
+
+The report reads the extension through a small script on ViewProof's own pages. The store build runs it only on `viewproof.app`. For a local server (`http://localhost:8787`), load the development build instead: run `pnpm --filter extension build:dev`, then load `apps/extension/.output/chrome-mv3-dev`.
+
 ## Repository layout
 
 - `packages/core`: scores, parsers and API types shared by every part (views per hour, outlier ×N, feed and player parsers, My channel rules).
 - `apps/extension`: the browser extension (WXT, Manifest V3).
 - `apps/api`: the server (Cloudflare Worker, Hono, D1): sign-in, channel connect, account, YouTube Analytics endpoints; serves the web app at `/app`. See [apps/api/README.md](apps/api/README.md).
 - `apps/web`: the web app (React, Vite), built into `apps/web/dist` and served by the Worker.
+- `packages/providers`: keyword data providers behind one interface (`KeywordProvider`); DataForSEO is the first.
 - `packages/db`: database migrations.
 - `docs/`: design spec, UI prototype and build plans.

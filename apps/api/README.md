@@ -18,6 +18,10 @@ While your Google app is in *Testing*, Google ends each tester's access after 7 
 
 The Worker reads YouTube Analytics (`reports.query`) and the Data API (your uploads) with the stored access, and caches the answers in D1 for 6 hours (first-week views per video for 30 days; "no views yet" and "revenue not available" are re-asked sooner). A cached answer is served without contacting Google; Google access is renewed at most once per 45 minutes per channel, and tabs that load together share one request. Removing a channel or deleting the account deletes its cached reports. YouTube's data lags 48–72 hours; each view says how far it goes.
 
+## Keyword estimates (optional)
+
+Estimated keyword volume comes from a licensed vendor, never from YouTube. Set `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` in `.dev.vars` (or as Wrangler secrets). Estimates stay **off** until you also set `DATAFORSEO_DISPLAY_OK=yes`, which confirms you're allowed to show DataForSEO data to your users. The hosted service keeps it off until DataForSEO confirms in writing. Each estimate costs two DataForSEO calls. Answers are cached for 30 days and shared by every user (table `keyword_cache`, which holds no personal data). Failed answers are not cached.
+
 ## What is stored
 
 - Your Google account id, email and name; your plan.
