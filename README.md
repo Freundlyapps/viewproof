@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1 — plan 1 (browser extension) and plan 2 (server: Google sign-in, channel connect, account) of 8.
+License: AGPL-3.0. Status: Phase 1 — plans 1–3 of 8 done: browser extension; server with Google sign-in and channel connect; web app with My channel.
 
 ## The browser extension (Chrome, Edge)
 
@@ -41,10 +41,19 @@ node apps/extension/e2e/live-check.mjs <outDir> <videoId>...   # manual check on
 
 Keep live checks to a handful of requests; never loop them.
 
+## The web app
+
+Sign in with Google, connect your channel (view-only) and open **My channel**: views, watch time, average view duration and subscribers per day; your videos; the real YouTube search terms that brought viewers; and YouTube's revenue estimates if you allow revenue access.
+
+Every number is YouTube's own value, labelled REAL (or ESTIMATE for revenue), with the previous period beside it. ViewProof doesn't compute scores, percentages or ratios from YouTube API data: YouTube's developer policy (III.E.4.h) forbids derived metrics. When YouTube returns nothing, the app says "No data" and why.
+
+Run it locally: set up `apps/api` (see [apps/api/README.md](apps/api/README.md)), then `pnpm dev` and open http://localhost:8787/app.
+
 ## Repository layout
 
-- `packages/core`: scores and parsers shared by every part (views per hour, outlier ×N, feed and player parsers).
+- `packages/core`: scores, parsers and API types shared by every part (views per hour, outlier ×N, feed and player parsers, My channel rules).
 - `apps/extension`: the browser extension (WXT, Manifest V3).
-- `apps/api`: the server (Cloudflare Worker, Hono, D1): sign-in, channel connect, account. See [apps/api/README.md](apps/api/README.md).
+- `apps/api`: the server (Cloudflare Worker, Hono, D1): sign-in, channel connect, account, YouTube Analytics endpoints; serves the web app at `/app`. See [apps/api/README.md](apps/api/README.md).
+- `apps/web`: the web app (React, Vite), built into `apps/web/dist` and served by the Worker.
 - `packages/db`: database migrations.
 - `docs/`: design spec, UI prototype and build plans.
