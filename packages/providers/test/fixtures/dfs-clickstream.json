@@ -1,0 +1,244 @@
+{
+  "version": "0.1.20240801",
+  "status_code": 20000,
+  "status_message": "Ok.",
+  "time": "0.3889 sec.",
+  "cost": 0.0103,
+  "tasks_count": 1,
+  "tasks_error": 0,
+  "tasks": [
+    {
+      "id": "08201437-1535-0591-0000-e179eb1fba5f",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.3607 sec.",
+      "cost": 0.0103,
+      "result_count": 1,
+      "path": [
+        "v3",
+        "keywords_data",
+        "clickstream_data",
+        "bulk_search_volume",
+        "live"
+      ],
+      "data": {
+        "api": "keywords_data",
+        "function": "bulk_search_volume",
+        "se": "clickstream_data",
+        "location_code": 2840,
+        "tag": "test-tag",
+        "keywords": [
+          "you tube",
+          "youtube",
+          "youtub"
+        ]
+      },
+      "result": [
+        {
+          "location_code": 2840,
+          "items_count": 3,
+          "items": [
+            {
+              "keyword": "youtub",
+              "search_volume": 418780,
+              "monthly_searches": [
+                {
+                  "year": 2024,
+                  "month": 7,
+                  "search_volume": 418780
+                },
+                {
+                  "year": 2024,
+                  "month": 6,
+                  "search_volume": 439710
+                },
+                {
+                  "year": 2024,
+                  "month": 5,
+                  "search_volume": 436562
+                },
+                {
+                  "year": 2024,
+                  "month": 4,
+                  "search_volume": 438434
+                },
+                {
+                  "year": 2024,
+                  "month": 3,
+                  "search_volume": 437668
+                },
+                {
+                  "year": 2024,
+                  "month": 2,
+                  "search_volume": 443624
+                },
+                {
+                  "year": 2024,
+                  "month": 1,
+                  "search_volume": 445666
+                },
+                {
+                  "year": 2023,
+                  "month": 12,
+                  "search_volume": 440136
+                },
+                {
+                  "year": 2023,
+                  "month": 11,
+                  "search_volume": 431861
+                },
+                {
+                  "year": 2023,
+                  "month": 10,
+                  "search_volume": 425703
+                },
+                {
+                  "year": 2023,
+                  "month": 9,
+                  "search_volume": 420420
+                },
+                {
+                  "year": 2023,
+                  "month": 8,
+                  "search_volume": 413230
+                }
+              ]
+            },
+            {
+              "keyword": "you tube",
+              "search_volume": 3986664,
+              "monthly_searches": [
+                {
+                  "year": 2024,
+                  "month": 7,
+                  "search_volume": 3986664
+                },
+                {
+                  "year": 2024,
+                  "month": 6,
+                  "search_volume": 4207200
+                },
+                {
+                  "year": 2024,
+                  "month": 5,
+                  "search_volume": 4130370
+                },
+                {
+                  "year": 2024,
+                  "month": 4,
+                  "search_volume": 4152322
+                },
+                {
+                  "year": 2024,
+                  "month": 3,
+                  "search_volume": 4224472
+                },
+                {
+                  "year": 2024,
+                  "month": 2,
+                  "search_volume": 4355926
+                },
+                {
+                  "year": 2024,
+                  "month": 1,
+                  "search_volume": 4445689
+                },
+                {
+                  "year": 2023,
+                  "month": 12,
+                  "search_volume": 4525497
+                },
+                {
+                  "year": 2023,
+                  "month": 11,
+                  "search_volume": 4520329
+                },
+                {
+                  "year": 2023,
+                  "month": 10,
+                  "search_volume": 4530924
+                },
+                {
+                  "year": 2023,
+                  "month": 9,
+                  "search_volume": 4560702
+                },
+                {
+                  "year": 2023,
+                  "month": 8,
+                  "search_volume": 4593340
+                }
+              ]
+            },
+            {
+              "keyword": "youtube",
+              "search_volume": 157924192,
+              "monthly_searches": [
+                {
+                  "year": 2024,
+                  "month": 7,
+                  "search_volume": 157924192
+                },
+                {
+                  "year": 2024,
+                  "month": 6,
+                  "search_volume": 166762144
+                },
+                {
+                  "year": 2024,
+                  "month": 5,
+                  "search_volume": 164564010
+                },
+                {
+                  "year": 2024,
+                  "month": 4,
+                  "search_volume": 164449749
+                },
+                {
+                  "year": 2024,
+                  "month": 3,
+                  "search_volume": 163587594
+                },
+                {
+                  "year": 2024,
+                  "month": 2,
+                  "search_volume": 164803434
+                },
+                {
+                  "year": 2024,
+                  "month": 1,
+                  "search_volume": 166157109
+                },
+                {
+                  "year": 2023,
+                  "month": 12,
+                  "search_volume": 164706784
+                },
+                {
+                  "year": 2023,
+                  "month": 11,
+                  "search_volume": 162002013
+                },
+                {
+                  "year": 2023,
+                  "month": 10,
+                  "search_volume": 159212953
+                },
+                {
+                  "year": 2023,
+                  "month": 9,
+                  "search_volume": 157132117
+                },
+                {
+                  "year": 2023,
+                  "month": 8,
+                  "search_volume": 154116528
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

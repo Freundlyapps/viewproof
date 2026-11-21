@@ -113,6 +113,12 @@ importers:
 
   packages/db: {}
 
+  packages/providers:
+    dependencies:
+      '@viewproof/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@1natsu/wait-element@5.0.0':
