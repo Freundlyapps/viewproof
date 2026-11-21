@@ -32,3 +32,26 @@ export interface VideoRow {
   averageViewDuration: Measured<number>;
 }
 export interface Videos { range: RangeKey; dataThrough: string | null; videos: VideoRow[]; fetchedAt: string }
+
+export interface SearchTerm {
+  term: string;
+  views: number;
+  watchMinutes: number;
+  previousViews: Measured<number>;
+  /** The video (of the period's top 10) that got the most views from this term, if any. */
+  topVideo: { videoId: string; title: string } | null;
+}
+export interface SearchTerms { range: RangeKey; terms: SearchTerm[]; note: string | null; fetchedAt: string }
+
+export type Earnings =
+  | { status: 'not_granted' }
+  | { status: 'not_available'; reason: string }
+  | {
+      status: 'ok';
+      range: RangeKey;
+      totals: { estimatedRevenue: Pair; playbackBasedCpm: Pair; monetizedPlaybacks: Pair };
+      topVideos: { videoId: string; title: string; estimatedRevenue: number; playbackBasedCpm: Measured<number> }[];
+      fetchedAt: string;
+    };
+
+export interface UploadTimes { uploads: { videoId: string; title: string; publishedAt: string; firstWeekViews: Measured<number> }[]; fetchedAt: string }
