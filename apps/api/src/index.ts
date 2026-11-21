@@ -11,6 +11,6 @@ export default {
       clientSecret: config.googleClientSecret,
       redirectUri: `${config.appUrl}/auth/google/callback`,
     });
-    return createApp({ db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), now: () => Date.now() }).fetch(req, env, ctx);
+    return createApp({ db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), now: () => Date.now(), assets: env.ASSETS }).fetch(req, env, ctx);
   },
 } satisfies ExportedHandler<Env>;

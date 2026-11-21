@@ -20,7 +20,7 @@ export function Account(props: { user: UserRow; channels: ChannelRow[]; max: num
   return (
     <Layout title="Your account" signedIn>
       <div class="card">
-        <h1>Your account</h1>
+        <div class="row" style="justify-content:space-between"><h1>Your account</h1><a class="btn pri" href="/app">Open ViewProof</a></div>
         <p class="muted small">{who(user)} · {usage}</p>
         {props.connected ? <div class="note">Connected ✓ You can check or remove it here any time.</div> : null}
         {props.byHand ? <div class="note">Channel removed. Its stored Google access couldn't be read, so please remove ViewProof by hand at myaccount.google.com/connections.</div> : null}
