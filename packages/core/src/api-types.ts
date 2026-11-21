@@ -59,7 +59,7 @@ export type Earnings =
 
 export interface UploadTimes { uploads: { videoId: string; title: string; publishedAt: string; firstWeekViews: Measured<number> }[]; fetchedAt: string }
 
-/** Countries a keyword estimate can be asked for (DataForSEO location codes). */
+/** Countries a keyword trend can be asked for (DataForSEO location codes). */
 export const COUNTRIES: { code: string; name: string; locationCode: number }[] = [
   { code: 'US', name: 'United States', locationCode: 2840 },
   { code: 'GB', name: 'United Kingdom', locationCode: 2826 },
@@ -73,17 +73,18 @@ export const COUNTRIES: { code: string; name: string; locationCode: number }[] =
 ];
 export const DEFAULT_COUNTRY = 'US';
 
-/** Estimated volume from a keyword data vendor (never YouTube data; always labelled). */
-export type KeywordEstimate =
+/**
+ * Relative YouTube search interest from Google Trends (via a vendor), 100 = the peak week in the range.
+ * Not a number of searches, and not YouTube API data.
+ */
+export type KeywordTrends =
   | { status: 'off'; reason: string }
   | { status: 'failed'; reason: string }
   | {
       status: 'ok'; provider: string; label: string; keyword: string; country: string;
-      volume: Measured<number>; monthly: { month: string; volume: number }[];
-      /** Relative YouTube search interest, 0–100 (Google Trends, YouTube search). */
       interest: { date: string; value: number }[];
-      /** Why `interest` is empty when the Trends call failed (then the estimate is not cached). */
-      interestError: string | null;
+      /** Why `interest` is empty, when it is. */
+      note: string | null;
       fetchedAt: string;
     };
 

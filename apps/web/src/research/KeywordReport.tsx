@@ -1,13 +1,13 @@
-import { COUNTRIES, DEFAULT_COUNTRY, type KeywordEstimate, type YourTerms as YourTermsData, normalizeKeyword } from '@viewproof/core';
+import { COUNTRIES, DEFAULT_COUNTRY, type KeywordTrends, type YourTerms as YourTermsData, normalizeKeyword } from '@viewproof/core';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import type { ChannelInfo } from '../api';
 import { type Loaded, useApi } from '../useApi';
-import { Estimate } from './Estimate';
 import { type ExtensionAnswer, askExtension, onKeywordUpdated } from './extension';
 import { recentKeywords, rememberKeyword } from './recent';
 import { Suggestions } from './Suggestions';
 import { TopResults } from './TopResults';
+import { Trends } from './Trends';
 import { YourTerms } from './YourTerms';
 
 export const reportHref = (q: string, country: string) => `/research/keywords?q=${encodeURIComponent(q)}&country=${country}`;
@@ -56,24 +56,24 @@ function KeywordReport(props: { q: string; country: string; channel: ChannelInfo
     return () => { live = false; off(); };
   }, [q]);
   const terms = useApi<YourTermsData>(channel ? `/api/channels/${channel.id}/keyword-terms?q=${encodeURIComponent(q)}` : null);
-  const estimate = useApi<KeywordEstimate>(`/api/keywords/estimate?q=${encodeURIComponent(q)}&country=${country}`);
-  const nothing = noDataAnywhere(ext, channel ? terms : null, estimate);
+  const trends = useApi<KeywordTrends>(`/api/keywords/trends?q=${encodeURIComponent(q)}&country=${country}`);
+  const nothing = noDataAnywhere(ext, channel ? terms : null, trends);
   return (
     <>
       {nothing ? <p className="banner">No data for this keyword from any source yet.</p> : null}
       <TopResults q={q} ext={ext} />
       <Suggestions ext={ext} country={country} />
       <YourTerms channel={channel} r={terms} />
-      <Estimate r={estimate} />
+      <Trends r={trends} />
     </>
   );
 }
 
 /** True only once every source has answered and none had anything. */
-function noDataAnywhere(ext: ExtensionAnswer | null, terms: Loaded<YourTermsData> | null, est: Loaded<KeywordEstimate>): boolean {
+function noDataAnywhere(ext: ExtensionAnswer | null, terms: Loaded<YourTermsData> | null, est: Loaded<KeywordTrends>): boolean {
   if (!ext || est.state === 'loading' || terms?.state === 'loading') return false;
   const hasExt = ext.installed && (!!ext.snapshot?.page.results.length || !!ext.suggestions && Object.values(ext.suggestions).some((l) => l.length > 0));
   const hasTerms = terms?.state === 'ok' && terms.data.terms.length > 0;
-  const hasEst = est.state === 'ok' && est.data.status === 'ok' && est.data.volume.kind === 'value';
+  const hasEst = est.state === 'ok' && est.data.status === 'ok' && est.data.interest.length > 0;
   return !hasExt && !hasTerms && !hasEst;
 }

@@ -37,11 +37,14 @@ function watchPage(data: unknown): string {
 }
 
 async function launch(feedStatus: number): Promise<BrowserContext> {
+  // Chromium 159+ ignores --load-extension: keep extensions enabled and load the build through the DevTools protocol.
   const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'vp-e2e-')), {
     channel: 'chromium',
     headless: true,
-    args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`],
+    args: ['--enable-unsafe-extension-debugging'],
+    ignoreDefaultArgs: ['--disable-extensions'],
   });
+  await (await ctx.browser()!.newBrowserCDPSession()).send('Extensions.loadUnpacked', { path: EXT });
   await ctx.route('https://www.youtube.com/**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/feeds/videos.xml') {

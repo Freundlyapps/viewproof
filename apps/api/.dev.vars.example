@@ -4,7 +4,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 # 32 random bytes, base64. Generate with: openssl rand -base64 32
 TOKEN_KEY=
-# Optional: keyword estimates (spec §6 S5). Off unless DATAFORSEO_DISPLAY_OK=yes.
+# Optional: YouTube search interest (Google Trends via DataForSEO). Off unless DATAFORSEO_DISPLAY_OK=yes.
 # DATAFORSEO_LOGIN=
 # DATAFORSEO_PASSWORD=
 # DATAFORSEO_DISPLAY_OK=
