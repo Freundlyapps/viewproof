@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
 import { authRoutes } from './routes/auth';
+import { connectRoutes } from './routes/connect';
 
 export interface Deps {
   db: D1Database;
@@ -23,5 +24,6 @@ export function createApp(deps: Deps): Hono {
 
   app.get('/health', (c) => c.json({ ok: true }));
   authRoutes(app, deps);
+  connectRoutes(app, deps);
   return app;
 }

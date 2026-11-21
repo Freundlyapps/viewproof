@@ -20,6 +20,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@viewproof/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       hono:
         specifier: ^4.13.19
         version: 4.13.19
@@ -67,6 +70,8 @@ importers:
       fast-xml-parser:
         specifier: ^5.12.1
         version: 5.12.1
+
+  packages/db: {}
 
 packages:
 

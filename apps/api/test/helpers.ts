@@ -20,3 +20,30 @@ export function cookieFrom(res: Response): string {
 export async function readText(res: Response): Promise<string> {
   return (await res.text()).replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 }
+
+import { createApp } from '../src/app';
+import { SCOPES, type GoogleClient, type MyChannel, type TokenSet } from '../src/google';
+
+export const ALL_SCOPES = [...SCOPES.signIn, ...SCOPES.channel];
+export function channelFixture(over: Partial<MyChannel> = {}): MyChannel {
+  return { channelId: 'UCqhp', title: 'Quiet Hands Pottery', handle: '@quiethands', avatarUrl: 'https://yt3.ggpht.com/a.jpg', subscriberCount: 12345, videoCount: 41, ...over };
+}
+
+/**
+ * Runs the real start → callback flow with a fake Google and returns the session cookie,
+ * the pending connection id and the app. Pass `cookie` to connect as an already signed-in user.
+ */
+export async function signIn(opts: { sub: string; channel?: MyChannel; scopes?: string[]; cookie?: string; query?: string; google?: Partial<GoogleClient>; envOver?: Partial<typeof env> }) {
+  const tokens: TokenSet = { accessToken: 'at', refreshToken: `rt-${opts.sub}`, scopes: opts.scopes ?? ALL_SCOPES, idClaims: { sub: opts.sub, email: `${opts.sub}@example.com` } };
+  const google = fakeGoogle({ exchangeCode: async () => tokens, myChannels: async () => [opts.channel ?? channelFixture()], ...opts.google });
+  const app = createApp(makeDeps({ google }, opts.envOver));
+  const start = await app.request(`/auth/google/start${opts.query ?? ''}`, { headers: opts.cookie ? { cookie: opts.cookie } : {} });
+  const state = new URL(start.headers.get('location')!).searchParams.get('state')!;
+  const cb = await app.request(`/auth/google/callback?state=${state}&code=c`, { headers: opts.cookie ? { cookie: opts.cookie } : {} });
+  const pendingId = new URL(cb.headers.get('location')!, APP).searchParams.get('id')!;
+  return { app, google, cookie: opts.cookie ?? cookieFrom(cb), pendingId };
+}
+
+export function post(app: ReturnType<typeof createApp>, path: string, cookie: string, form: Record<string, string> = {}) {
+  return app.request(path, { method: 'POST', headers: { origin: APP, cookie, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form).toString() });
+}
