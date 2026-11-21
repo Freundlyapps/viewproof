@@ -1,13 +1,14 @@
 import { answer, isPageMessage, type ExtensionMessage } from '../src/app-bridge';
 import { SEARCH_KEY, changedQueries, searchStore } from '../src/search';
 import type { SuggestResult } from '../src/suggest';
+import { appMatches } from '../src/app-origins';
 
 /**
  * Runs only on ViewProof's own pages. Hands the web app the keyword snapshots this browser read on YouTube
  * and YouTube's suggestions. Nothing is sent anywhere else.
  */
 export default defineContentScript({
-  matches: ['https://viewproof.app/*', 'http://localhost:8787/*', 'http://localhost:5173/*'],
+  matches: appMatches(import.meta.env.DEV),
   runAt: 'document_start',
   main() {
     const store = searchStore(browser.storage.local);

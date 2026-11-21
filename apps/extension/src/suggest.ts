@@ -42,7 +42,9 @@ export function suggester(deps: { area: chrome.storage.StorageArea; fetch: typeo
           const res = await deps.fetch(`${ENDPOINT}?client=youtube&ds=yt&q=${encodeURIComponent(q)}`, { credentials: 'omit' });
           items = res.ok ? parseSuggestions(await res.text()) : null;
         } catch {
-          items = null;
+          // Offline or a dropped connection is not YouTube refusing: no pause.
+          await deps.area.set({ [THROTTLE_KEY]: { times: recent, pausedUntil: null } satisfies Throttle });
+          return { ok: false, reason: "Couldn't reach YouTube's suggestions (network error); try again." };
         }
         if (!items) {
           const until = now + PAUSE_MS;

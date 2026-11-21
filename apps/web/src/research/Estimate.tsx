@@ -22,6 +22,7 @@ export function Estimate(props: { r: Loaded<KeywordEstimate> }) {
           <tbody>{e.monthly.map((m) => <tr key={m.month}><td>{m.month}</td><td className="num">{fmt.count(m.volume)}</td></tr>)}</tbody>
         </table>
       ) : null}
+      {e.interestError ? <p className="small muted">YouTube search interest: no data ({e.interestError})</p> : null}
       {e.interest.length ? (
         <p className="small muted">YouTube search interest (Google Trends, 100 = peak): {e.interest.map((p) => `${p.date} ${p.value}`).join(' · ')}</p>
       ) : null}

@@ -22,7 +22,7 @@ function counting(answer: (kw: string, c: string) => KeywordEstimate) {
   const p: KeywordProvider = { name: 'fake', estimate: async (kw, c) => (calls.push(`${kw}|${c.code}`), answer(kw, c.code)) };
   return { p, calls };
 }
-const ok = (kw: string, c: string): KeywordEstimate => ({ status: 'ok', provider: 'fake', label: 'Estimate', keyword: kw, country: c, volume: { kind: 'value', value: 1000, formula: 'f', inputs: {} }, monthly: [], interest: [], fetchedAt: '2026-11-21T00:00:00Z' });
+const ok = (kw: string, c: string): KeywordEstimate => ({ status: 'ok', provider: 'fake', label: 'Estimate', keyword: kw, country: c, volume: { kind: 'value', value: 1000, formula: 'f', inputs: {} }, monthly: [], interest: [], interestError: null, fetchedAt: '2026-11-21T00:00:00Z' });
 const get = async (app: ReturnType<typeof createApp>, path: string, cookie = '') => app.request(path, { headers: { cookie } });
 
 describe('keyword estimate', () => {
@@ -115,3 +115,36 @@ describe('your matching search terms', () => {
 });
 
 void noProvider;
+
+describe('review fixes', () => {
+  test('an estimate whose Trends part failed is not cached', async () => {
+    const a = await connected('kw-tr', 'UCkwtr');
+    const { p, calls } = counting((kw, c) => ({ ...ok(kw, c), interestError: 'DataForSEO: Internal error.' }) as KeywordEstimate);
+    const app = createApp(makeDeps({ keywords: p }));
+    await get(app, '/api/keywords/estimate?q=slip', a.cookie);
+    await get(app, '/api/keywords/estimate?q=slip', a.cookie);
+    expect(calls).toHaveLength(2);
+  });
+
+  test('each user gets 50 new paid lookups a day; cached keywords still work', async () => {
+    const a = await connected('kw-cap', 'UCkwcap');
+    const b = await connected('kw-cap2', 'UCkwcap2');
+    const { p, calls } = counting(ok);
+    const app = createApp(makeDeps({ keywords: p, now: () => NOW }));
+    for (let i = 0; i < 50; i++) expect((await get(app, `/api/keywords/estimate?q=cap${i}`, a.cookie)).status).toBe(200);
+    const over = await get(app, '/api/keywords/estimate?q=cap-over', a.cookie);
+    expect(over.status).toBe(429);
+    expect(await over.json()).toEqual({ error: 'limit', message: 'You reached 50 new keyword estimates today; keywords looked up before still work. More tomorrow.' });
+    expect((await get(app, '/api/keywords/estimate?q=cap0', a.cookie)).status).toBe(200);
+    expect((await get(app, '/api/keywords/estimate?q=cap-over', b.cookie)).status).toBe(200);
+    expect(calls).toHaveLength(51);
+  }, 120_000);
+
+  test('with no provider configured, lookups are not counted', async () => {
+    const a = await connected('kw-none-cap', 'UCkwnonecap');
+    const app = createApp(makeDeps({ now: () => NOW }));
+    for (let i = 0; i < 52; i++) await get(app, `/api/keywords/estimate?q=n${i}`, a.cookie);
+    expect((await get(app, '/api/keywords/estimate?q=last', a.cookie)).status).toBe(200);
+    expect(await env.DB.prepare('SELECT count FROM keyword_lookups WHERE user_id = (SELECT user_id FROM channels WHERE channel_id = ?)').bind('UCkwnonecap').first()).toBeNull();
+  }, 120_000);
+});

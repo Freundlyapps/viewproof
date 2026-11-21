@@ -72,12 +72,13 @@ function duration(s: string | null): number | null {
 function result(v: Obj): SearchResult {
   const viewsText = text(v.viewCountText) ?? '';
   const live = /watching|zuschauer/i.test(viewsText) || (v.badges ?? []).some((b: Obj) => b.metadataBadgeRenderer?.style === 'BADGE_STYLE_TYPE_LIVE_NOW');
-  const digits = viewsText.replace(/\D/g, '');
+  // Only a fully written number followed by a view word: abbreviations (1.2M, 1,2 Mio.) and premieres ("123 waiting") are not view counts.
+  const full = /^(\d{1,3}(?:[.,\s\u00a0\u202f]\d{3})*|\d+)\s*(views?|aufrufe?)$/i.exec(viewsText.trim());
   let views: Measured<number>;
   if (live) views = noData('Live now: viewers, not views');
   else if (/^no views|^keine aufrufe/i.test(viewsText)) views = value(0, PAGE_SOURCE, { text: viewsText });
-  else if (digits) views = value(Number(digits), PAGE_SOURCE, { text: viewsText });
-  else views = noData('YouTube showed no view count for this result');
+  else if (full) views = value(Number(full[1]!.replace(/\D/g, '')), PAGE_SOURCE, { text: viewsText });
+  else views = noData(viewsText ? `View count not understood: ${viewsText}` : 'YouTube showed no view count for this result');
   const ageLabel = text(v.publishedTimeText);
   const days = ageLabel ? parseAge(ageLabel) : null;
   const ageDays = days !== null ? value(days, PAGE_SOURCE, { text: ageLabel! })

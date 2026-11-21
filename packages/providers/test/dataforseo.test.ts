@@ -91,3 +91,41 @@ describe('dataForSeoProvider', () => {
 test('noProvider says off', async () => {
   expect(await noProvider('none configured').estimate('x', US)).toEqual({ status: 'off', reason: 'none configured' });
 });
+
+describe('review fixes', () => {
+  test("another keyword's row is never used", async () => {
+    const { fn } = fakeFetch({ clickstream: clickstream(), trends: trends() });
+    const r = await dataForSeoProvider(fn, { login: 'l', password: 'p' }).estimate('pottery wheel', US);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.volume).toEqual({ kind: 'no_data', reason: 'DataForSEO returned no row for this keyword' });
+  });
+
+  test('matches the row by normalized keyword', async () => {
+    const c = oneKeyword('you tube');
+    c.tasks[0].result[0].items[0].keyword = 'You  Tube';
+    const { fn } = fakeFetch({ clickstream: c, trends: trends() });
+    const r = await dataForSeoProvider(fn, { login: 'l', password: 'p' }).estimate('you tube', US);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.volume.kind).toBe('value');
+  });
+
+  test('a failed Trends call is reported, not silent', async () => {
+    const t = trends();
+    t.tasks[0].status_code = 50000;
+    t.tasks[0].status_message = 'Internal error.';
+    const { fn } = fakeFetch({ clickstream: oneKeyword('youtub'), trends: t });
+    const r = await dataForSeoProvider(fn, { login: 'l', password: 'p' }).estimate('youtub', US);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.interestError).toBe('DataForSEO: Internal error.');
+    const ok = await dataForSeoProvider(fakeFetch({ clickstream: oneKeyword('youtub'), trends: trends() }).fn, { login: 'l', password: 'p' }).estimate('youtub', US);
+    if (ok.status !== 'ok') throw new Error(ok.status);
+    expect(ok.interestError).toBeNull();
+  });
+
+  test('fetchedAt from the injected clock', async () => {
+    const { fn } = fakeFetch({ clickstream: oneKeyword('youtub'), trends: trends() });
+    const r = await dataForSeoProvider(fn, { login: 'l', password: 'p' }, () => Date.parse('2026-11-21T00:00:00Z')).estimate('youtub', US);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.fetchedAt).toBe('2026-11-21T00:00:00.000Z');
+  });
+});

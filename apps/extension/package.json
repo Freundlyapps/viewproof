@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "wxt build",
+    "build:dev": "wxt build --mode development",
     "dev": "wxt",
     "test": "vitest run",
     "typecheck": "wxt prepare && tsc -p tsconfig.json",

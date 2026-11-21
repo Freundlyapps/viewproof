@@ -1,4 +1,4 @@
-import { type KeywordEstimate, noData, value } from '@viewproof/core';
+import { type KeywordEstimate, noData, normalizeKeyword, value } from '@viewproof/core';
 import { ESTIMATE_LABEL, type KeywordProvider } from './keyword-provider';
 
 const BASE = 'https://api.dataforseo.com/v3/keywords_data';
@@ -10,7 +10,7 @@ type Answer = { ok: true; result: Obj } | { ok: false; reason: string };
  * DataForSEO: clickstream monthly volume (bulk_search_volume) + Google Trends with YouTube search (explore, type youtube).
  * Response paths follow the documented examples (test/fixtures). Absent fields are no_data, never a default.
  */
-export function dataForSeoProvider(fetchFn: typeof fetch, creds: { login: string; password: string }): KeywordProvider {
+export function dataForSeoProvider(fetchFn: typeof fetch, creds: { login: string; password: string }, now: () => number = () => Date.now()): KeywordProvider {
   const auth = `Basic ${btoa(`${creds.login}:${creds.password}`)}`;
   async function post(path: string, body: unknown): Promise<Answer> {
     let res: Response;
@@ -35,7 +35,8 @@ export function dataForSeoProvider(fetchFn: typeof fetch, creds: { login: string
         post('google_trends/explore/live', [{ keywords: [keyword], location_code: country.locationCode, type: 'youtube', time_range: 'past_12_months' }]),
       ]);
       if (!vol.ok) return { status: 'failed', reason: vol.reason };
-      const item = (vol.result.items as Obj[] | undefined)?.find((i) => i.keyword === keyword) ?? (vol.result.items as Obj[] | undefined)?.[0];
+      // Only the row for this keyword; another keyword's volume is never shown in its place.
+      const item = (vol.result.items as Obj[] | undefined)?.find((i) => typeof i.keyword === 'string' && normalizeKeyword(i.keyword) === normalizeKeyword(keyword));
       const sv = item?.search_volume;
       const monthly = Array.isArray(item?.monthly_searches)
         ? (item.monthly_searches as Obj[]).filter((m) => typeof m.search_volume === 'number' && typeof m.year === 'number' && typeof m.month === 'number')
@@ -52,10 +53,12 @@ export function dataForSeoProvider(fetchFn: typeof fetch, creds: { login: string
         label: ESTIMATE_LABEL,
         keyword,
         country: country.code,
-        volume: typeof sv === 'number' ? value(sv, 'DataForSEO clickstream monthly average', { keyword, location_code: country.locationCode }) : noData('DataForSEO has no volume for this keyword'),
+        volume: !item ? noData(vol.result.items?.length ? 'DataForSEO returned no row for this keyword' : 'DataForSEO has no volume for this keyword')
+          : typeof sv === 'number' ? value(sv, 'DataForSEO clickstream monthly average', { keyword, location_code: country.locationCode }) : noData('DataForSEO has no volume for this keyword'),
         monthly,
         interest,
-        fetchedAt: new Date().toISOString(),
+        interestError: tr.ok ? null : tr.reason,
+        fetchedAt: new Date(now()).toISOString(),
       };
     },
   };

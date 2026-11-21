@@ -125,3 +125,19 @@ describe('research', () => {
     expect(JSON.parse(localStorage.getItem('vp-keywords') ?? '[]')).toEqual(['kiln']);
   });
 });
+
+describe('review fixes', () => {
+  test('a slow answer (suggestions being fetched) still counts as installed', async () => {
+    api();
+    ext = fakeExtension({ snapshots: { [KW]: fixtureSnapshot() }, delayMs: 2500 });
+    renderAt(at());
+    expect(await screen.findByText('Florian Gadsby has 5 of the top 18 results.', {}, { timeout: 6000 })).toBeTruthy();
+    expect(screen.queryByText(/Install the ViewProof extension/)).toBeNull();
+  }, 15_000);
+});
+
+test('a failed interest series says why', async () => {
+  api({ '/api/keywords/estimate': { status: 'ok', provider: 'DataForSEO', label: 'Estimate — clickstream panel, not YouTube data', keyword: KW, country: 'US', volume: { kind: 'value', value: 5, formula: 'f', inputs: {} }, monthly: [], interest: [], interestError: 'DataForSEO: Internal error.', fetchedAt: '2026-11-21T12:00:00Z' } });
+  renderAt(at());
+  expect(await screen.findByText('YouTube search interest: no data (DataForSEO: Internal error.)')).toBeTruthy();
+});

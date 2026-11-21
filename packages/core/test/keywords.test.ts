@@ -133,3 +133,20 @@ describe('containsKeyword', () => {
     expect(containsKeyword('bowl trimming tool', 'trim bowl')).toBe(false);
   });
 });
+
+describe('review fixes: view counts', () => {
+  const withViews = (t: string) => {
+    const r = raw();
+    items(r).find((i) => i.videoRenderer).videoRenderer.viewCountText = { simpleText: t };
+    return page(r).results[0]!.views;
+  };
+  test('only a fully written number followed by a view word is a view count', () => {
+    expect(withViews('2,061,788 views')).toMatchObject({ kind: 'value', value: 2061788 });
+    expect(withViews('2.061.788 Aufrufe')).toMatchObject({ kind: 'value', value: 2061788 });
+    expect(withViews('1 view')).toMatchObject({ kind: 'value', value: 1 });
+    expect(withViews('No views')).toMatchObject({ kind: 'value', value: 0 });
+    expect(withViews('123 waiting')).toEqual({ kind: 'no_data', reason: 'View count not understood: 123 waiting' });
+    expect(withViews('1.2M views')).toEqual({ kind: 'no_data', reason: 'View count not understood: 1.2M views' });
+    expect(withViews('1,2 Mio. Aufrufe')).toEqual({ kind: 'no_data', reason: 'View count not understood: 1,2 Mio. Aufrufe' });
+  });
+});

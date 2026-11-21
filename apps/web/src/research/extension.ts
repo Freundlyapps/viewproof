@@ -7,23 +7,29 @@ export type ExtensionAnswer =
 const fromExtension = (e: MessageEvent) => e.origin === location.origin && !!e.data && typeof e.data === 'object';
 let seq = 0;
 
+/** Wait for one message from the extension matching `want`, or null after the timeout. */
+function waitFor<T>(want: (d: any) => boolean, timeoutMs: number, send: () => void): Promise<T | null> {
+  return new Promise((resolve) => {
+    const done = (v: T | null) => { window.removeEventListener('message', onMsg); clearTimeout(timer); resolve(v); };
+    const onMsg = (e: MessageEvent) => { if (fromExtension(e) && want(e.data)) done(e.data as T); };
+    const timer = setTimeout(() => done(null), timeoutMs);
+    window.addEventListener('message', onMsg);
+    send();
+  });
+}
+
 /**
  * Ask the ViewProof extension (its content script on this page) for what this browser read on YouTube for a keyword.
- * No answer within the timeout means the extension isn't installed (or not enabled for this site).
+ * "Installed" is decided by a quick hello; the keyword answer may take longer (YouTube's suggestions are fetched first).
  */
-export function askExtension(q: string, timeoutMs = 1500): Promise<ExtensionAnswer> {
+export async function askExtension(q: string, helloMs = 1500, answerMs = 20_000): Promise<ExtensionAnswer> {
+  const here = await waitFor<{ version: string }>((d) => d.type === 'viewproof:here', helloMs, () => window.postMessage({ type: 'viewproof:hello' }, location.origin));
+  if (!here) return { installed: false };
   const id = `kw${++seq}-${Date.now()}`;
-  return new Promise((resolve) => {
-    const done = (a: ExtensionAnswer) => { window.removeEventListener('message', onMsg); clearTimeout(timer); resolve(a); };
-    const onMsg = (e: MessageEvent) => {
-      if (!fromExtension(e) || e.data.type !== 'viewproof:kw-response' || e.data.id !== id) return;
-      const d = e.data as Extract<ExtensionAnswer, { installed: true }>;
-      done({ installed: true, version: d.version, snapshot: d.snapshot ?? null, suggestions: d.suggestions ?? null, suggestionsError: d.suggestionsError ?? null });
-    };
-    const timer = setTimeout(() => done({ installed: false }), timeoutMs);
-    window.addEventListener('message', onMsg);
-    window.postMessage({ type: 'viewproof:kw-request', id, q }, location.origin);
-  });
+  const d = await waitFor<Extract<ExtensionAnswer, { installed: true }>>((m) => m.type === 'viewproof:kw-response' && m.id === id, answerMs,
+    () => window.postMessage({ type: 'viewproof:kw-request', id, q }, location.origin));
+  if (!d) return { installed: true, version: here.version, snapshot: null, suggestions: null, suggestionsError: 'The extension did not answer in time; reload the page to try again.' };
+  return { installed: true, version: d.version, snapshot: d.snapshot ?? null, suggestions: d.suggestions ?? null, suggestionsError: d.suggestionsError ?? null };
 }
 
 /** Called when the extension reads a new YouTube search (the user searched in another tab). */

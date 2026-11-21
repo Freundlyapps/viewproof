@@ -2,7 +2,7 @@
 import type { Measured } from './measured';
 import type { Coverage, RangeKey, periodFor } from './period';
 
-export type ApiErrorCode = 'signed_out' | 'not_found' | 'reconnect' | 'gone' | 'google_failed';
+export type ApiErrorCode = 'signed_out' | 'not_found' | 'reconnect' | 'gone' | 'google_failed' | 'bad_request' | 'limit';
 export interface ApiError { error: ApiErrorCode; message: string }
 
 /** A YouTube value for the chosen period and the same-length period before it (no % change: III.E.4.h). */
@@ -82,6 +82,8 @@ export type KeywordEstimate =
       volume: Measured<number>; monthly: { month: string; volume: number }[];
       /** Relative YouTube search interest, 0–100 (Google Trends, YouTube search). */
       interest: { date: string; value: number }[];
+      /** Why `interest` is empty when the Trends call failed (then the estimate is not cached). */
+      interestError: string | null;
       fetchedAt: string;
     };
 

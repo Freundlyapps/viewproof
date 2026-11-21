@@ -11,15 +11,15 @@ export function fixtureSnapshot(query = 'pottery wheel for beginners', capturedA
 }
 
 /** Answers window messages exactly like the extension's content script on ViewProof pages. Returns a remover. */
-export function fakeExtension(opts: { snapshots?: Record<string, KeywordSnapshot>; suggestions?: KeywordSuggestions | null; suggestionsError?: string | null } = {}) {
+export function fakeExtension(opts: { snapshots?: Record<string, KeywordSnapshot>; suggestions?: KeywordSuggestions | null; suggestionsError?: string | null; delayMs?: number } = {}) {
   const onMsg = (e: MessageEvent) => {
     const d = e.data as { type?: string; id?: string; q?: string };
     if (d?.type === 'viewproof:hello') window.postMessage({ type: 'viewproof:here', version: '0.2.0' }, '*');
     if (d?.type === 'viewproof:kw-request') {
-      window.postMessage({
+      setTimeout(() => window.postMessage({
         type: 'viewproof:kw-response', id: d.id, version: '0.2.0', snapshot: opts.snapshots?.[d.q!.trim().toLowerCase().replace(/\s+/g, ' ')] ?? null,
         suggestions: opts.suggestions ?? null, suggestionsError: opts.suggestionsError ?? null,
-      }, '*');
+      }, '*'), opts.delayMs ?? 0);
     }
   };
   window.addEventListener('message', onMsg);

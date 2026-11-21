@@ -58,6 +58,8 @@ Run it locally: set up `apps/api` (see [apps/api/README.md](apps/api/README.md))
 - **Your search terms** (REAL): the real searches that brought viewers to your channel (YouTube Analytics, your top 25 over 90 days) that contain the keyword.
 - **Estimated monthly searches** (ESTIMATE): only when a keyword data vendor is configured. The DataForSEO adapter (clickstream volume plus Google Trends for YouTube search) is labelled "Estimate — clickstream panel, not YouTube data" and is off unless `DATAFORSEO_DISPLAY_OK=yes` (see [apps/api/README.md](apps/api/README.md)). YouTube doesn't publish search volume; every tool's volume is an estimate.
 
+The report reads the extension through a small script on ViewProof's own pages. The store build runs it only on `viewproof.app`. For a local server (`http://localhost:8787`), load the development build instead: run `pnpm --filter extension build:dev`, then load `apps/extension/.output/chrome-mv3-dev`.
+
 ## Repository layout
 
 - `packages/core`: scores, parsers and API types shared by every part (views per hour, outlier ×N, feed and player parsers, My channel rules).
