@@ -3,6 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2026-08-15"
 compatibility_flags = ["nodejs_compat"]
 
+# The React app, built by `pnpm --filter web build` into apps/web/dist/app and served at /app.
+# The Worker runs first so /api, /auth and /account are never shadowed; html_handling none so the
+# Worker can fetch /app/index.html directly for app routes.
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "viewproof"

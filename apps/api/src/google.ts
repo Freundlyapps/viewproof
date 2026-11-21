@@ -21,7 +21,7 @@ export interface MyChannel {
   videoCount: number | null;
 }
 
-export type GoogleError = { kind: 'revoked' } | { kind: 'failed'; reason: string };
+export type GoogleError = { kind: 'revoked' } | { kind: 'failed'; reason: string } | { kind: 'forbidden'; reason: string };
 
 export interface GoogleClient {
   /** consent=false only for a plain returning sign-in: Google then skips the permission screen it already has. */

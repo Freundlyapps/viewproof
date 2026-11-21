@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
+import type { YouTubeClient } from './youtube';
 import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
+import { channelRoutes } from './routes/channel';
 import { connectRoutes } from './routes/connect';
 import { readSession } from './session';
 import { Home } from './views/Home';
@@ -11,8 +13,13 @@ export interface Deps {
   db: D1Database;
   config: Config;
   google: GoogleClient;
+  youtube: YouTubeClient;
   now: () => number;
+  /** Built web app (Workers Static Assets binding); absent when not configured. */
+  assets?: { fetch(req: Request): Promise<Response> };
 }
+
+const NO_BUILD = 'The web app is not built yet. Run: pnpm --filter web build';
 
 function originOf(h: string | undefined): string | null {
   try {
@@ -34,9 +41,25 @@ export function createApp(deps: Deps): Hono {
   });
 
   app.get('/health', (c) => c.json({ ok: true }));
-  app.get('/', async (c) => c.html(Home({ signedIn: (await readSession(c, deps)) !== null })));
+  app.get('/', async (c) => ((await readSession(c, deps)) ? c.redirect('/app', 302) : c.html(Home({ signedIn: false }))));
+
+  // The React app (apps/web, built to apps/web/dist/app). Unknown /app paths are app routes → index.html;
+  // missing files stay 404 so a broken build is visible.
+  app.get('/app/*', async (c) => serveApp(c.req.raw, c.req.path));
+  app.get('/app', async (c) => serveApp(c.req.raw, c.req.path));
+  async function serveApp(req: Request, path: string): Promise<Response> {
+    if (!deps.assets) return new Response(NO_BUILD, { status: 503 });
+    if (path !== '/app' && path !== '/app/') {
+      const file = await deps.assets.fetch(req);
+      // A path naming a file (has an extension) that isn't there is a 404; only app routes get index.html.
+      if (file.ok || path.startsWith('/app/assets/') || /\.[^/]+$/.test(path)) return file;
+    }
+    const index = await deps.assets.fetch(new Request(new URL('/app/index.html', req.url)));
+    return index.ok ? index : new Response(NO_BUILD, { status: 503 });
+  }
   authRoutes(app, deps);
   connectRoutes(app, deps);
   accountRoutes(app, deps);
+  channelRoutes(app, deps);
   return app;
 }

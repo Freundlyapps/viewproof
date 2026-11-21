@@ -6,6 +6,8 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   TOKEN_KEY: string;
+  /** Built web app (apps/web/dist), see wrangler.toml [assets]. */
+  ASSETS?: Fetcher;
 }
 
 export interface Config {

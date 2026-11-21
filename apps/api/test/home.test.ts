@@ -9,10 +9,9 @@ describe('home', () => {
     expect(html).toContain('href="/auth/google/start"');
     expect(html).toContain('view only');
   });
-  test('signed in: links to the account', async () => {
+  test('signed in: goes to the app', async () => {
     const { app, cookie } = await signIn({ sub: 'h-in' });
-    const html = await readText(await app.request('/', { headers: { cookie } }));
-    expect(html).toContain('href="/account"');
-    expect(html).not.toContain('Sign in with Google');
+    const res = await app.request('/', { headers: { cookie } });
+    expect(res.headers.get('location')).toBe('/app');
   });
 });
