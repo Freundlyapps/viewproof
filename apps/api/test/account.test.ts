@@ -95,7 +95,7 @@ describe('json api', () => {
     expect(me).toMatchObject({ email: 'a-json@example.com', plan: 'free', maxChannels: 1 });
     const res = await app.request('/api/channels', { headers: { cookie } });
     const text = await res.text();
-    expect(JSON.parse(text)).toEqual([expect.objectContaining({ channelId: 'UCjson', title: 'Title UCjson', status: 'active', statusReason: null })]);
+    expect(JSON.parse(text)).toEqual([expect.objectContaining({ channelId: 'UCjson', title: 'Title UCjson', status: 'active', statusReason: null, revenueAccess: false })]);
     const enc = (await env.DB.prepare('SELECT refresh_token_enc FROM channels WHERE channel_id = ?').bind('UCjson').first<{ refresh_token_enc: string }>())!.refresh_token_enc;
     expect(text).not.toContain(enc);
     expect(text).not.toContain('v1.');

@@ -3,6 +3,7 @@ import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
 import { REVOKED_REASON, UNREADABLE_REASON } from '../channel-data';
 import { releaseGrant, tryDecrypt } from '../grants';
+import { SCOPES } from '../google';
 import { maxChannels } from '../plans';
 import { clearSession, readSession } from '../session';
 import { Account } from '../views/Account';
@@ -102,6 +103,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       (await channelsOf(deps, s.userId)).map((ch) => ({
         id: ch.id, platform: ch.platform, channelId: ch.channel_id, title: ch.title, handle: ch.handle, avatarUrl: ch.avatar_url,
         status: ch.status, statusReason: ch.status_reason, connectedAt: ch.connected_at, lastVerifiedAt: ch.last_verified_at,
+        revenueAccess: ch.scopes.split(' ').includes(SCOPES.revenue),
       })),
     );
   });

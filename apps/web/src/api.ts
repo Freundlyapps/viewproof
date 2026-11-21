@@ -3,7 +3,7 @@ import type { ApiError } from '@viewproof/core';
 export interface Me { id: string; email: string | null; name: string | null; plan: string; maxChannels: number | null }
 export interface ChannelInfo {
   id: string; platform: string; channelId: string; title: string | null; handle: string | null; avatarUrl: string | null;
-  status: 'active' | 'reconnect' | 'gone'; statusReason: string | null; connectedAt: string; lastVerifiedAt: string;
+  status: 'active' | 'reconnect' | 'gone'; statusReason: string | null; connectedAt: string; lastVerifiedAt: string; revenueAccess: boolean;
 }
 
 export const isApiError = (x: unknown): x is ApiError => !!x && typeof x === 'object' && 'error' in x && typeof (x as ApiError).error === 'string';
