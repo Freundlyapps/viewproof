@@ -11,3 +11,4 @@ export interface ChannelRow {
   id: string; user_id: string; platform: 'youtube'; channel_id: string; title: string | null; handle: string | null; avatar_url: string | null;
   scopes: string; refresh_token_enc: string; status: ChannelStatus; status_reason: string | null; connected_at: string; last_verified_at: string;
 }
+export interface ReportCacheRow { channel_id: string; key: string; body: string; fetched_at: string }

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
+import type { YouTubeClient } from './youtube';
 import { accountRoutes } from './routes/account';
 import { authRoutes } from './routes/auth';
 import { connectRoutes } from './routes/connect';
@@ -11,6 +12,7 @@ export interface Deps {
   db: D1Database;
   config: Config;
   google: GoogleClient;
+  youtube: YouTubeClient;
   now: () => number;
 }
 

@@ -1,6 +1,7 @@
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
+import { REVOKED_REASON, UNREADABLE_REASON } from '../channel-data';
 import { releaseGrant, tryDecrypt } from '../grants';
 import { maxChannels } from '../plans';
 import { clearSession, readSession } from '../session';
@@ -27,17 +28,17 @@ async function checkChannel(deps: Deps, ch: ChannelRow): Promise<void> {
       .run();
 
   const stored = await tryDecrypt(deps, ch.refresh_token_enc);
-  if (!stored) return void (await set('reconnect', "Stored access can't be read; reconnect", true));
+  if (!stored) return void (await set('reconnect', UNREADABLE_REASON, true));
   const token = await deps.google.refresh(stored);
   if ('kind' in token) {
     return void (await (token.kind === 'revoked'
-      ? set('reconnect', 'Google access was removed or expired', true)
+      ? set('reconnect', REVOKED_REASON, true)
       : set(ch.status, `Check failed: ${token.reason}`, false)));
   }
   const list = await deps.google.myChannels(token.accessToken);
   if ('kind' in list) {
     return void (await (list.kind === 'revoked'
-      ? set('reconnect', 'Google access was removed or expired', true)
+      ? set('reconnect', REVOKED_REASON, true)
       : set(ch.status, `Check failed: ${list.reason}`, false)));
   }
   const now = list.find((x) => x.channelId === ch.channel_id);
@@ -51,7 +52,10 @@ async function checkChannel(deps: Deps, ch: ChannelRow): Promise<void> {
 /** Delete a channel and revoke its access. Returns false when the stored token couldn't be read (revoke by hand). */
 export async function revokeAndDelete(deps: Deps, ch: ChannelRow): Promise<boolean> {
   const token = await tryDecrypt(deps, ch.refresh_token_enc);
-  await deps.db.prepare('DELETE FROM channels WHERE id = ?').bind(ch.id).run();
+  await deps.db.batch([
+    deps.db.prepare('DELETE FROM report_cache WHERE channel_id = ?').bind(ch.id),
+    deps.db.prepare('DELETE FROM channels WHERE id = ?').bind(ch.id),
+  ]);
   if (token) await deps.google.revoke(token);
   return token !== null;
 }
@@ -138,6 +142,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     const pendingTokens = await Promise.all(pending.map((p) => tryDecrypt(deps, p.refresh_token_enc)));
     await clearSession(c, deps);
     await deps.db.batch([
+      deps.db.prepare('DELETE FROM report_cache WHERE channel_id IN (SELECT id FROM channels WHERE user_id = ?)').bind(s.userId),
       deps.db.prepare('DELETE FROM oauth_states WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM pending_connections WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM channels WHERE user_id = ?').bind(s.userId),
