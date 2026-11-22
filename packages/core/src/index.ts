@@ -14,3 +14,4 @@ export * from './keywords';
 export * from './competitors';
 export * from './pool';
 export * from './checklist';
+export * from './channel-page';

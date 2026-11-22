@@ -38,9 +38,7 @@ export function outlierScore(args: {
   const med = median(chosen.map((b) => b.views))!;
   if (med <= 0) return noData('Earlier videos have no views yet');
 
-  const ratio = video.views / med;
-  // One decimal from ×1 up; two significant figures below, so tiny ratios never read as ×0.
-  const score = ratio >= 1 ? Math.round(ratio * 10) / 10 : Number(ratio.toPrecision(2));
+  const score = roundRatio(video.views / med);
   return value(score, "views ÷ median views of the channel's earlier videos", {
     views: video.views,
     baselineMedian: med,
@@ -48,4 +46,9 @@ export function outlierScore(args: {
     mixedFormats: chosen.some((b) => b.format === 'unknown'),
     negative: score <= NEGATIVE_OUTLIER,
   });
+}
+
+/** One decimal from ×1 up; two significant figures below, so tiny ratios never read as ×0. */
+export function roundRatio(ratio: number): number {
+  return ratio >= 1 ? Math.round(ratio * 10) / 10 : Number(ratio.toPrecision(2));
 }
