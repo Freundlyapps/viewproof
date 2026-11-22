@@ -52,15 +52,15 @@ describe('pool', () => {
       expect(cols.some((c) => /user|token/.test(c)), `${t}: ${cols}`).toBe(false);
     }
     const [b] = await (await app().request('/api/pool/browsers', { headers: { cookie } })).json<PoolBrowser[]>();
-    expect(b).toMatchObject({ id: browser.id, acceptedToday: 2, rejectedToday: 0, acceptedTotal: 2, lastUsedAt: iso(T0) });
+    expect(b).toMatchObject({ id: browser.id, acceptedToday: 2, rejectedToday: 0, acceptedTotal: 2, lastUsedAt: '2026-11-22T00:00:00.000Z' }); // day precision only
   });
 
-  test('plausibility against stored history; bad items named', async () => {
+  test('history is checked against the feed only, never other contributions; bad items named', async () => {
     const { token } = await link(await cookieFor('pl-plaus'));
     await send(token, { v: 1, observations: [obs({ videoId: 'ccccccccccc', views: 10000, observedAt: iso(T0 - 2 * H) })] });
     const r = await (await send(token, { v: 1, observations: [obs({ videoId: 'ccccccccccc', views: 10, observedAt: iso(T0 - H) }), obs({ videoId: 'bad' })] })).json<ContributeResult>();
-    expect(r).toEqual({ accepted: 0, rejected: 2, reasons: ['views fell from 10000 to 10', 'videoId: not a YouTube video id'] });
-    expect(await count("SELECT COUNT(*) n FROM pool_observations WHERE video_id = 'ccccccccccc'")).toBe(1);
+    expect(r).toEqual({ accepted: 1, rejected: 1, reasons: ['videoId: not a YouTube video id'] });
+    expect(await count("SELECT COUNT(*) n FROM pool_observations WHERE video_id = 'ccccccccccc'")).toBe(2);
   });
 
   test('batch limits', async () => {
@@ -82,14 +82,14 @@ describe('pool', () => {
     expect(await count("SELECT COUNT(*) n FROM pool_observations WHERE video_id = 'eeeeeeeeeee'")).toBe(1);
   });
 
-  test('suspended after 200 rejections in a day', async () => {
+  test('account paused after 200 malformed items in a day', async () => {
     const cookie = await cookieFor('pl-susp');
     const { token } = await link(cookie);
     const bad = Array.from({ length: 201 }, () => obs({ videoId: 'x' }));
     expect(await (await send(token, { v: 1, observations: bad })).json<ContributeResult>()).toMatchObject({ rejected: 201 });
     const r = await send(token, { v: 1, observations: [obs({ videoId: 'fffffffffff' })] });
     expect(r.status).toBe(403);
-    expect(await r.json()).toEqual({ error: 'limit', message: 'Contribution paused: too much data was rejected.' });
+    expect(await r.json()).toEqual({ error: 'limit', message: 'Contribution paused for 7 days: too much data was rejected.' });
     const [b] = await (await app().request('/api/pool/browsers', { headers: { cookie } })).json<PoolBrowser[]>();
     expect(b!.status).toBe('suspended');
   });

@@ -24,14 +24,14 @@ You can share the public facts of the videos you see on YouTube. They let Outlie
 2. Agree on the extension's data-sharing page, which opens after linking.
 
 - **Sent:** video and channel ids, title, view count, upload time or age, length, Short or long, from watch and search pages you open. Batches go every 5 minutes, only to the server you linked.
-- **Never sent:** who you are on YouTube, cookies, watch time, your searches.
-- **On the server:** observations are stored without your name or browser. The server keeps only how many items each linked browser sent per day.
+- **Never sent:** who you are on YouTube, cookies, watch time, or the words you type into YouTube's search box. The facts of the results you see are sent.
+- **On the server:** observations are stored without your name or browser, at hour precision; when a video or channel was seen, and when a browser last sent, are kept to the day. So no timestamp can pair a person with what they watched. The server keeps only how many items each linked browser sent per day.
 - **Checks:** before anything is kept, the server checks each item:
   - its format;
   - YouTube id shapes;
   - view counts can't fall more than 1 % or grow faster than 1 million an hour;
   - at most 300 items per batch and 3,000 per browser per day.
-  A browser with more than 200 rejected items in a day is paused.
+  Counts are compared with the channel's own public feed, never with what other browsers sent, so one browser can't make others fail. More than 200 malformed items from a browser in a day pause the whole account for 7 days. An account can link up to 5 browsers, and each browser can introduce at most 200 new channels a day.
 - **Never shown as numbers:** the values a browser sent are not shown directly. Outliers shows views, views per hour and ×N from each channel's public feed. Shared facts only tell the server which videos and channels to look at.
 - **Your record:** the extension's data-sharing page lists every item it sent. Stop sharing, unlink or clear the list there at any time.
 - **Self-hosting:** the store build links only to `viewproof.app`. To link to your own server, add your origin to `src/app-origins.ts` and build the extension yourself.

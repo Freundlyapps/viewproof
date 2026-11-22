@@ -73,16 +73,20 @@ export async function ingestFeed(deps: Deps, channelId: string, xml: string): Pr
 
 /** Poll up to `max` channels whose window has passed, never-polled and oldest first. Returns how many were tried. */
 export async function pollStale(deps: Deps, max: number, channelIds?: string[], kind?: 'tracked' | 'pool'): Promise<number> {
+  if (max <= 0) return 0;
   const cutoff = new Date(deps.now() - POLL_EVERY_MS).toISOString();
   const poolCutoff = new Date(deps.now() - POOL_SEEN_DAYS * DAY_MS).toISOString();
   const scope = channelIds ? ` AND channel_id IN (${channelIds.map(() => '?').join(',') || "''"})` : '';
   const tracked = 'channel_id IN (SELECT channel_id FROM user_competitors)';
   // Pool channels: seen by a contribution in the last 30 days and tracked by nobody (tracked ones have their own budget).
-  const kindSql = kind === 'tracked' ? ` AND ${tracked}` : kind === 'pool' ? ` AND NOT ${tracked} AND channel_id IN (SELECT channel_id FROM pool_channels WHERE last_seen_at >= ?)` : '';
+  // A pool channel whose feed never read (junk or deleted id) is retried once a week, so it can't crowd out real ones.
+  const kindSql = kind === 'tracked' ? ` AND ${tracked}` : kind === 'pool'
+    ? ` AND NOT ${tracked} AND channel_id IN (SELECT channel_id FROM pool_channels WHERE last_seen_at >= ?) AND NOT (last_poll_ok_at IS NULL AND last_polled_at IS NOT NULL AND last_polled_at >= ?)`
+    : '';
   const due = (await deps.db.prepare(
     `SELECT channel_id FROM tracked_channels WHERE (last_polled_at IS NULL OR last_polled_at < ?)${scope}${kindSql}
      ORDER BY last_polled_at IS NOT NULL, last_polled_at LIMIT ?`,
-  ).bind(cutoff, ...(channelIds ?? []), ...(kind === 'pool' ? [poolCutoff] : []), max).all<{ channel_id: string }>()).results;
+  ).bind(cutoff, ...(channelIds ?? []), ...(kind === 'pool' ? [poolCutoff, new Date(deps.now() - 7 * DAY_MS).toISOString()] : []), max).all<{ channel_id: string }>()).results;
   for (const d of due) await pollChannel(deps, d.channel_id);
   return due.length;
 }

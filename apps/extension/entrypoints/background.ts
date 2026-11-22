@@ -13,7 +13,8 @@ export default defineBackground(() => {
   const pool = poolStore(browser.storage.local);
   const flush = () => pool.flush((i, init) => fetch(i, init), Date.now()).catch((e: unknown) => console.warn('[ViewProof] pool', e));
 
-  browser.alarms.create(FLUSH_ALARM, { periodInMinutes: 5 });
+  // Create once: re-creating on every service-worker wake-up would keep pushing the next send back.
+  void browser.alarms.get(FLUSH_ALARM).then((a) => { if (!a) void browser.alarms.create(FLUSH_ALARM, { periodInMinutes: 5 }); });
   browser.alarms.onAlarm.addListener((a) => { if (a.name === FLUSH_ALARM) void flush(); });
 
   browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {

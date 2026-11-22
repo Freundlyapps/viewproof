@@ -42,7 +42,10 @@ Test the Cron job locally with `npx wrangler dev --test-scheduled`, then `curl "
   - `GET` and `DELETE /api/pool/browsers[/:id]`;
   - `POST /api/pool/contribute` takes the bearer token only, no cookie;
   - `GET /api/outliers`.
-- **Cron budget per hourly run:** up to 30 user-tracked feeds, then up to 15 pool channels seen in the last 30 days. That keeps each run under the Workers Free limit of 50 subrequests.
+- **Cron budget per hourly run:** `CRON_FEED_BUDGET` feeds, default 10. Up to ⌈2/3⌉ of them go to user-tracked channels; the rest, at most ⌈1/3⌉, to pool channels seen in the last 30 days. A pool channel whose feed never read is retried once a week.
+  - Each feed costs about 4 D1 queries, and Workers Free allows 50 queries per invocation, so keep the default there.
+  - On Workers Paid (1,000 queries), set `CRON_FEED_BUDGET=45`.
+  - Archive and prune run before polling.
 - **Retention:**
   - observations in D1 for 90 days;
   - pool channels not seen for 30 days are removed with their videos.

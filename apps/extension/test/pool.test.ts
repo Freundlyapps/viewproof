@@ -138,3 +138,58 @@ describe('link message from the web app', () => {
     expect(r).toEqual({ type: 'viewproof:linked', id: '9' });
   });
 });
+
+describe('review fixes', () => {
+  const slow = (reply: () => Response | Promise<Response>) => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const fetchFn = (async () => { await gate; return reply(); }) as unknown as typeof fetch;
+    return { fetchFn, release: () => release() };
+  };
+
+  test('I1: "Stop sharing" during a failing send stays stopped', async () => {
+    const p = poolStore(fakeArea());
+    await p.link('tok', SERVER, NOW);
+    await p.setConsent(true);
+    await p.enqueue([o('a')]);
+    const s = slow(() => new Response('{"error":"x","message":"Server error"}', { status: 500 }));
+    const running = p.flush(s.fetchFn, NOW);
+    await new Promise((r) => setTimeout(r, 0));
+    await p.setConsent(false);
+    s.release();
+    await running;
+    expect(await p.get()).toMatchObject({ consent: false, queue: [] });
+  });
+
+  test('I1: "Unlink" during a send stays unlinked', async () => {
+    const p = poolStore(fakeArea());
+    await p.link('tok', SERVER, NOW);
+    await p.setConsent(true);
+    await p.enqueue([o('a')]);
+    const s = slow(() => { throw new TypeError('Failed to fetch'); });
+    const running = p.flush(s.fetchFn, NOW);
+    await new Promise((r) => setTimeout(r, 0));
+    await p.unlink();
+    s.release();
+    await running;
+    expect(await p.get()).toMatchObject({ token: null, server: null, queue: [] });
+  });
+
+  test('two flushes at once send once and lose nothing', async () => {
+    const p = poolStore(fakeArea());
+    await p.link('tok', SERVER, NOW);
+    await p.setConsent(true);
+    await p.enqueue([o('a'), o('b')]);
+    let calls = 0;
+    const s = slow(() => { calls++; return ok(2); });
+    const one = p.flush(s.fetchFn, NOW);
+    const two = p.flush(s.fetchFn, NOW);
+    await new Promise((r) => setTimeout(r, 0));
+    await p.enqueue([o('c')]);
+    s.release();
+    expect(await two).toBe('idle');
+    await one;
+    expect(calls).toBe(1);
+    expect((await p.get()).queue.map((q) => q.videoId)).toEqual(['cxxxxxxxxxx']);
+  });
+});

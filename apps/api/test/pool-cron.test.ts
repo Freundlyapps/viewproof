@@ -20,7 +20,7 @@ async function poolChannel(id: string, seenAt: number) {
 }
 function deps(now: number, extra: Record<string, unknown> = {}) {
   const fetched: string[] = [];
-  return { fetched, deps: makeDeps({ now: () => now, fetchFeed: async (id) => { fetched.push(id); return { ok: true, xml: feedFor(id) }; }, ...extra }) };
+  return { fetched, deps: makeDeps({ now: () => now, fetchFeed: async (id) => { fetched.push(id); return { ok: true, xml: feedFor(id) }; }, ...extra }, { CRON_FEED_BUDGET: '45' } as never) };
 }
 
 describe('pool cron', () => {

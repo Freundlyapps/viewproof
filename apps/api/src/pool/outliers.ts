@@ -27,10 +27,11 @@ export async function findOutliers(deps: Deps, query: ReturnType<typeof parseOut
   const nowIso = new Date(now).toISOString();
   const seen = new Date(now - POOL_SEEN_DAYS * DAY_MS).toISOString();
   const candidates = (await deps.db.prepare(
-    `SELECT pv.video_id, pv.channel_id, t.title AS channel_title FROM pool_videos pv
-     JOIN pool_channels pc ON pc.channel_id = pv.channel_id AND pc.last_seen_at >= ?
-     JOIN tracked_channels t ON t.channel_id = pv.channel_id AND t.last_poll_ok_at IS NOT NULL
-     JOIN feed_videos fv ON fv.video_id = pv.video_id`,
+    // The channel is the one the video's own feed lists, not whatever a contribution claimed.
+    `SELECT pv.video_id, fv.channel_id, t.title AS channel_title FROM pool_videos pv
+     JOIN feed_videos fv ON fv.video_id = pv.video_id
+     JOIN tracked_channels t ON t.channel_id = fv.channel_id AND t.last_poll_ok_at IS NOT NULL
+     WHERE pv.last_seen_at >= ?`,
   ).bind(seen).all<{ video_id: string; channel_id: string; channel_title: string }>()).results;
 
   const channelIds = [...new Set(candidates.map((c) => c.channel_id))];
@@ -58,9 +59,12 @@ export async function findOutliers(deps: Deps, query: ReturnType<typeof parseOut
   rows.sort((a, b) => (b.outlier.kind === 'value' ? b.outlier.value : 0) - (a.outlier.kind === 'value' ? a.outlier.value : 0));
 
   const cov = await deps.db.prepare(
-    `SELECT (SELECT COUNT(*) FROM pool_videos pv JOIN pool_channels pc USING (channel_id) WHERE pc.last_seen_at >= ?1) AS videos,
-            (SELECT COUNT(*) FROM pool_channels WHERE last_seen_at >= ?1) AS channels,
-            (SELECT COUNT(*) FROM pool_channels pc LEFT JOIN tracked_channels t USING (channel_id) WHERE pc.last_seen_at >= ?1 AND t.last_poll_ok_at IS NULL) AS waiting,
+    // Channels whose feed has never been readable (deleted or made-up ids) are left out of every count.
+    `WITH ch AS (SELECT pc.channel_id, t.last_poll_ok_at, t.last_polled_at FROM pool_channels pc JOIN tracked_channels t USING (channel_id)
+                WHERE pc.last_seen_at >= ?1 AND (t.last_poll_ok_at IS NOT NULL OR t.last_polled_at IS NULL))
+     SELECT (SELECT COUNT(*) FROM pool_videos pv JOIN ch USING (channel_id)) AS videos,
+            (SELECT COUNT(*) FROM ch) AS channels,
+            (SELECT COUNT(*) FROM ch WHERE last_polled_at IS NULL) AS waiting,
             (SELECT COUNT(*) FROM pool_videos pv JOIN pool_channels pc USING (channel_id) JOIN tracked_channels t USING (channel_id)
               WHERE pc.last_seen_at >= ?1 AND t.last_poll_ok_at IS NOT NULL AND pv.video_id NOT IN (SELECT video_id FROM feed_videos)) AS older`,
   ).bind(seen).first<{ videos: number; channels: number; waiting: number; older: number }>();

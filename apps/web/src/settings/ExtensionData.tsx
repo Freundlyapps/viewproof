@@ -51,8 +51,8 @@ export function ExtensionData() {
         <h2 style={{ marginTop: 0 }}>What is shared</h2>
         <ul>
           <li>Sent: video and channel ids, title, view count, upload time or age, length, Short or long.</li>
-          <li>Never sent: who you are on YouTube, cookies, what you watch for how long, your searches.</li>
-          <li>Stored without your name: the server keeps only how many items each linked browser sent per day.</li>
+          <li>Never sent: who you are on YouTube, cookies, what you watch for how long, or the words you type into YouTube's search box (the facts of the results you see are sent).</li>
+          <li>Stored without your name, by the day or hour only: the server keeps how many items each linked browser sent per day, never which.</li>
           <li>Every item your browser sent is listed on the extension's own data-sharing page, where you can also stop.</li>
         </ul>
         <button type="button" className="btn pri" onClick={() => void linkThis()} disabled={busy}>Link this browser</button>
@@ -63,13 +63,13 @@ export function ExtensionData() {
       ) : (
         <div className="card" style={{ overflowX: 'auto' }}>
           <table aria-label="Linked browsers">
-            <thead><tr><th>Browser</th><th>Linked</th><th>Last sent</th><th className="num">Accepted today</th><th className="num">Rejected today</th><th className="num">Accepted in total</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Browser</th><th>Linked</th><th>Last sent (day)</th><th className="num">Accepted today</th><th className="num">Rejected today</th><th className="num">Accepted in total</th><th>Status</th><th /></tr></thead>
             <tbody>
               {list.data.map((b) => (
                 <tr key={b.id}>
                   <td>{b.label}</td>
                   <td>{new Date(b.createdAt).toLocaleDateString()}</td>
-                  <td>{ago(b.lastUsedAt)}</td>
+                  <td>{b.lastUsedAt ? new Date(b.lastUsedAt).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '—'}</td>
                   <td className="num">{b.acceptedToday}</td>
                   <td className="num">{b.rejectedToday}</td>
                   <td className="num">{b.acceptedTotal}</td>

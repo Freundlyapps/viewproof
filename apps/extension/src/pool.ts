@@ -34,6 +34,8 @@ export function poolStore(area: chrome.storage.StorageArea) {
   const put = async (s: PoolState) => area.set({ [POOL_KEY]: s });
   const active = (s: PoolState) => s.consent && !!s.token && !!s.server && !s.paused;
   const log = (s: PoolState, e: PoolLogEntry) => [e, ...s.log].slice(0, MAX_LOG);
+  const key = (q: PoolObservation) => `${q.videoId}:${q.views}:${q.observedAt}`;
+  let inFlight = false;
 
   return {
     get,
@@ -62,44 +64,69 @@ export function poolStore(area: chrome.storage.StorageArea) {
       await put({ ...s, queue });
       return queue.length;
     },
-    /** Send up to one batch to the linked server. 401 unlinks, 403 pauses; network errors and 429 keep the queue. */
+    /**
+     * Send up to one batch to the linked server. 401 unlinks, 403 pauses; network errors and 429 keep the queue.
+     * One send at a time, and every outcome is applied to the state as it is after the request:
+     * a "Stop sharing" or "Unlink" made while it was in flight stays in force.
+     */
     async flush(fetchFn: typeof fetch, now: number): Promise<FlushResult> {
-      const s = await get();
-      if (!active(s) || s.queue.length === 0) return 'idle';
-      const batch = s.queue.slice(0, MAX_BATCH);
-      const at = new Date(now).toISOString();
-      const entry = (over: Partial<PoolLogEntry>): PoolLogEntry => ({
-        at, sent: batch.length, accepted: 0, rejected: 0, reasons: [], error: null,
-        videos: batch.map((b) => ({ videoId: b.videoId, title: b.title, views: b.views, source: b.source })), ...over,
-      });
-      let res: Response;
+      if (inFlight) return 'idle';
+      inFlight = true;
       try {
-        res = await fetchFn(`${s.server}/api/pool/contribute`, {
-          method: 'POST', credentials: 'omit',
-          headers: { authorization: `Bearer ${s.token}`, 'content-type': 'application/json', accept: 'application/json' },
-          body: JSON.stringify({ v: 1, observations: batch }),
-        });
-      } catch (e) {
-        await put({ ...s, log: log(s, entry({ sent: 0, error: `Not sent: ${e instanceof Error ? e.message : 'network error'}` })) });
-        return 'error';
+        return await sendOnce(fetchFn, now);
+      } finally {
+        inFlight = false;
       }
-      const body = (await res.json().catch(() => null)) as (ContributeResult & { message?: string }) | null;
-      const message = body?.message ?? `HTTP ${res.status}`;
-      if (res.status === 401) {
-        await put({ ...s, token: null, server: null, linkedAt: null, queue: [], statusNote: message, log: log(s, entry({ sent: 0, error: message })) });
-        return 'unlinked';
-      }
-      if (res.status === 403) {
-        await put({ ...s, paused: true, queue: [], statusNote: message, log: log(s, entry({ sent: 0, error: message })) });
-        return 'paused';
-      }
-      if (!res.ok || !body) {
-        await put({ ...s, log: log(s, entry({ sent: 0, error: message })) });
-        return 'error';
-      }
-      const fresh = await get(); // items may have been queued while sending
-      await put({ ...fresh, queue: fresh.queue.slice(batch.length), log: log(fresh, entry({ accepted: body.accepted, rejected: body.rejected, reasons: body.reasons })) });
-      return 'sent';
     },
   };
+
+  async function sendOnce(fetchFn: typeof fetch, now: number): Promise<FlushResult> {
+    const s = await get();
+    if (!active(s) || s.queue.length === 0) return 'idle';
+    const batch = s.queue.slice(0, MAX_BATCH);
+    const at = new Date(now).toISOString();
+    const entry = (over: Partial<PoolLogEntry>): PoolLogEntry => ({
+      at, sent: batch.length, accepted: 0, rejected: 0, reasons: [], error: null,
+      videos: batch.map((b) => ({ videoId: b.videoId, title: b.title, views: b.views, source: b.source })), ...over,
+    });
+    let res: Response | null = null;
+    let failure: string | null = null;
+    try {
+      res = await fetchFn(`${s.server}/api/pool/contribute`, {
+        method: 'POST', credentials: 'omit',
+        headers: { authorization: `Bearer ${s.token}`, 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ v: 1, observations: batch }),
+      });
+    } catch (e) {
+      failure = `Not sent: ${e instanceof Error ? e.message : 'network error'}`;
+    }
+    const body = res ? ((await res.json().catch(() => null)) as (ContributeResult & { message?: string }) | null) : null;
+    const fresh = await get();
+    const sameLink = fresh.token === s.token && fresh.server === s.server;
+    if (failure || !res) {
+      await put({ ...fresh, log: log(fresh, entry({ sent: 0, error: failure })) });
+      return 'error';
+    }
+    const message = body?.message ?? `HTTP ${res.status}`;
+    if (res.status === 401) {
+      await put(sameLink
+        ? { ...fresh, token: null, server: null, linkedAt: null, queue: [], statusNote: message, log: log(fresh, entry({ sent: 0, error: message })) }
+        : { ...fresh, log: log(fresh, entry({ sent: 0, error: message })) });
+      return 'unlinked';
+    }
+    if (res.status === 403) {
+      await put(sameLink
+        ? { ...fresh, paused: true, queue: [], statusNote: message, log: log(fresh, entry({ sent: 0, error: message })) }
+        : { ...fresh, log: log(fresh, entry({ sent: 0, error: message })) });
+      return 'paused';
+    }
+    if (!res.ok || !body) {
+      await put({ ...fresh, log: log(fresh, entry({ sent: 0, error: message })) });
+      return 'error';
+    }
+    // Remove exactly what was sent; items queued meanwhile stay.
+    const sent = new Set(batch.map(key));
+    await put({ ...fresh, queue: fresh.queue.filter((q) => !sent.has(key(q))), log: log(fresh, entry({ accepted: body.accepted, rejected: body.rejected, reasons: body.reasons })) });
+    return 'sent';
+  }
 }
