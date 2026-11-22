@@ -106,3 +106,12 @@ export interface Competitor {
 }
 export interface CompetitorDetail extends Competitor { videos: import('./competitors').CompetitorVideo[] }
 export interface CompetitorUploads { uploads: (import('./competitors').CompetitorVideo & { channelId: string; channelTitle: string })[] }
+
+/** Plan 5b: data pool. */
+export interface ContributeResult { accepted: number; rejected: number; reasons: string[] }
+export interface PoolBrowser {
+  id: string; label: string; createdAt: string; lastUsedAt: string | null;
+  acceptedToday: number; rejectedToday: number; acceptedTotal: number; status: 'active' | 'suspended';
+}
+export type OutlierRow = import('./competitors').CompetitorVideo & { channelId: string; channelTitle: string; channelMedian: Measured<number> };
+export interface Outliers { rows: OutlierRow[]; coverage: { videos: number; channels: number; channelsWaiting: number; days: 30 } }
