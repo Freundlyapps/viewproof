@@ -7,7 +7,7 @@ export const NAV: (NavItem | '-')[] = [
   { to: '/research/keywords', section: '/research', label: 'Research', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3' },
   { to: '/channel/overview', section: '/channel', label: 'My channel', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
   { to: '/optimize', label: 'Optimize video', icon: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z', soon: "Check a video's title, description and tags against your real search terms, then copy them into YouTube Studio." },
-  { to: '/competitors', label: 'Competitors', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8', soon: 'Track up to 25 channels: their new uploads, top videos and growth over time.' },
+  { to: '/competitors', label: 'Competitors', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8' },
   { to: '/ai', label: 'Ask AI', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', soon: 'Ask about your channel; every answer says which data it used. Use the included AI or your own key.' },
   '-',
   { to: '/tools', label: 'Tools', icon: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z', soon: 'Tag extractor, chapter checker, transcript viewer and calculators that use your own numbers.' },
