@@ -50,6 +50,8 @@ async function store(deps: Deps, items: PoolObservation[]): Promise<{ accepted: 
     stmts.push(
       deps.db.prepare('INSERT INTO pool_channels (channel_id, first_seen_at, last_seen_at) VALUES (?, ?, ?) ON CONFLICT(channel_id) DO UPDATE SET last_seen_at = excluded.last_seen_at')
         .bind(o.channelId, iso, iso),
+      // So the feed poller sees it; the title is replaced by the feed's on the first poll.
+      deps.db.prepare('INSERT OR IGNORE INTO tracked_channels (channel_id, title, created_at) VALUES (?, ?, ?)').bind(o.channelId, o.channelId, iso),
       deps.db.prepare(
         `INSERT INTO pool_videos (video_id, channel_id, title, published_at, format, duration_sec, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(video_id) DO UPDATE SET title = excluded.title, last_seen_at = excluded.last_seen_at,

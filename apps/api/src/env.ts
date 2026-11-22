@@ -14,6 +14,8 @@ export interface Env {
   DATAFORSEO_DISPLAY_OK?: string;
   /** Optional YouTube Data API key: competitor @handles and current subscriber counts. */
   YOUTUBE_API_KEY?: string;
+  /** Optional R2 bucket for the data pool archive. */
+  POOL?: R2Bucket;
 }
 
 export interface Config {

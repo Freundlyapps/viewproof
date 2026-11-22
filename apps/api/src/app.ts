@@ -26,6 +26,8 @@ export interface Deps {
   fetchFeed: (channelId: string) => Promise<FeedResult>;
   /** Data API counts for other channels (key or user token). */
   channelStats: ChannelStatsClient;
+  /** R2 bucket for the pool archive; absent on servers without one. */
+  pool?: R2Bucket;
   now: () => number;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
   assets?: { fetch(req: Request): Promise<Response> };

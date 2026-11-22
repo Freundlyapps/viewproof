@@ -28,7 +28,7 @@ function depsFor(env: Env) {
     clientSecret: config.googleClientSecret,
     redirectUri: `${config.appUrl}/auth/google/callback`,
   }), TOKENS, () => Date.now());
-  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), now: () => Date.now(), assets: env.ASSETS };
+  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), now: () => Date.now(), assets: env.ASSETS, pool: env.POOL };
 }
 
 export default {
