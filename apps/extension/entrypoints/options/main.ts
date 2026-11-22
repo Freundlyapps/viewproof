@@ -1,6 +1,9 @@
+import { CHECKLIST_LABELS, type ChecklistRuleId, type ChecklistSettings, ruleText } from '@viewproof/core';
 import { type PoolState, poolStore } from '../../src/pool';
+import { type PageKind, type PanelToggles, settingsStore } from '../../src/settings';
 
 const pool = poolStore(browser.storage.local);
+const settings = settingsStore(browser.storage.local);
 const app = document.getElementById('app')!;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...kids: (Node | string)[]): HTMLElementTagNameMap[K] {
@@ -16,9 +19,49 @@ const button = (label: string, onClick: () => Promise<void>, cls = '') => {
 };
 
 function render(): Promise<void> {
-  return pool.get().then((s: PoolState) => {
-    app.replaceChildren(consent(s), link(s), log(s));
+  return Promise.all([pool.get(), settings.getToggles(), settings.getChecklist()]).then(([s, t, c]: [PoolState, PanelToggles, ChecklistSettings]) => {
+    app.replaceChildren(panels(t), checklist(c), consent(s), link(s), log(s));
   });
+}
+
+const PAGES: [PageKind, string][] = [['watch', 'Watch pages'], ['channel', 'Channel pages (Videos and Shorts tabs)'], ['search', 'Search results']];
+
+function panels(t: PanelToggles) {
+  const box = el('div', { class: 'card' }, el('h2', {}, 'Show ViewProof on'));
+  for (const [kind, label] of PAGES) {
+    const input = el('input', { type: 'checkbox', id: `panel-${kind}` });
+    input.checked = t[kind];
+    input.addEventListener('change', () => void settings.setToggle(kind, input.checked));
+    box.append(el('p', {}, el('label', { for: `panel-${kind}` }, input, ' ', label)));
+  }
+  return box;
+}
+
+const NUMBERS: Partial<Record<ChecklistRuleId, [string, string][]>> = {
+  title: [['min', 'min characters'], ['max', 'max characters (YouTube allows 100)']],
+  description: [['min', 'min characters']],
+  tags: [['min', 'min tags']],
+};
+
+function checklist(c: ChecklistSettings) {
+  const box = el('div', { class: 'card' }, el('h2', {}, 'Video checklist'),
+    el('p', { class: 'muted small' }, 'Shown on watch pages. Each rule is a plain check of what YouTube shows; switch rules off or change the numbers.'));
+  const save = (next: ChecklistSettings) => void settings.setChecklist(next);
+  for (const id of Object.keys(CHECKLIST_LABELS) as ChecklistRuleId[]) {
+    const rule = c[id] as { on: boolean } & Record<string, number | boolean>;
+    const on = el('input', { type: 'checkbox', id: `rule-${id}` });
+    on.checked = rule.on;
+    on.addEventListener('change', () => save({ ...c, [id]: { ...rule, on: on.checked } }));
+    const row = el('div', { class: 'rule' }, el('label', { for: `rule-${id}` }, on, ' ', el('strong', {}, CHECKLIST_LABELS[id])), el('div', { class: 'muted small' }, ruleText(id, c)));
+    for (const [key, label] of NUMBERS[id] ?? []) {
+      const input = el('input', { type: 'number', min: '0', step: '1', value: String(rule[key]), 'aria-label': `${CHECKLIST_LABELS[id]} ${label}` });
+      input.addEventListener('change', () => save({ ...c, [id]: { ...rule, [key]: Number(input.value) } }));
+      row.append(el('label', { class: 'num' }, input, ` ${label}`));
+    }
+    box.append(row);
+  }
+  box.append(el('p', {}, button('Reset to defaults', () => settings.resetChecklist())));
+  return box;
 }
 
 function consent(s: PoolState) {
