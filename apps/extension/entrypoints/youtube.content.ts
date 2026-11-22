@@ -6,12 +6,17 @@ import { isSearchMessage, searchQueryOf, searchStore } from '../src/search';
 import { fromSearch, fromWatch, parsePlayerResponse, parseSearchPage, type PoolObservation } from '@viewproof/core';
 import { poolStore } from '../src/pool';
 import { whenIdle } from '../src/idle';
+import { applyBadges, type Badge, badgeWatcher, clearBadges } from '../src/badges';
+import { channelBadges, channelCard, isChannelMessage, isChannelPath } from '../src/channel';
+import { type CardModel, mountHost, placeBefore, removeHost, renderPagePanel } from '../src/page-panel';
+import { gridOutliers, parseChannelPage } from '@viewproof/core';
 import { DEFAULT_TOGGLES, type PanelToggles, settingsChanged, settingsStore } from '../src/settings';
 
 /** Ask the background script to send once this many observations are queued. */
 const FLUSH_AT = 50;
 
 const HOST_ID = 'viewproof-panel';
+const PAGE_HOST = 'viewproof-page-panel';
 const MOUNT_WAIT_MS = 10_000;
 
 /** Isolated world: turns the page's player data into the ViewProof panel. Talks only to youtube.com. */
@@ -38,6 +43,50 @@ export default defineContentScript({
       checklist: () => settings.getChecklist(),
     };
 
+    // Channel and search pages: one card above YouTube's list, plus ×N badges on its tiles.
+    let pageSeq = 0;
+    let watcher: { stop(): void } | null = null;
+    let currentBadges = new Map<string, Badge>();
+    let lastPage: { kind: 'channel' | 'search'; run: () => void } | null = null;
+    const resetPage = () => {
+      pageSeq++;
+      watcher?.stop();
+      watcher = null;
+      currentBadges = new Map();
+      clearBadges();
+      removeHost(PAGE_HOST);
+    };
+    /** Show (or update) the card and badges, unless the user has navigated since `seq`. */
+    const showPage = (seq: number, model: CardModel, badges: Map<string, Badge>, place: (h: HTMLElement) => boolean) => {
+      void whenIdle(() => mountHost(PAGE_HOST, place)).then((host) => {
+        if (!host || seq !== pageSeq) return;
+        renderPagePanel(host, model);
+        currentBadges = badges;
+        if (watcher) applyBadges(document, currentBadges);
+        else watcher = badgeWatcher(() => applyBadges(document, currentBadges));
+      });
+    };
+    const placeChannel = (h: HTMLElement) => placeBefore(h, document.querySelector('ytd-browse:not([hidden]) ytd-rich-grid-renderer'));
+
+    window.addEventListener('message', (e) => {
+      if (!isChannelMessage(e, window, location.origin)) return;
+      const { url, data } = e.data;
+      const run = () => {
+        if (!toggles.channel || new URL(url).pathname !== location.pathname || !isChannelPath(location.pathname)) return;
+        const seq = pageSeq;
+        const page = parseChannelPage(data);
+        if ('error' in page) {
+          if (page.error === 'Not a channel page') return;
+          showPage(seq, { title: "This channel's videos", stats: [], lines: [], error: page.error }, new Map(), placeChannel);
+          return;
+        }
+        const outliers = gridOutliers(page);
+        showPage(seq, channelCard(page, outliers), channelBadges(outliers), placeChannel);
+      };
+      lastPage = { kind: 'channel', run };
+      void ready.then(run);
+    });
+
     // Settings changed on the options page: apply them without a reload.
     browser.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local') return;
@@ -49,6 +98,10 @@ export default defineContentScript({
           const host = document.getElementById(HOST_ID);
           if (!t.watch && host) host.style.display = 'none';
           if (t.watch && !wasOn && lastPlayer && location.pathname === '/watch') void handlePlayer(lastPlayer, deps);
+          if (lastPage) {
+            if (!t[lastPage.kind]) resetPage();
+            else if (!document.getElementById(PAGE_HOST)) lastPage.run();
+          }
         });
       }
       if (c.checklist && toggles.watch && lastPlayer && location.pathname === '/watch') void handlePlayer(lastPlayer, deps);
@@ -83,6 +136,8 @@ export default defineContentScript({
 
     // The moment navigation starts, the old video's numbers must go.
     document.addEventListener('yt-navigate-start', () => {
+      resetPage();
+      lastPage = null;
       const host = document.getElementById(HOST_ID);
       if (host) renderPanel(host, { kind: 'loading' });
     });
