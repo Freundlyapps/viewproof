@@ -23,6 +23,9 @@ describe('videos tab', () => {
     expect(rows[0]!.textContent).toContain('5:01');
     expect(rows[0]!.textContent).toContain('58,600');
     expect(rows[1]!.textContent).toContain(WHY);
+    // One reason for the three range columns, not the same sentence three times.
+    expect(rows[1]!.textContent!.split(WHY)).toHaveLength(2);
+    expect(within(rows[1]!).getByText(`No data: ${WHY}`).closest('td')!.getAttribute('colspan')).toBe('3');
     expect(within(rows[0]!).getByRole('link', { name: 'Open in Studio' }).getAttribute('href')).toBe('https://studio.youtube.com/video/a/analytics');
   });
 

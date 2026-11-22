@@ -1,4 +1,4 @@
-import type { Videos } from '@viewproof/core';
+import type { Measured, Videos } from '@viewproof/core';
 import type { ChannelInfo } from '../api';
 import { useApi } from '../useApi';
 import { CoverageNote } from '../ui/CoverageNote';
@@ -6,6 +6,12 @@ import { ErrorNote } from '../ui/ErrorNote';
 import { fmt } from '../ui/format';
 import { Value } from '../ui/Value';
 import { useRange } from './RangeChips';
+
+/** When every range column is missing for the same reason, say it once. */
+function sameReason(...ms: Measured<number>[]): string | null {
+  const r = ms[0]!.kind === 'no_data' ? ms[0]!.reason : null;
+  return r !== null && ms.every((m) => m.kind === 'no_data' && m.reason === r) ? r : null;
+}
 
 export function VideosTab(props: { channel: ChannelInfo }) {
   const [range] = useRange();
@@ -28,9 +34,13 @@ export function VideosTab(props: { channel: ChannelInfo }) {
                   <div><div>{v.title}</div><div className="small muted">{v.publishedAt.slice(0, 10)}{v.durationSec !== null ? ` · ${fmt.duration(v.durationSec)}` : ''}</div></div>
                 </div>
               </td>
-              <td className="num"><Value m={v.views} format={fmt.count} /></td>
-              <td className="num"><Value m={v.watchMinutes} format={fmt.hours} /></td>
-              <td className="num"><Value m={v.averageViewDuration} format={fmt.duration} /></td>
+              {sameReason(v.views, v.watchMinutes, v.averageViewDuration)
+                ? <td colSpan={3} className="num"><span className="nodata" data-testid="value">No data: {sameReason(v.views, v.watchMinutes, v.averageViewDuration)}</span></td>
+                : <>
+                  <td className="num"><Value m={v.views} format={fmt.count} /></td>
+                  <td className="num"><Value m={v.watchMinutes} format={fmt.hours} /></td>
+                  <td className="num"><Value m={v.averageViewDuration} format={fmt.duration} /></td>
+                </>}
               <td className="num"><Value m={v.lifetimeViews} format={fmt.count} /></td>
               <td><a className="btn" href={`https://studio.youtube.com/video/${v.videoId}/analytics`} target="_blank" rel="noreferrer">Open in Studio</a></td>
             </tr>

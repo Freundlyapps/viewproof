@@ -103,3 +103,20 @@ describe('uploads', () => {
     expect(await client(async () => json({}, 401)).yt.uploads('t', 10)).toEqual({ kind: 'revoked' });
   });
 });
+
+describe("Google's success bodies carry a `kind` too", () => {
+  test('a report with kind youtubeAnalytics#resultTable is data, not an error', async () => {
+    const { yt } = client(async () => json({ kind: 'youtubeAnalytics#resultTable', columnHeaders: [{ name: 'views' }], rows: [[5]] }));
+    expect(await yt.report('tok', { startDate: '2026-11-01', endDate: '2026-11-02', metrics: ['views'] })).toEqual({ columns: ['views'], rows: [[5]] });
+  });
+  test('uploads with youtube#…ListResponse bodies are data', async () => {
+    const { yt } = client(async (url) => {
+      if (url.includes('/channels')) return json({ kind: 'youtube#channelListResponse', items: [{ kind: 'youtube#channel', contentDetails: { relatedPlaylists: { uploads: 'UUx' } } }] });
+      if (url.includes('/playlistItems')) return json({ kind: 'youtube#playlistItemListResponse', items: [{ contentDetails: { videoId: 'vvvvvvvvvvv' } }] });
+      return json({ kind: 'youtube#videoListResponse', items: [{ kind: 'youtube#video', id: 'vvvvvvvvvvv', snippet: { title: 'T', publishedAt: '2026-11-01T00:00:00Z' }, contentDetails: { duration: 'PT1M' }, statistics: { viewCount: '7' } }] });
+    });
+    const ups = await yt.uploads('tok', 10);
+    expect(Array.isArray(ups)).toBe(true);
+    expect(ups).toMatchObject([{ videoId: 'vvvvvvvvvvv', views: 7 }]);
+  });
+});

@@ -63,7 +63,9 @@ async function call(fetchFn: typeof fetch, url: string, token: string): Promise<
     return { kind: 'failed', reason: errText(e) };
   }
 }
-const isError = (x: unknown): x is GoogleError => typeof obj(x)?.kind === 'string';
+// Google's own bodies carry `kind` too ("youtube#channelListResponse"), so only our error kinds count.
+const ERROR_KINDS: readonly string[] = ['revoked', 'failed', 'forbidden'];
+const isError = (x: unknown): x is GoogleError => ERROR_KINDS.includes(String(obj(x)?.kind));
 
 export function httpYouTubeClient(fetchFn: typeof fetch): YouTubeClient {
   return {

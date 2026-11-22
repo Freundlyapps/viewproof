@@ -69,4 +69,11 @@ describe('shell', () => {
     expect(await screen.findByText(/Tag extractor, chapter checker/)).toBeTruthy();
     expect(screen.getByText('Not built yet')).toBeTruthy();
   });
+
+  test('an unknown address says not found, not "not built yet"', async () => {
+    mockApi({ '/api/me': ME, '/api/channels': [channel()] });
+    renderAt('/nope');
+    expect(await screen.findByText("This page doesn't exist.")).toBeTruthy();
+    expect(screen.queryByText('Not built yet')).toBeNull();
+  });
 });

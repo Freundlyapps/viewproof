@@ -66,7 +66,7 @@ export function App() {
         <Route path="/competitors/:channelId?" element={<Competitors />} />
         <Route path="/settings/*" element={<Settings />} />
         {NAV.flatMap((n) => (n !== '-' && n.soon ? [<Route key={n.to} path={`${n.to}/*`} element={<Soon title={n.label} text={n.soon} />} />] : []))}
-        <Route path="*" element={<Soon title="Not found" text="This page doesn't exist." />} />
+        <Route path="*" element={<Soon title="Not found" sub="Check the address" text="This page doesn't exist." />} />
       </Routes>
     </Shell>
   );

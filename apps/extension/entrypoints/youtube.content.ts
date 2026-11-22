@@ -6,6 +6,7 @@ import { isSearchMessage, searchQueryOf, searchStore } from '../src/search';
 import { fromSearch, fromWatch, parsePlayerResponse, parseSearchPage, type PoolObservation } from '@viewproof/core';
 import { poolStore } from '../src/pool';
 import { whenIdle } from '../src/idle';
+import { pageScope, watchColumn } from '../src/dom';
 import { applyBadges, type Badge, badgeWatcher, clearBadges } from '../src/badges';
 import { channelBadges, channelCard, isChannelMessage, isChannelPath } from '../src/channel';
 import { type CardModel, mountHost, placeBefore, removeHost, renderPagePanel } from '../src/page-panel';
@@ -60,13 +61,13 @@ export default defineContentScript({
       removeHost(PAGE_HOST);
     };
     /** Show (or update) the card and badges, unless the user has navigated since `seq`. */
-    const showPage = (seq: number, model: CardModel, badges: Map<string, Badge>, place: (h: HTMLElement) => boolean) => {
+    const showPage = (seq: number, model: CardModel, badges: Map<string, Badge>, place: (h: HTMLElement) => boolean, kind: 'channel' | 'search') => {
       void whenIdle(() => (seq === pageSeq ? mountHost(PAGE_HOST, (h) => seq === pageSeq && place(h)) : null)).then((host) => {
         if (!host || seq !== pageSeq) return;
         renderPagePanel(host, model);
         currentBadges = badges;
-        if (watcher) applyBadges(document, currentBadges);
-        else watcher = badgeWatcher(() => applyBadges(document, currentBadges));
+        if (watcher) applyBadges(pageScope(kind), currentBadges);
+        else watcher = badgeWatcher(() => applyBadges(pageScope(kind), currentBadges));
       });
     };
     const placeSearch = (h: HTMLElement) => placeBefore(h, document.querySelector('ytd-search:not([hidden]) ytd-section-list-renderer'));
@@ -81,11 +82,11 @@ export default defineContentScript({
         const page = parseChannelPage(data);
         if ('error' in page) {
           if (page.error === 'Not a channel page') return;
-          showPage(seq, { title: "This channel's videos", stats: [], lines: [], error: page.error }, new Map(), placeChannel);
+          showPage(seq, { title: "This channel's videos", stats: [], lines: [], error: page.error }, new Map(), placeChannel, 'channel');
           return;
         }
         const outliers = gridOutliers(page);
-        showPage(seq, channelCard(page, outliers), channelBadges(outliers), placeChannel);
+        showPage(seq, channelCard(page, outliers), channelBadges(outliers), placeChannel, 'channel');
       };
       lastPage = { kind: 'channel', run };
       void ready.then(run);
@@ -141,12 +142,12 @@ export default defineContentScript({
         const p = parseSearchPage(response, query);
         const seq = pageSeq;
         if ('error' in p) {
-          showPage(seq, { title: `What ranks for "${query}"`, stats: [], lines: [], error: p.error }, new Map(), placeSearch);
+          showPage(seq, { title: `What ranks for "${query}"`, stats: [], lines: [], error: p.error }, new Map(), placeSearch, 'search');
           return;
         }
         const facts = topResultsFacts(p);
         const summary = factsSummary(facts);
-        showPage(seq, searchCard(p, facts, summary, null), new Map(), placeSearch);
+        showPage(seq, searchCard(p, facts, summary, null), new Map(), placeSearch, 'search');
         void searchFeedOutliers(p, {
           baseline: (ch) => getBaseline(ch, { fetch: deps.fetch, now: deps.now, cache: deps.cache }),
           isCurrent: () => seq === pageSeq,
@@ -164,7 +165,7 @@ export default defineContentScript({
               badge: `×${v}`,
               note: `${x.views.kind === 'value' ? `${x.views.value.toLocaleString('en-US')} views` : ''}${x.ageLabel ? ` · ${x.ageLabel}` : ''} · ${x.channelName}`,
             }));
-          showPage(seq, searchCard(p, facts, summary, { withXn: badges.size, total: p.results.length, stopped: r.stopped, rows }), badges, placeSearch);
+          showPage(seq, searchCard(p, facts, summary, { withXn: badges.size, total: p.results.length, stopped: r.stopped, rows }), badges, placeSearch, 'search');
         });
       };
       lastPage = { kind: 'search', run };
@@ -200,7 +201,7 @@ export default defineContentScript({
 /** Find or create the panel host at the top of the right-hand column. */
 function mount(): Promise<HTMLElement | null> {
   const attach = (): HTMLElement | null => {
-    const column = document.querySelector('#secondary');
+    const column = watchColumn(document);
     if (!column) return null;
     let host = document.getElementById(HOST_ID);
     if (!host) {
