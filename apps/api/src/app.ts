@@ -6,6 +6,7 @@ import type { FeedResult } from './competitors/poll';
 import type { ChannelStatsClient } from './competitors/stats';
 import { competitorRoutes } from './competitors/routes';
 import { poolRoutes } from './pool/routes';
+import { outlierRoutes } from './pool/outliers';
 import type { KeywordProvider } from '@viewproof/providers';
 import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
@@ -80,5 +81,6 @@ export function createApp(deps: Deps): Hono {
   keywordRoutes(app, deps);
   competitorRoutes(app, deps);
   poolRoutes(app, deps);
+  outlierRoutes(app, deps);
   return app;
 }

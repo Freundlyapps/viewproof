@@ -41,7 +41,7 @@ export async function saveStats(deps: Deps, ids: string[], auth: StatsAuth): Pro
 }
 
 /** The channel's latest 15 feed videos with each one's latest snapshot count. */
-async function feedOf(deps: Deps, channelIds: string[]): Promise<Map<string, (FeedVideo & { title: string })[]>> {
+export async function feedOf(deps: Deps, channelIds: string[]): Promise<Map<string, (FeedVideo & { title: string })[]>> {
   const out = new Map<string, (FeedVideo & { title: string })[]>();
   if (!channelIds.length) return out;
   const rows = (await deps.db.prepare(
@@ -57,7 +57,7 @@ async function feedOf(deps: Deps, channelIds: string[]): Promise<Map<string, (Fe
   return out;
 }
 
-async function historyOf(deps: Deps, videoIds: string[]) {
+export async function historyOf(deps: Deps, videoIds: string[]) {
   const out = new Map<string, { views: number; at: string }[]>();
   if (!videoIds.length) return out;
   const rows = (await deps.db.prepare(`SELECT video_id, at, views FROM video_snapshots WHERE video_id IN (${videoIds.map(() => '?').join(',')}) ORDER BY at`)
