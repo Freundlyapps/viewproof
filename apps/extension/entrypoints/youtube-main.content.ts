@@ -1,8 +1,9 @@
 import { MSG, type PlayerMessage, readPlayer } from '../src/bridge';
 import { SEARCH_MSG, type SearchMessage } from '../src/search';
+import { CHANNEL_MSG, type ChannelMessage, isChannelPath } from '../src/channel';
 
 /**
- * Runs in the page's own JS world (MAIN) only to read the player and search-results data YouTube
+ * Runs in the page's own JS world (MAIN) only to read the player, search-results and channel-grid data YouTube
  * already loaded for this page. Makes no requests; reads no cookies.
  */
 export default defineContentScript({
@@ -41,10 +42,19 @@ export default defineContentScript({
       const msg: SearchMessage = { type: SEARCH_MSG, url: location.href, response };
       window.postMessage(msg, location.origin);
     };
+    // Channel Videos/Shorts tabs: same two sources.
+    const postChannel = (data: unknown) => {
+      if (!isChannelPath(location.pathname) || !data) return;
+      const msg: ChannelMessage = { type: CHANNEL_MSG, url: location.href, data };
+      window.postMessage(msg, location.origin);
+    };
     document.addEventListener('yt-navigate-finish', (e) => {
       const d = (e as CustomEvent<{ response?: { response?: unknown } }>).detail?.response;
       postSearch(d?.response ?? d);
+      postChannel(d?.response ?? d);
     });
-    postSearch((window as unknown as { ytInitialData?: unknown }).ytInitialData);
+    const initial = (window as unknown as { ytInitialData?: unknown }).ytInitialData;
+    postSearch(initial);
+    postChannel(initial);
   },
 });

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="manifest.open_in_tab" content="true" />
-    <title>ViewProof — data sharing</title>
+    <title>ViewProof — settings</title>
     <style>
       body { font: 15px/1.5 system-ui, sans-serif; max-width: 860px; margin: 32px auto; padding: 0 20px; color: #1C1917; background: #FAFAF9; }
       @media (prefers-color-scheme: dark) { body { color: #E7E7EA; background: #0F1115; } .card { background: #171a21 !important; border-color: #2a2f3a !important; } }
@@ -15,11 +15,12 @@
       button.pri { background: #0F766E; border-color: #0F766E; color: #fff; }
       table { width: 100%; border-collapse: collapse; font-size: .88rem; } th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e7e5e450; vertical-align: top; }
       .bad { color: #B45309; }
+      .rule { padding: 8px 0; border-bottom: 1px solid #e7e5e450; } .num { margin-right: 14px; font-size: .88rem; } input[type=number] { width: 70px; font: inherit; }
     </style>
   </head>
   <body>
-    <h1>ViewProof — data sharing</h1>
-    <p class="muted">Off unless you agree below. You can stop at any time.</p>
+    <h1>ViewProof — settings</h1>
+    <p class="muted">Panels and checklist rules apply in this browser only. Data sharing is off unless you agree below.</p>
     <div id="app"></div>
     <script type="module" src="./main.ts"></script>
   </body>

@@ -1,3 +1,4 @@
+import { type ChecklistItem, type ChecklistSettings, DEFAULT_CHECKLIST, runChecklist } from './checklist';
 import type { ParseResult } from './feed';
 import { type Measured, noData, value } from './measured';
 import { outlierScore } from './outlier';
@@ -14,6 +15,8 @@ export interface Scorecard {
   /** Hours since publishing; no_data for scheduled videos. */
   age: Measured<number>;
   tags: string[];
+  /** Rule-based checks; rules switched off are left out. */
+  checklist: ChecklistItem[];
 }
 
 export function buildScorecard(args: {
@@ -21,6 +24,7 @@ export function buildScorecard(args: {
   previous: ViewObservation | null;
   baseline: ParseResult<FeedVideo[]>;
   now: string;
+  checklist?: ChecklistSettings;
 }): Scorecard {
   const { video, previous, baseline, now } = args;
   const liveOrUpcoming = video.isLive || video.isUpcoming;
@@ -46,5 +50,6 @@ export function buildScorecard(args: {
       ? noData('Not published yet')
       : value(ageHours, 'hours since publishing', { publishedAt: video.publishedAt }),
     tags: video.tags,
+    checklist: runChecklist(video, args.checklist ?? DEFAULT_CHECKLIST),
   };
 }

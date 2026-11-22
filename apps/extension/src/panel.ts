@@ -1,10 +1,21 @@
-import type { Measured, Scorecard } from '@viewproof/core';
+import type { ChecklistItem, Measured, Scorecard } from '@viewproof/core';
 import css from './panel.css?raw';
 
 export type PanelState =
   | { kind: 'ok'; card: Scorecard; outlierPending?: boolean }
   | { kind: 'loading' }
   | { kind: 'error'; reason: string };
+
+/** What the panel's buttons do; injected so tests need no browser APIs. */
+export interface PanelActions {
+  copy(text: string): Promise<void>;
+  openOptions(): void;
+}
+
+export const defaultActions: PanelActions = {
+  copy: (text) => navigator.clipboard.writeText(text),
+  openOptions: () => { void chrome.runtime.sendMessage({ kind: 'open-options' }).catch(() => undefined); },
+};
 
 const num = new Intl.NumberFormat('en-US');
 
@@ -31,7 +42,28 @@ function age(hours: number): string {
   return d < 60 ? `${d} days` : `${Math.floor(d / 30)} months`;
 }
 
-function content(state: PanelState): HTMLElement[] {
+function btn(label: string, onClick: (b: HTMLButtonElement) => void): HTMLButtonElement {
+  const b = el('button', 'btn', label) as HTMLButtonElement;
+  b.type = 'button';
+  b.addEventListener('click', () => onClick(b));
+  return b;
+}
+
+const MARK: Record<ChecklistItem['status'], [string, string]> = { pass: ['✓', 'Pass'], fail: ['✗', 'Fail'], skip: ['–', 'Skipped'] };
+
+function checklistSection(items: ChecklistItem[], actions: PanelActions): HTMLElement {
+  return el('div', 'checklist',
+    el('div', 'row', el('strong', null, 'Checklist'), btn('Edit rules', () => actions.openOptions())),
+    ...items.map((i) => {
+      const [mark, word] = MARK[i.status];
+      return el('div', `check ${i.status}`,
+        el('span', 'mark', mark), el('span', 'st', word), ' ',
+        el('span', 'lbl', i.label), ': ', i.detail,
+        el('span', 'rule', i.rule));
+    }));
+}
+
+function content(state: PanelState, actions: PanelActions): HTMLElement[] {
   if (state.kind === 'loading') return [el('div', 'err', 'Loading…')];
   if (state.kind === 'error') {
     return [el('div', 'err', "Couldn't read this page. YouTube may have changed something."), el('div', 'reason', state.reason)];
@@ -60,16 +92,22 @@ function content(state: PanelState): HTMLElement[] {
     out.push(el('div', 'why', `Why ×${card.outlier.value}? `,
       el('span', 'm', `${num.format(Number(i.views))} views; this channel usually gets ${num.format(Number(i.baselineMedian))} (median of ${i.baselineCount} earlier videos).${mixed}`)));
   }
-  if (card.tags.length) out.push(el('div', 'tags', ...card.tags.map((t) => el('span', 'tag', t))));
+  if (card.tags.length) {
+    out.push(el('div', 'tags', ...card.tags.map((t) => el('span', 'tag', t)),
+      btn('Copy tags', (b) => {
+        void actions.copy(card.tags.join(', ')).then(() => { b.textContent = 'Copied'; }, () => { b.textContent = "Couldn't copy"; });
+      })));
+  }
+  if (card.checklist.length) out.push(checklistSection(card.checklist, actions));
   return out;
 }
 
 /** Render into the host's shadow root (created once, reused across navigations). */
-export function renderPanel(host: HTMLElement, state: PanelState): void {
+export function renderPanel(host: HTMLElement, state: PanelState, actions: PanelActions = defaultActions): void {
   const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
   const box = el('div', 'vp',
     el('div', 'head', 'ViewProof', state.kind === 'ok' ? el('span', 'sfx', state.card.title) : null),
-    el('div', 'body', ...content(state)),
+    el('div', 'body', ...content(state, actions)),
   );
   box.setAttribute('data-theme', document.documentElement.hasAttribute('dark') ? 'dark' : 'light');
   root.replaceChildren(el('style', null, css), box);

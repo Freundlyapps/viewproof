@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1 — plans 1–4, 5a and 5b done: browser extension; server with Google sign-in and channel connect; web app with My channel; keyword research; competitor tracking; opt-in data pool and Outliers. Next: 5c, extension panels on channel and search pages.
+License: AGPL-3.0. Status: Phase 1 — plans 1–5 done: browser extension with panels on watch, channel and search pages; server with Google sign-in and channel connect; web app with My channel; keyword research; competitor tracking; opt-in data pool and Outliers.
 
 ## The browser extension (Chrome, Edge)
 
@@ -9,7 +9,27 @@ On any YouTube video page, a panel at the top of the right-hand column shows:
 
 - **Views / hour**: views divided by hours since upload ("avg since upload"). If you opened the same video at least an hour earlier and its count has moved, it uses the change since your last visit instead ("since your last visit"). A line under the tiles shows the exact numbers used.
 - **vs usual (×N)**: this video's views divided by the median views of the channel's earlier uploads of the same type (long video or Short), taken from the channel's public RSS feed (its latest 15 uploads). It needs at least 5 earlier videos of the same type; otherwise it says "No data" and why. Videos older than the channel's latest 15 uploads get "No data" too: the feed has nothing earlier to compare with.
-- **Age** and **tags** (the video's public tags).
+- **Age** and **tags** (the video's public tags), with a **Copy tags** button.
+- **Checklist**: plain checks of what YouTube shows for the video. Each check shows the rule it applied:
+  - title length (20–70 characters by default; YouTube allows 100);
+  - description length (at least 250 characters);
+  - at least 3 tags;
+  - chapters by YouTube's rules (first at 0:00, at least 3, each at least 10 seconds);
+  - an end screen;
+  - captions that aren't only auto-generated.
+
+  Shorts skip chapters and end screens. **Edit rules** opens the extension's settings, where you can switch each rule off or change its numbers.
+
+On a channel's **Videos** or **Shorts** tab, a panel above the grid shows:
+- the channel's usual views: the median of its latest 15 videos;
+- the biggest outliers on the page;
+- a ×N badge on each video.
+
+YouTube shows only rounded counts there ("3.1M"), so ×N is computed from them and shows the range the rounding allows ("between ×2.4 and ×2.6"). Only the videos on the first page are covered (about 30); videos loaded by scrolling aren't. Sorting by Popular or Oldest gives no ×N, because the order is no longer upload order.
+
+On a **search results** page, a panel above the results shows facts about the results you see: median views, median upload age, how many are from the last 90 days and how many have under 10,000 views, plus a short summary. Results that are among their channel's latest 15 uploads get a ×N badge. The extension checks at most 8 channel feeds per search, 2 at a time, and stops if YouTube asks it to slow down.
+
+The extension's settings page has a switch for each page type (watch, channel, search). Changes apply without reloading the page. Every panel draws after the page has finished its own work.
 
 Live and upcoming videos show "No data" with the reason instead of a misleading number.
 
@@ -56,6 +76,7 @@ pnpm --filter extension exec playwright install chromium --no-shell   # once, fo
 pnpm --filter extension e2e       # builds and runs the extension against fake YouTube pages
 pnpm --filter @viewproof/core canary   # ONE real feed request: fails loudly if YouTube changed the feed format
 node apps/extension/e2e/live-check.mjs <outDir> <videoId>...   # manual check on real videos; one page load each
+node apps/extension/e2e/panels-live-check.mjs <outDir> [channel|search|watch]   # manual check of the page panels; 1–3 page loads
 ```
 
 Keep live checks to a handful of requests; never loop them.

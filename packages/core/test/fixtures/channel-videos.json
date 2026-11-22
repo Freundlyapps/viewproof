@@ -1,0 +1,2136 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "tabs": [
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Home"
+     }
+    },
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Videos",
+      "selected": true,
+      "content": {
+       "richGridRenderer": {
+        "contents": [
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "38:48",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "uXuQF_PPg5U",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "This Simple Task Is Impossible for Computers"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "3.1M"
+                     },
+                     "accessibilityLabel": "3.1 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "3d ago"
+                     },
+                     "accessibilityLabel": "3 days ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "uXuQF_PPg5U",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "1:05:56",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "KfODG5REyss",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "I finally saw quantum physics with my own eyes... (It's spookier than I expected)"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "21M"
+                     },
+                     "accessibilityLabel": "21 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "2w ago"
+                     },
+                     "accessibilityLabel": "2 weeks ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "KfODG5REyss",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "34:28",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "eyZEqSPeMwg",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Relativity is so much weirder than we thought..."
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "8.5M"
+                     },
+                     "accessibilityLabel": "8.5 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "4w ago"
+                     },
+                     "accessibilityLabel": "4 weeks ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "eyZEqSPeMwg",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "34:32",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "NiCgcUTL9_Q",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Fiber Optics are so much cooler than I thought"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "16M"
+                     },
+                     "accessibilityLabel": "16 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "1mo ago"
+                     },
+                     "accessibilityLabel": "1 month ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "NiCgcUTL9_Q",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "5:08",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "ONAuUyml0yI",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "We're trying something new..."
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "1.4M"
+                     },
+                     "accessibilityLabel": "1.4 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "1mo ago"
+                     },
+                     "accessibilityLabel": "1 month ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "ONAuUyml0yI",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "47:42",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "JsBZOcqZerk",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Insane Real Engineering of the Nazi Enigma Machine"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "22M"
+                     },
+                     "accessibilityLabel": "22 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "2mo ago"
+                     },
+                     "accessibilityLabel": "2 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "JsBZOcqZerk",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "22:45",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "J1WoNuemKOg",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "We sent a camera to space to film the solar eclipse"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "2.8M"
+                     },
+                     "accessibilityLabel": "2.8 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "3mo ago"
+                     },
+                     "accessibilityLabel": "3 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "J1WoNuemKOg",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "26:58",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "wt4p2oalmRY",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Is spider web really stronger than steel?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "10M"
+                     },
+                     "accessibilityLabel": "10 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "3mo ago"
+                     },
+                     "accessibilityLabel": "3 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "wt4p2oalmRY",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "35:32",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "tL9Lw250spc",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Why does every mammal get 1 billion heartbeats in their life?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "6.9M"
+                     },
+                     "accessibilityLabel": "6.9 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "3mo ago"
+                     },
+                     "accessibilityLabel": "3 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "tL9Lw250spc",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "39:44",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "GK2pZ_oVU1o",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Scariest Chart in Electrical Engineering"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "6.9M"
+                     },
+                     "accessibilityLabel": "6.9 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "4mo ago"
+                     },
+                     "accessibilityLabel": "4 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "GK2pZ_oVU1o",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "23:22",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "mvcesPWvUIc",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "We've Been Using The Wrong Science In Court For 50 years"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "2.7M"
+                     },
+                     "accessibilityLabel": "2.7 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "4mo ago"
+                     },
+                     "accessibilityLabel": "4 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "mvcesPWvUIc",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "41:30",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "8HBDE-msUjw",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "We're 99.9% sure this pattern is true, but no one can prove it"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "6.8M"
+                     },
+                     "accessibilityLabel": "6.8 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "5mo ago"
+                     },
+                     "accessibilityLabel": "5 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "8HBDE-msUjw",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "34:17",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "tz23G_UXCGA",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Something is jamming GPS over Europe. Here's what we found"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "12M"
+                     },
+                     "accessibilityLabel": "12 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "5mo ago"
+                     },
+                     "accessibilityLabel": "5 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "tz23G_UXCGA",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "29:54",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "kS-CGkiPetQ",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Google Maps is unreasonably fast. Let me explain"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "Veritasium"
+                     }
+                    },
+                    {
+                     "text": {
+                      "content": "and 2swap"
+                     }
+                    },
+                    {
+                     "text": {
+                      "content": "8.9M"
+                     },
+                     "accessibilityLabel": "8.9 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "5mo ago"
+                     },
+                     "accessibilityLabel": "5 months ago"
+                    }
+                   ]
+                  }
+                 ]
+                }
+               }
+              }
+             },
+             "contentId": "kS-CGkiPetQ",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "21:18",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "SVTPv4sI_Jc",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The CIA's new tech doesn't make sense"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "3.3M"
+                     },
+                     "accessibilityLabel": "3.3 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "6mo ago"
+                     },
+                     "accessibilityLabel": "6 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "SVTPv4sI_Jc",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "33:25",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "ksn5yrsC3Wg",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Crystal That Could Destroy All Medicine"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "10M"
+                     },
+                     "accessibilityLabel": "10 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "6mo ago"
+                     },
+                     "accessibilityLabel": "6 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "ksn5yrsC3Wg",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "25:44",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "PPJ6NJkmDAo",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "How easy is it to steal $10,000 from a locked phone?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "9.7M"
+                     },
+                     "accessibilityLabel": "9.7 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "7mo ago"
+                     },
+                     "accessibilityLabel": "7 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "PPJ6NJkmDAo",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "58:54",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "jjp3WC8Unj8",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "What happens if you drop 0.125 grams of antimatter?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "12M"
+                     },
+                     "accessibilityLabel": "12 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "7mo ago"
+                     },
+                     "accessibilityLabel": "7 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "jjp3WC8Unj8",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "28:43",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "YSJY3DvnybE",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Secret Spy Tech Inside Every Credit Card"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "6.2M"
+                     },
+                     "accessibilityLabel": "6.2 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "7mo ago"
+                     },
+                     "accessibilityLabel": "7 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "YSJY3DvnybE",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "20:45",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "9szhjhO9epA",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "We Made A Giant Zipper To Explain How It Works"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "9.9M"
+                     },
+                     "accessibilityLabel": "9.9 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "8mo ago"
+                     },
+                     "accessibilityLabel": "8 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "9szhjhO9epA",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "25:40",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "Ol18JoeXlVI",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "This Paradox Splits Smart People 50/50"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "9.6M"
+                     },
+                     "accessibilityLabel": "9.6 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "8mo ago"
+                     },
+                     "accessibilityLabel": "8 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "Ol18JoeXlVI",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "53:00",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "aoag03mSuXQ",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Internet Was Weeks Away From Disaster And No One Knew"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "16M"
+                     },
+                     "accessibilityLabel": "16 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "8mo ago"
+                     },
+                     "accessibilityLabel": "8 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "aoag03mSuXQ",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "54:46",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "cMx139eTxoc",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "What does asbestos do to a person?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "11M"
+                     },
+                     "accessibilityLabel": "11 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "9mo ago"
+                     },
+                     "accessibilityLabel": "9 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "cMx139eTxoc",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "30:17",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "6HVYHNTDOFs",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Why Cold Drinks Were Deadly Before 1914"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "12M"
+                     },
+                     "accessibilityLabel": "12 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "9mo ago"
+                     },
+                     "accessibilityLabel": "9 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "6HVYHNTDOFs",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "35:53",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "XKSjCOKDtpk",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Do we know how magnets work yet?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "11M"
+                     },
+                     "accessibilityLabel": "11 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "9mo ago"
+                     },
+                     "accessibilityLabel": "9 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "XKSjCOKDtpk",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "30:09",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "P-4pbFcERnk",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "What Happens If You Keep Slowing Down?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "11M"
+                     },
+                     "accessibilityLabel": "11 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "10mo ago"
+                     },
+                     "accessibilityLabel": "10 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "P-4pbFcERnk",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "55:00",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "MiUHjLxm3V0",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Closest Thing We Have to Alien Technology"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "67M"
+                     },
+                     "accessibilityLabel": "67 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "10mo ago"
+                     },
+                     "accessibilityLabel": "10 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "MiUHjLxm3V0",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "17:35",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "piHGnG4LsmQ",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "The Future of Veritasium"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "5.1M"
+                     },
+                     "accessibilityLabel": "5.1 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "10mo ago"
+                     },
+                     "accessibilityLabel": "10 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "piHGnG4LsmQ",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "44:16",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "NIk_0AW5hFU",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "There Is Something Faster Than Light"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "17M"
+                     },
+                     "accessibilityLabel": "17 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "11mo ago"
+                     },
+                     "accessibilityLabel": "11 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "NIk_0AW5hFU",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "richItemRenderer": {
+           "content": {
+            "lockupViewModel": {
+             "contentImage": {
+              "thumbnailViewModel": {
+               "overlays": [
+                {
+                 "thumbnailBottomOverlayViewModel": {
+                  "badges": [
+                   {
+                    "thumbnailBadgeViewModel": {
+                     "text": "35:23",
+                     "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT",
+                     "animationActivationTargetId": "Y-W-w8yNiKU",
+                     "animatedText": "Now playing",
+                     "animationActivationEntitySelectorType": "THUMBNAIL_BADGE_ANIMATION_ENTITY_SELECTOR_TYPE_PLAYER_STATE"
+                    }
+                   }
+                  ]
+                 }
+                },
+                {},
+                {}
+               ]
+              }
+             },
+             "metadata": {
+              "lockupMetadataViewModel": {
+               "title": {
+                "content": "Why does antimatter exist?"
+               },
+               "metadata": {
+                "contentMetadataViewModel": {
+                 "metadataRows": [
+                  {
+                   "metadataParts": [
+                    {
+                     "text": {
+                      "content": "10M"
+                     },
+                     "accessibilityLabel": "10 million views"
+                    },
+                    {
+                     "text": {
+                      "content": "11mo ago"
+                     },
+                     "accessibilityLabel": "11 months ago"
+                    }
+                   ]
+                  }
+                 ],
+                 "delimiter": " "
+                }
+               }
+              }
+             },
+             "contentId": "Y-W-w8yNiKU",
+             "contentType": "LOCKUP_CONTENT_TYPE_VIDEO"
+            }
+           }
+          }
+         },
+         {
+          "continuationItemRenderer": {
+           "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+           "continuationEndpoint": {}
+          }
+         }
+        ],
+        "header": {
+         "chipBarViewModel": {
+          "chips": [
+           {
+            "chipViewModel": {
+             "text": "Latest",
+             "selected": true,
+             "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_UNSPECIFIED",
+             "tapCommand": {
+              "innertubeCommand": {}
+             },
+             "accessibilityLabel": "Latest"
+            }
+           },
+           {
+            "chipViewModel": {
+             "text": "Popular",
+             "selected": false,
+             "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_UNSPECIFIED",
+             "tapCommand": {
+              "innertubeCommand": {}
+             },
+             "accessibilityLabel": "Popular"
+            }
+           },
+           {
+            "chipViewModel": {
+             "text": "Oldest",
+             "selected": false,
+             "displayType": "CHIP_VIEW_MODEL_DISPLAY_TYPE_UNSPECIFIED",
+             "tapCommand": {
+              "innertubeCommand": {}
+             },
+             "accessibilityLabel": "Oldest"
+            }
+           }
+          ]
+         }
+        },
+        "targetId": "6b82421e-0000-26cc-8a3e-34c7e93c8263",
+        "style": "RICH_GRID_STYLE_SLIM"
+       }
+      }
+     }
+    },
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Shorts"
+     }
+    },
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Playables"
+     }
+    },
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Playlists"
+     }
+    },
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Posts"
+     }
+    },
+    {
+     "tabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Store"
+     }
+    },
+    {
+     "expandableTabRenderer": {
+      "endpoint": {
+       "browseEndpoint": {
+        "browseId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+        "canonicalBaseUrl": "/@veritasium"
+       }
+      },
+      "title": "Search",
+      "selected": false
+     }
+    }
+   ]
+  }
+ },
+ "header": {
+  "pageHeaderRenderer": {
+   "pageTitle": "Veritasium",
+   "content": {
+    "pageHeaderViewModel": {
+     "title": {
+      "dynamicTextViewModel": {
+       "text": {
+        "content": "Veritasium",
+        "attachmentRuns": [
+         {
+          "startIndex": 10,
+          "length": 0,
+          "element": {
+           "type": {
+            "imageType": {}
+           },
+           "properties": {
+            "layoutProperties": {
+             "height": {
+              "value": 24,
+              "unit": "DIMENSION_UNIT_POINT"
+             },
+             "width": {
+              "value": 24,
+              "unit": "DIMENSION_UNIT_POINT"
+             },
+             "margin": {
+              "left": {
+               "value": 8,
+               "unit": "DIMENSION_UNIT_POINT"
+              }
+             }
+            }
+           }
+          },
+          "alignment": "ALIGNMENT_VERTICAL_CENTER"
+         }
+        ]
+       },
+       "maxLines": 2
+      }
+     },
+     "metadata": {
+      "contentMetadataViewModel": {
+       "metadataRows": [
+        {
+         "metadataParts": [
+          {
+           "text": {
+            "content": "@veritasium"
+           },
+           "enableTruncation": true
+          }
+         ]
+        },
+        {
+         "metadataParts": [
+          {
+           "text": {
+            "content": "21.5M subscribers"
+           },
+           "accessibilityLabel": "21.5 million subscribers"
+          },
+          {
+           "text": {
+            "content": "553 videos"
+           }
+          }
+         ]
+        }
+       ],
+       "delimiter": "•"
+      }
+     }
+    }
+   }
+  }
+ },
+ "metadata": {
+  "channelMetadataRenderer": {
+   "title": "Veritasium",
+   "externalId": "UCHnyfMqiRRG1u-2MsSQLbXA",
+   "vanityChannelUrl": "http://www.youtube.com/@veritasium"
+  }
+ }
+}

@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { NavigationGuard } from '../src/bridge';
 import { handlePlayer } from '../src/flow';
 import { memoryStore } from '../src/store';
+import { DEFAULT_CHECKLIST, normalizeChecklist } from '@viewproof/core';
 
 const fx = (n: string) => JSON.parse(readFileSync(new URL(`../../../packages/core/test/fixtures/${n}`, import.meta.url), 'utf8'));
 const player = fx('player-watch.json');
@@ -90,4 +91,12 @@ describe('handlePlayer', () => {
     await handlePlayer({ url: URL_A, payload: player }, d);
     expect(vi.mocked(d.render).mock.calls.at(-1)![0]).toMatchObject({ kind: 'ok' });
   });
+});
+
+test('the stored checklist rules are applied', async () => {
+  const d = deps({ checklist: async () => normalizeChecklist({ ...DEFAULT_CHECKLIST, title: { on: false, min: 20, max: 70 } }) });
+  await handlePlayer({ url: URL_A, payload: player }, d);
+  const last = vi.mocked(d.render).mock.calls.at(-1)![0] as { card: { checklist: { id: string }[] } };
+  expect(last.card.checklist.map((i) => i.id)).not.toContain('title');
+  expect(last.card.checklist.map((i) => i.id)).toContain('tags');
 });

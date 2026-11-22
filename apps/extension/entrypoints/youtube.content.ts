@@ -1,15 +1,25 @@
-import { isPlayerMessage, NavigationGuard } from '../src/bridge';
-import { handlePlayer } from '../src/flow';
+import { isPlayerMessage, NavigationGuard, type PlayerMessage } from '../src/bridge';
+import { handlePlayer, idleRenderer, withChecklist } from '../src/flow';
 import { type PanelState, renderPanel } from '../src/panel';
 import { chromeStore } from '../src/store';
 import { isSearchMessage, searchQueryOf, searchStore } from '../src/search';
 import { fromSearch, fromWatch, parsePlayerResponse, parseSearchPage, type PoolObservation } from '@viewproof/core';
 import { poolStore } from '../src/pool';
+import { whenIdle } from '../src/idle';
+import { applyBadges, type Badge, badgeWatcher, clearBadges } from '../src/badges';
+import { channelBadges, channelCard, isChannelMessage, isChannelPath } from '../src/channel';
+import { type CardModel, mountHost, placeBefore, removeHost, renderPagePanel } from '../src/page-panel';
+import { factsSummary, gridOutliers, parseChannelPage, topResultsFacts } from '@viewproof/core';
+import { getBaseline } from '../src/baseline';
+import { searchCard, searchFeedOutliers } from '../src/search-panel';
+import { badgeFor } from '../src/channel';
+import { DEFAULT_TOGGLES, type PanelToggles, settingsChanged, settingsStore } from '../src/settings';
 
 /** Ask the background script to send once this many observations are queued. */
 const FLUSH_AT = 50;
 
 const HOST_ID = 'viewproof-panel';
+const PAGE_HOST = 'viewproof-page-panel';
 const MOUNT_WAIT_MS = 10_000;
 
 /** Isolated world: turns the page's player data into the ViewProof panel. Talks only to youtube.com. */
@@ -17,6 +27,14 @@ export default defineContentScript({
   matches: ['https://www.youtube.com/*'],
   runAt: 'document_idle',
   main() {
+    const settings = settingsStore(browser.storage.local);
+    let toggles: PanelToggles = DEFAULT_TOGGLES;
+    const ready = settings.getToggles().then((t) => { toggles = t; }, () => undefined);
+    let lastPlayer: PlayerMessage | null = null;
+    /** What the watch panel shows now; re-drawn (never re-computed) when settings change. */
+    let lastState: PanelState | null = null;
+    const painter = idleRenderer({ whenIdle, mount, paint: renderPanel, currentUrl: () => location.href, enabled: () => toggles.watch });
+
     const deps = {
       guard: new NavigationGuard(),
       store: chromeStore(browser.storage.local),
@@ -24,8 +42,80 @@ export default defineContentScript({
       fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
       now: () => Date.now(),
       currentUrl: () => location.href,
-      render: (state: PanelState) => void mount().then((host) => host && renderPanel(host, state)),
+      render: (state: PanelState) => { lastState = state; painter.render(state); },
+      checklist: () => settings.getChecklist(),
     };
+
+    // Channel and search pages: one card above YouTube's list, plus ×N badges on its tiles.
+    let pageSeq = 0;
+    let watcher: { stop(): void } | null = null;
+    let currentBadges = new Map<string, Badge>();
+    let lastPage: { kind: 'channel' | 'search'; run: () => void } | null = null;
+    const resetPage = () => {
+      pageSeq++;
+      watcher?.stop();
+      watcher = null;
+      currentBadges = new Map();
+      clearBadges();
+      removeHost(PAGE_HOST);
+    };
+    /** Show (or update) the card and badges, unless the user has navigated since `seq`. */
+    const showPage = (seq: number, model: CardModel, badges: Map<string, Badge>, place: (h: HTMLElement) => boolean) => {
+      void whenIdle(() => (seq === pageSeq ? mountHost(PAGE_HOST, (h) => seq === pageSeq && place(h)) : null)).then((host) => {
+        if (!host || seq !== pageSeq) return;
+        renderPagePanel(host, model);
+        currentBadges = badges;
+        if (watcher) applyBadges(document, currentBadges);
+        else watcher = badgeWatcher(() => applyBadges(document, currentBadges));
+      });
+    };
+    const placeSearch = (h: HTMLElement) => placeBefore(h, document.querySelector('ytd-search:not([hidden]) ytd-section-list-renderer'));
+    const placeChannel = (h: HTMLElement) => placeBefore(h, document.querySelector('ytd-browse:not([hidden]) ytd-rich-grid-renderer'));
+
+    window.addEventListener('message', (e) => {
+      if (!isChannelMessage(e, window, location.origin)) return;
+      const { url, data } = e.data;
+      const run = () => {
+        if (!toggles.channel || new URL(url).pathname !== location.pathname || !isChannelPath(location.pathname)) return;
+        const seq = pageSeq;
+        const page = parseChannelPage(data);
+        if ('error' in page) {
+          if (page.error === 'Not a channel page') return;
+          showPage(seq, { title: "This channel's videos", stats: [], lines: [], error: page.error }, new Map(), placeChannel);
+          return;
+        }
+        const outliers = gridOutliers(page);
+        showPage(seq, channelCard(page, outliers), channelBadges(outliers), placeChannel);
+      };
+      lastPage = { kind: 'channel', run };
+      void ready.then(run);
+    });
+
+    // Settings changed on the options page: apply them without a reload.
+    browser.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local') return;
+      const c = settingsChanged(changes);
+      if (c.toggles) {
+        void settings.getToggles().then((t) => {
+          const wasOn = toggles.watch;
+          toggles = t;
+          const host = document.getElementById(HOST_ID);
+          if (!t.watch && host) host.style.display = 'none';
+          if (t.watch && !wasOn && lastState && location.pathname === '/watch') painter.render(lastState);
+          if (lastPage) {
+            if (!t[lastPage.kind]) resetPage();
+            else if (!document.getElementById(PAGE_HOST)) lastPage.run();
+          }
+        });
+      }
+      if (c.checklist && lastState && lastPlayer && location.pathname === '/watch') {
+        const player = lastPlayer;
+        void settings.getChecklist().then((rules) => {
+          const next = lastState && withChecklist(lastState, player.payload, rules);
+          if (next) deps.render(next);
+        });
+      }
+    });
 
     // Opt-in pool (plan 5b): public facts of the videos on this page, queued only with consent and a linked server.
     const pool = poolStore(browser.storage.local);
@@ -44,17 +134,57 @@ export default defineContentScript({
       const q = searchQueryOf(e.data.url);
       const page = q ? parseSearchPage(e.data.response, q) : null;
       if (page && !('error' in page)) share(page.results.map((r) => fromSearch(r, new Date().toISOString())));
+      const { url, response } = e.data;
+      const run = () => {
+        if (!toggles.search || url !== location.href) return;
+        const query = searchQueryOf(url) ?? new URL(url).searchParams.get('search_query') ?? '';
+        const p = parseSearchPage(response, query);
+        const seq = pageSeq;
+        if ('error' in p) {
+          showPage(seq, { title: `What ranks for "${query}"`, stats: [], lines: [], error: p.error }, new Map(), placeSearch);
+          return;
+        }
+        const facts = topResultsFacts(p);
+        const summary = factsSummary(facts);
+        showPage(seq, searchCard(p, facts, summary, null), new Map(), placeSearch);
+        void searchFeedOutliers(p, {
+          baseline: (ch) => getBaseline(ch, { fetch: deps.fetch, now: deps.now, cache: deps.cache }),
+          isCurrent: () => seq === pageSeq,
+        }).then((r) => {
+          if (seq !== pageSeq) return;
+          const badges = new Map<string, Badge>();
+          for (const [id, m] of r.outliers) { const b = badgeFor(m); if (b) badges.set(id, b); }
+          const rows = p.results
+            .flatMap((x) => { const m = r.outliers.get(x.videoId); return m?.kind === 'value' ? [{ x, v: m.value }] : []; })
+            .sort((a, b) => b.v - a.v)
+            .slice(0, 5)
+            .map(({ x, v }) => ({
+              text: x.title || x.videoId,
+              href: `https://www.youtube.com/watch?v=${x.videoId}`,
+              badge: `×${v}`,
+              note: `${x.views.kind === 'value' ? `${x.views.value.toLocaleString('en-US')} views` : ''}${x.ageLabel ? ` · ${x.ageLabel}` : ''} · ${x.channelName}`,
+            }));
+          showPage(seq, searchCard(p, facts, summary, { withXn: badges.size, total: p.results.length, stopped: r.stopped, rows }), badges, placeSearch);
+        });
+      };
+      lastPage = { kind: 'search', run };
+      void ready.then(run);
     });
 
     window.addEventListener('message', (e) => {
       if (!isPlayerMessage(e, window, location.origin)) return;
-      void handlePlayer(e.data, deps); // handles its own errors, and only for the current video
+      lastPlayer = e.data;
+      void ready.then(() => handlePlayer(e.data, deps)); // handles its own errors, and only for the current video
       const v = e.data.payload ? parsePlayerResponse(e.data.payload) : null;
       if (v?.ok) share([fromWatch(v.value, new Date().toISOString())]);
     });
 
     // The moment navigation starts, the old video's numbers must go.
     document.addEventListener('yt-navigate-start', () => {
+      painter.invalidate();
+      lastState = null;
+      resetPage();
+      lastPage = null;
       const host = document.getElementById(HOST_ID);
       if (host) renderPanel(host, { kind: 'loading' });
     });
@@ -62,7 +192,7 @@ export default defineContentScript({
     // Hide the panel on pages that are not videos.
     document.addEventListener('yt-navigate-finish', () => {
       const host = document.getElementById(HOST_ID);
-      if (host) host.style.display = location.pathname === '/watch' ? '' : 'none';
+      if (host) host.style.display = location.pathname === '/watch' && toggles.watch ? '' : 'none';
     });
   },
 });

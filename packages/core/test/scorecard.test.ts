@@ -6,6 +6,7 @@ import type { FeedVideo } from '../src/types';
 const video: WatchVideo = {
   platform: 'youtube', videoId: 'vid00000001', channelId: 'UCx', title: 'T', views: 96000, lengthSeconds: 600,
   publishedAt: '2026-11-18T12:00:00Z', tags: ['a', 'b'], isLive: false, isUpcoming: false, format: 'long',
+  description: '', captions: { manual: 0, auto: 0 }, endScreenElements: 0,
 };
 const baseline: FeedVideo[] = [10000, 20000, 30000, 40000, 50000].map((v, i) => ({
   platform: 'youtube', videoId: `b${i}`, title: '', publishedAt: `2026-11-0${i + 1}T00:00:00Z`, views: v, format: 'long',
