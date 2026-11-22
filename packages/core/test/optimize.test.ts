@@ -77,6 +77,9 @@ describe('titleFacts', () => {
   test('fewer than 5 titles → no data with the count', () => {
     expect(titleFacts(['a', 'b', 'c', 'd'], 'x')).toEqual({ ok: false, reason: 'Only 4 outlier titles for this keyword; need 5 to compare' });
   });
+  test('none at all reads naturally', () => {
+    expect(titleFacts([], 'x')).toEqual({ ok: false, reason: 'No outlier titles for this keyword yet; need 5 to compare' });
+  });
   test('counts, not percentages', () => {
     const titles = [
       'Etymology of 10 words',                 // number, early

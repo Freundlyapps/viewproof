@@ -104,6 +104,7 @@ export interface TitleFacts { n: number; medianLength: number; withNumber: numbe
 const QUESTION_START = /^(how|what|why|when|who|which|can|do|does|is|are)\b/i;
 
 export function titleFacts(titles: string[], keyword: string): { ok: true; facts: TitleFacts } | { ok: false; reason: string } {
+  if (!titles.length) return { ok: false, reason: 'No outlier titles for this keyword yet; need 5 to compare' };
   if (titles.length < 5) return { ok: false, reason: `Only ${titles.length} outlier ${titles.length === 1 ? 'title' : 'titles'} for this keyword; need 5 to compare` };
   const first = kw(keyword)[0];
   return {

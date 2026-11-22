@@ -121,6 +121,15 @@ Where the data comes from: each channel's public RSS feed, which lists its lates
 - **Filters:** keyword in the title, long or Shorts, uploaded within 7 / 30 / 90 days or 12 months, channel size (the channel's usual views: under 10k, 10k–100k, over 100k) and a minimum ×N.
 - **Waiting channels:** a channel the network has just found waits for its first feed check (the hourly job checks up to 15 new channels an hour). The page says how many are waiting.
 
+## Optimize video
+
+**Optimize video** checks a title, description and tags with fixed rules. Each rule shows its threshold; there is no score. Nothing is written to YouTube: **Copy all** puts the title, description and tags on the clipboard, and **Open in YouTube Studio** opens the video's edit page.
+- **Title:** 20–70 characters; at most 100 (YouTube's limit); contains the keyword; the keyword starts within the first 40 characters. Characters are counted as you see them (an emoji is one).
+- **Preview:** the title at search-result and phone home-feed widths, cut to two lines. It's an approximate picture, not a measurement; YouTube's layout varies by device.
+- **Outlier titles:** videos the network found in the last 90 days that beat their channel's usual by ×2 or more and contain the keyword, with plain counts (median length, titles with a number, questions, keyword early). Under 5 titles there are no counts, only the titles.
+- **Your videos:** pick one of your videos to see its real search terms from YouTube Analytics (last 90 days) and whether each appears in the title, description or tags. You can edit the fields and see the checks update. Description: at least 250 characters, the keyword in the first 150, and valid chapters. Tags: at least 3, and within YouTube's 500-character limit. Each video check uses 1 YouTube Data API unit and is kept for 6 hours.
+- **AI title ideas** are optional and labelled AI (see "AI").
+
 ## AI
 
 **Ask AI** writes titles, descriptions, tags and video ideas, and answers questions about your channel. Every answer lists the data it used, line by line, and cites it as [S1], [S2]…

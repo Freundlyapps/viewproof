@@ -26,7 +26,7 @@ function Editor(props: { data: OptimizeVideo }) {
   return (
     <div className="stack">
       <div className="stack-s">
-        <h3>Search terms for this video <Badge kind="real" /></h3>
+        <h3>Search terms for this video {props.data.terms.length > 0 && <Badge kind="real" />}</h3>
         {props.data.terms.length ? (
           <table className="tbl" aria-label="Search terms for this video">
             <thead><tr><th>Term</th><th>Views from search</th><th>Title</th><th>Description</th><th>Tags</th></tr></thead>

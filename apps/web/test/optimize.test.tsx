@@ -94,6 +94,7 @@ describe('Your videos', () => {
     renderAt('/optimize');
     await userEvent.selectOptions(await screen.findByLabelText('Video'), 'abcdefghijk');
     expect(await screen.findByText('YouTube lists search terms only once enough people searched.')).toBeTruthy();
+    expect(screen.queryByText('REAL')).toBeNull();
     await waitFor(() => expect((screen.getByLabelText('Keyword for this video') as HTMLInputElement).value).toBe(''));
   });
 });
