@@ -53,7 +53,10 @@ function channelLines(o: Overview): string[] {
   const out: string[] = [];
   if (v !== null) out.push(views(v));
   if (minutes !== null) out.push(`${num(minutes / 60)} watch hours`);
-  if (avd !== null) out.push(`average view duration ${Math.floor(avd / 60)}:${String(Math.round(avd % 60)).padStart(2, '0')}`);
+  if (avd !== null) {
+    const sec = Math.round(avd);
+    out.push(`average view duration ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
+  }
   if (gained !== null && lost !== null) out.push(`${num(gained - lost)} net subscribers (${num(gained)} gained, ${num(lost)} lost)`);
   if (o.dataThrough) out.push(`data through ${o.dataThrough}`);
   return out;

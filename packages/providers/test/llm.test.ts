@@ -23,7 +23,14 @@ describe('OpenAI-compatible providers', () => {
     expect(r).toEqual({ text: 'answer', model: 'm-1', inputTokens: 12, outputTokens: 3 });
     expect(f.calls[0]!.url).toBe('https://api.openai.com/v1/chat/completions');
     expect(header(f.calls[0]!.init, 'authorization')).toBe('Bearer k');
-    expect(f.calls[0]!.body).toEqual({ model: 'm-1', max_tokens: 100, messages: [{ role: 'system', content: 'sys' }, { role: 'user', content: 'hi' }] });
+    expect(f.calls[0]!.body).toEqual({ model: 'm-1', max_completion_tokens: 100, messages: [{ role: 'system', content: 'sys' }, { role: 'user', content: 'hi' }] });
+  });
+
+  test('OpenAI gets max_completion_tokens (newer models refuse max_tokens)', async () => {
+    const f = fakeFetch(ok);
+    await llmClient({ provider: 'openai', apiKey: 'k', model: 'gpt-x', fetchFn: f.fn }).complete(REQ);
+    expect(f.calls[0]!.body.max_completion_tokens).toBe(100);
+    expect(f.calls[0]!.body.max_tokens).toBeUndefined();
   });
 
   test('custom base URL with a trailing slash; missing usage counts as 0', async () => {

@@ -6,8 +6,10 @@ import type { AiTask } from '../plans';
 import { readSession } from '../session';
 import { type AiItem, citations, parseItems } from './answer';
 import { type QuickAction, SYSTEM_QUICK, askSystem, quickPrompt } from './prompts';
-import { type AiChoice, aiUsage, chooseAi, label, llmFailure } from './router';
-import { type SourceKind, gatherSources, sourceBlock } from './sources';
+import { type AiChoice, aiUsage, chooseAi, label, llmFailure, refundable } from './router';
+import { type Missing, type SourceKind, gatherSources, sourceBlock } from './sources';
+
+const missingLine = (m: Missing[]) => (m.length ? `Not available: ${m.map((x) => `${x.label} (${x.reason})`).join('; ')}.` : '');
 
 const err = (c: Context, status: number, body: Record<string, unknown>) => c.json(body, status as 400);
 const bad = (c: Context, message: string) => err(c, 400, { error: 'bad_request', message });
@@ -53,7 +55,7 @@ function parseMessages(body: Record<string, unknown>): LlmMessage[] | string {
     const role = (x as { role?: unknown })?.role;
     const content = (x as { content?: unknown })?.content;
     if ((role !== 'user' && role !== 'assistant') || typeof content !== 'string' || !content.trim()) return 'Each message needs a role and text.';
-    if (content.length > 4000) return 'A message can be at most 4,000 characters.';
+    if (content.length > (role === 'user' ? 4000 : 40_000)) return 'A message can be at most 4,000 characters.';
     if (role !== (i % 2 === 0 ? 'user' : 'assistant')) return 'Messages must take turns, starting with yours.';
     out.push({ role, content });
   }
@@ -77,18 +79,15 @@ export function aiRoutes(app: Hono, deps: Deps): void {
     const choice = await choose(c, deps, s.userId, 'quick');
     if (choice instanceof Response) return choice;
     const { sources, missing } = await gatherSources(deps, s.userId, SOURCES[action], typeof b.channel === 'string' ? b.channel : null);
-    const r = await choice.client.complete({ system: SYSTEM_QUICK, messages: [{ role: 'user', content: quickPrompt(action, topic, notes, sourceBlock(sources)) }], maxTokens: 4000 });
+    const r = await choice.client.complete({ system: SYSTEM_QUICK, messages: [{ role: 'user', content: quickPrompt(action, topic, notes, sourceBlock(sources), missingLine(missing)) }], maxTokens: 4000 });
     if (isLlmError(r)) {
-      await choice.release();
+      if (refundable(r.error)) await choice.release();
       const f = llmFailure(r, choice.via, choice.client.provider);
       return err(c, f.status, { error: f.error, message: f.message });
     }
     const parsed = parseItems(r.text, new Set(sources.map((x) => x.id)));
     const items = parsed && (action === 'tags' ? capTags(parsed) : parsed.slice(0, COUNT[action]));
-    if (!items?.length) {
-      await choice.release();
-      return err(c, 502, { error: 'bad_output', message: BAD_OUTPUT });
-    }
+    if (!items?.length) return err(c, 502, { error: 'bad_output', message: BAD_OUTPUT });
     return c.json({
       items, sources, missing,
       ai: { provider: choice.client.provider, label: label(choice.client.provider), model: choice.client.model, via: choice.via },
@@ -106,17 +105,14 @@ export function aiRoutes(app: Hono, deps: Deps): void {
     const choice = await choose(c, deps, s.userId, 'coach');
     if (choice instanceof Response) return choice;
     const { sources, missing } = await gatherSources(deps, s.userId, ALL, typeof b.channel === 'string' ? b.channel : null);
-    const r = await choice.client.complete({ system: askSystem(sourceBlock(sources)), messages, maxTokens: 8000 });
+    const r = await choice.client.complete({ system: askSystem(sourceBlock(sources), missingLine(missing)), messages, maxTokens: 8000 });
     if (isLlmError(r)) {
-      await choice.release();
+      if (refundable(r.error)) await choice.release();
       const f = llmFailure(r, choice.via, choice.client.provider);
       return err(c, f.status, { error: f.error, message: f.message });
     }
     const answer = r.text.trim();
-    if (!answer) {
-      await choice.release();
-      return err(c, 502, { error: 'bad_output', message: BAD_OUTPUT });
-    }
+    if (!answer) return err(c, 502, { error: 'bad_output', message: BAD_OUTPUT });
     const { cited, unknown } = citations(answer, new Set(sources.map((x) => x.id)));
     return c.json({
       answer, cited, unknownCitations: unknown, sources, missing,

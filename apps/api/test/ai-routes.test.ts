@@ -69,12 +69,18 @@ describe('POST /api/ai/quick', () => {
     expect(req.maxTokens).toBe(4000);
   });
 
-  test('unreadable output → 502 and the use is refunded', async () => {
+  test('unreadable output → 502 and the use still counts (prompts can force it)', async () => {
     const s = await setup('pro', () => 'Sorry!');
     const res = await sendJsonReq(s.app, 'POST', '/api/ai/quick', s.cookie, { action: 'titles', topic: 'x' });
     expect(res.status).toBe(502);
     expect(await res.json()).toMatchObject({ error: 'bad_output', message: "The AI's answer couldn't be read. Try again." });
-    expect(await used(s.id)).toBe(0);
+    expect(await used(s.id)).toBe(1);
+  });
+
+  test('a cut-off answer counts; a provider outage is refunded', async () => {
+    const cut = await setup('pro', () => ({ error: 'truncated', message: 'cut' }));
+    expect((await sendJsonReq(cut.app, 'POST', '/api/ai/quick', cut.cookie, { action: 'tags', topic: 'x' })).status).toBe(502);
+    expect(await used(cut.id)).toBe(1);
   });
 
   test('LLM error → status from llmFailure and the use is refunded', async () => {
@@ -115,6 +121,18 @@ describe('POST /api/ai/quick', () => {
 });
 
 describe('POST /api/ai/ask', () => {
+  test('a long earlier answer does not block the follow-up', async () => {
+    const s = await setup('pro', () => 'ok [S1]');
+    const messages = [{ role: 'user', content: 'q1' }, { role: 'assistant', content: 'x'.repeat(6000) }, { role: 'user', content: 'q2' }];
+    expect((await sendJsonReq(s.app, 'POST', '/api/ai/ask', s.cookie, { messages })).status).toBe(200);
+  });
+
+  test('missing data is named to the model', async () => {
+    const s = await setup('pro', () => 'ok', false);
+    await sendJsonReq(s.app, 'POST', '/api/ai/ask', s.cookie, { messages: [{ role: 'user', content: 'hi' }] });
+    expect(s.f.requests[0]!.req.system).toContain('Not available: Your channel, last 28 days (No channel connected)');
+  });
+
   test('answer with cited and unknown citations', async () => {
     const s = await setup('pro', () => 'Views rose [S1]. Also [S7].');
     const res = await sendJsonReq(s.app, 'POST', '/api/ai/ask', s.cookie, { messages: [{ role: 'user', content: 'How am I doing?' }] });

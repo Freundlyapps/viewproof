@@ -71,6 +71,13 @@ describe('chooseAi', () => {
     expect(await chooseAi(deps(), id, 'coach')).toMatchObject({ error: 'limit', limit: 0, message: expect.stringContaining('Pro') });
   });
 
+  test('a limit refusal reports the real count (e.g. after a downgrade)', async () => {
+    const id = uid(); await addUser(id);
+    await env.DB.prepare("INSERT INTO ai_usage (user_id, month, quick, coach) VALUES (?, '2026-11', 37, 4)").bind(id).run();
+    expect(await chooseAi(deps(), id, 'quick')).toMatchObject({ error: 'limit', used: 37, limit: 20 });
+    expect(await chooseAi(deps(), id, 'coach')).toMatchObject({ error: 'limit', used: 4, limit: 0 });
+  });
+
   test('self-hosted is unlimited', async () => {
     const id = uid(); await addUser(id);
     const d = deps({ ...KEY_ENV, SELF_HOSTED: 'true' });

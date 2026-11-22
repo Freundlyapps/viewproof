@@ -68,7 +68,8 @@ function openAiCompatible(provider: LlmProviderId, baseUrl: string, apiKey: stri
         res = await fetchFn(url, {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}) },
-          body: JSON.stringify({ model, max_tokens: r.maxTokens, messages: [{ role: 'system', content: r.system }, ...r.messages] }),
+          // OpenAI's newer models refuse max_tokens; the other providers only know max_tokens.
+          body: JSON.stringify({ model, [provider === 'openai' ? 'max_completion_tokens' : 'max_tokens']: r.maxTokens, messages: [{ role: 'system', content: r.system }, ...r.messages] }),
         });
       } catch {
         return err('unavailable', `Could not reach ${LLM_PRESETS[provider].label}`);

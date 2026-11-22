@@ -42,6 +42,13 @@ describe('gatherSources', () => {
     expect(r.sources[2]!.lines[0]).toContain('"Why "OK" means okay" — 5,000 views');
   });
 
+  test('average view duration never shows 60 seconds', async () => {
+    const u = uid(); await addUser(u); const ch = await channel(u);
+    const o = overview(10); (o.totals as any).averageViewDuration = pair(119.6);
+    await cache(ch, `overview:28d:${day()}`, o);
+    expect((await gatherSources(deps(), u, ['channel'], ch)).sources[0]!.lines).toContain('average view duration 2:00');
+  });
+
   test('one view is singular', async () => {
     const u = uid(); await addUser(u); const ch = await channel(u);
     await cache(ch, `terms:90d:${day()}`, { ...terms, terms: [{ term: 'rare', views: 1, watchMinutes: 0, previousViews: none, topVideo: null }] });

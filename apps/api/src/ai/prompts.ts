@@ -23,14 +23,15 @@ const TASKS: Record<QuickAction, (topic: string) => string> = {
   ideas: (t) => `Suggest 5 next video ideas for this channel${t ? `, focused on: ${t}` : ''}. Each item's text is a working title; "why" names the evidence from the sources.`,
 };
 
-export function quickPrompt(action: QuickAction, topic: string, notes: string, block: string): string {
+export function quickPrompt(action: QuickAction, topic: string, notes: string, block: string, missing = ''): string {
   return [
     TASKS[action](topic),
     notes ? `Creator's notes: ${notes}` : '',
+    missing,
     block ? `Sources:\n${block}` : 'Sources: none are available. Say so in "why" and keep suggestions general.',
   ].filter(Boolean).join('\n\n');
 }
 
-export function askSystem(block: string): string {
-  return `${SYSTEM_ASK}\n\n${block ? `Sources:\n${block}` : 'Sources: none are available for this creator yet. Say so when it matters.'}`;
+export function askSystem(block: string, missing = ''): string {
+  return `${SYSTEM_ASK}\n\n${block ? `Sources:\n${block}` : 'Sources: none are available for this creator yet. Say so when it matters.'}${missing ? `\n\n${missing}` : ''}`;
 }

@@ -38,15 +38,17 @@ export async function chooseAi(deps: Deps, userId: string, task: AiTask): Promis
   const ai = deps.config.ai;
   if (!ai) return { error: 'no_ai', message: NO_AI };
   const limit = aiLimit(await planOf(deps, userId), deps.config.selfHosted, task);
-  if (limit === 0) return { error: 'limit', message: COACH_IS_PRO, used: 0, limit: 0 };
   const month = monthOf(deps.now());
+  const usedNow = async () =>
+    (await deps.db.prepare(`SELECT ${task} AS n FROM ai_usage WHERE user_id = ? AND month = ?`).bind(userId, month).first<{ n: number }>())?.n ?? 0;
+  if (limit === 0) return { error: 'limit', message: COACH_IS_PRO, used: await usedNow(), limit: 0 };
   // Reserve one use atomically; the WHERE on the upsert keeps concurrent requests from passing the limit.
   const cap = Number.isFinite(limit) ? limit : Number.MAX_SAFE_INTEGER;
   const r = await deps.db
     .prepare(`INSERT INTO ai_usage (user_id, month, ${task}) VALUES (?, ?, 1) ON CONFLICT(user_id, month) DO UPDATE SET ${task} = ${task} + 1 WHERE ${task} < ?`)
     .bind(userId, month, cap)
     .run();
-  if (!r.meta.changes) return { error: 'limit', message: limitText(task, limit), used: limit, limit };
+  if (!r.meta.changes) return { error: 'limit', message: limitText(task, limit), used: await usedNow(), limit };
   const client = deps.llm({ provider: ai.provider, apiKey: ai.apiKey, model: task === 'quick' ? ai.quickModel : ai.coachModel, baseUrl: ai.baseUrl });
   const release = async () => {
     await deps.db.prepare(`UPDATE ai_usage SET ${task} = MAX(${task} - 1, 0) WHERE user_id = ? AND month = ?`).bind(userId, month).run();
@@ -64,6 +66,9 @@ export async function aiUsage(deps: Deps, userId: string): Promise<{ month: stri
     coach: { used: row?.coach ?? 0, limit: finite(aiLimit(plan, deps.config.selfHosted, 'coach')) },
   };
 }
+
+/** Refund only failures the user can't cause; a prompt can force a cut-off, a refusal or unreadable output. */
+export const refundable = (e: LlmError['error']) => e === 'unavailable' || e === 'rate_limited' || e === 'auth' || e === 'bad_request';
 
 export function llmFailure(e: LlmError, via: 'own' | 'included', provider: LlmProviderId): { error: string; message: string; status: number } {
   const name = label(provider);
