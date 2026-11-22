@@ -22,7 +22,7 @@ describe('channelCard', () => {
     expect(m.title).toBe("This channel's videos");
     const t = JSON.stringify(m);
     expect(t).toContain('rounded');
-    expect(t).toContain('21.5M subscribers');
+    expect(m.stats.find((s) => s.label === 'Subscribers')?.value).toBe('21.5M');
     expect(m.rows!.length).toBeLessThanOrEqual(5);
     expect(m.rows!.length).toBeGreaterThan(0);
     const xs = m.rows!.map((r) => Number(r.badge.slice(1)));
@@ -30,6 +30,7 @@ describe('channelCard', () => {
     expect(m.rows![0]!.href).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/);
     expect(m.rows![0]!.note).toMatch(/between ×[\d.]+ and ×[\d.]+/);
     expect(m.lines.join(' ')).toContain('×N for 25 of 30 videos');
+    expect(m.lines.at(-1)).toBe('5 without ×N: Needs 5 earlier videos on this page.');
   });
   test('sorted by Popular says why there is no ×N', () => {
     const p = { ...page, sort: 'popular' as const };

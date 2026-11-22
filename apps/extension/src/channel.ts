@@ -50,10 +50,11 @@ export function channelCard(page: ChannelPage, outliers: Map<string, Measured<nu
   const stats: CardModel['stats'] = [
     { label: `Usual views (median of latest ${counts.length})`, value: med === null ? 'No data' : `≈${compact.format(med)}`, note: 'from rounded counts' },
   ];
-  if (page.subscribersText) stats.push({ label: 'Subscribers', value: page.subscribersText.replace(/\s*subscribers?$/i, ''), note: page.subscribersText });
+  if (page.subscribersText) stats.push({ label: 'Subscribers', value: page.subscribersText.replace(/\s*subscribers?$/i, '') });
   const lines = [`×N for ${withXn.length} of ${page.videos.length} videos on this page: shown views ÷ the median of the next 15 older videos on this tab. Videos loaded by scrolling aren't included.`];
   if (missing.length) {
-    const reasons = [...new Set(missing.map((m) => m.reason))];
+    // "Needs 5 earlier videos…; found 4" and "…; found 3" are one reason.
+    const reasons = [...new Set(missing.map((m) => m.reason.replace(/; found \d+$/, '')))];
     lines.push(`${missing.length} without ×N: ${reasons.slice(0, 2).join('; ')}.`);
   }
   const rows = withXn

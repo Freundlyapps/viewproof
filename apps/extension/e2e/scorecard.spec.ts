@@ -1,7 +1,7 @@
 // Loads the built extension into Chromium and serves fake youtube.com pages through
 // request routing — no real YouTube traffic. Real-page behaviour is checked by hand (README).
 import { type BrowserContext, chromium, expect, test } from '@playwright/test';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,12 +18,17 @@ function player(videoId: string, title: string, views: number, hoursAgo: number,
   };
 }
 
-function feed(): string {
-  const entries = [10000, 20000, 30000, 30000, 40000, 50000].map((v, i) => `
+function feed(extra?: string): string {
+  const newest = extra ? [`
+  <entry><yt:videoId>${extra}</yt:videoId><title>new</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=${extra}"/>
+    <published>${new Date(Date.now() - 24 * HOUR).toISOString()}</published>
+    <media:group><media:community><media:statistics views="1"/></media:community></media:group></entry>`] : [];
+  const entries = [...newest, ...[10000, 20000, 30000, 30000, 40000, 50000].map((v, i) => `
   <entry><yt:videoId>base0000${i}aa</yt:videoId><title>b${i}</title>
     <link rel="alternate" href="https://www.youtube.com/watch?v=base0000${i}aa"/>
     <published>${new Date(Date.now() - (200 + i * 24) * HOUR).toISOString()}</published>
-    <media:group><media:community><media:statistics views="${v}"/></media:community></media:group></entry>`);
+    <media:group><media:community><media:statistics views="${v}"/></media:community></media:group></entry>`)];
   return `<?xml version="1.0"?><feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">${entries.join('')}</feed>`;
 }
 
@@ -34,6 +39,25 @@ function watchPage(data: unknown): string {
     window.__vp = ${JSON.stringify(data)};
     document.getElementById('movie_player').getPlayerResponse = () => window.__vp;
   </script></body></html>`;
+}
+
+const FIX = (n: string) => readFileSync(fileURLToPath(new URL(`../../../packages/core/test/fixtures/${n}`, import.meta.url)), 'utf8');
+const SEARCH_VIDEO = '-YCGK33c0xs';
+const SEARCH_CHANNEL = 'UCqZL_f4Jp8yHnv2KNvcsWeg';
+const tileHtml = (tag: string, id: string) => `<${tag}><a href="/watch?v=${id}">thumb</a><div id="details"><h3><a href="/watch?v=${id}">title ${id}</a></h3></div></${tag}>`;
+
+function channelPage(): string {
+  return `<!doctype html><html><body><ytd-browse><div id="primary"><ytd-rich-grid-renderer>
+    ${['uXuQF_PPg5U', 'KfODG5REyss', 'Y-W-w8yNiKU'].map((id) => tileHtml('ytd-rich-item-renderer', id)).join('')}
+  </ytd-rich-grid-renderer></div></ytd-browse>
+  <script>window.ytInitialData = ${FIX('channel-videos.json')};</script></body></html>`;
+}
+
+function searchPage(): string {
+  return `<!doctype html><html><body><ytd-search><div id="primary"><ytd-section-list-renderer><div id="contents">
+    ${tileHtml('ytd-video-renderer', SEARCH_VIDEO)}${tileHtml('ytd-video-renderer', 'otherresult1')}
+  </div></ytd-section-list-renderer></div></ytd-search>
+  <script>window.ytInitialData = ${FIX('search-results-en.json')};</script></body></html>`;
 }
 
 async function launch(feedStatus: number): Promise<BrowserContext> {
@@ -47,12 +71,17 @@ async function launch(feedStatus: number): Promise<BrowserContext> {
   await (await ctx.browser()!.newBrowserCDPSession()).send('Extensions.loadUnpacked', { path: EXT });
   await ctx.route('https://www.youtube.com/**', (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === '/feeds/videos.xml' && url.searchParams.get('channel_id') === SEARCH_CHANNEL && feedStatus === 200) {
+      return route.fulfill({ status: 200, contentType: 'application/xml', body: feed(SEARCH_VIDEO) });
+    }
     if (url.pathname === '/feeds/videos.xml') {
       if (url.searchParams.get('channel_id') === HUNG_CHANNEL) return; // never answers
       return feedStatus === 200
         ? route.fulfill({ status: 200, contentType: 'application/xml', body: feed() })
         : route.fulfill({ status: feedStatus, body: '' });
     }
+    if (url.pathname === '/@fixture/videos') return route.fulfill({ status: 200, contentType: 'text/html', body: channelPage() });
+    if (url.pathname === '/results') return route.fulfill({ status: 200, contentType: 'text/html', body: searchPage() });
     if (url.pathname === '/watch') {
       return route.fulfill({ status: 200, contentType: 'text/html', body: watchPage(player(url.searchParams.get('v')!, 'First video', 90000, 72)) });
     }
@@ -117,5 +146,59 @@ test('navigating to a video whose channel feed hangs: old numbers vanish, new on
   await expect(panel(page)).toContainText('100'); // 4,800 views ÷ 48 h
   await expect(panel(page)).toContainText('Loading');
   await expect(panel(page)).toContainText('Timed out loading the channel feed', { timeout: 15_000 });
+  await ctx.close();
+});
+
+const pagePanel = (page: import('@playwright/test').Page) => page.locator('#viewproof-page-panel');
+
+test('watch page shows the checklist', async () => {
+  const ctx = await launch(200);
+  const page = await ctx.newPage();
+  await page.goto('https://www.youtube.com/watch?v=VIDEO000001');
+  await expect(panel(page)).toContainText('Checklist', { timeout: 15_000 });
+  await expect(panel(page)).toContainText('Title length');
+  await expect(panel(page)).toContainText('No end screen');
+  await ctx.close();
+});
+
+test('channel page: panel above the grid and ×N badges on tiles', async () => {
+  const ctx = await launch(200);
+  const page = await ctx.newPage();
+  await page.goto('https://www.youtube.com/@fixture/videos');
+  await expect(pagePanel(page)).toContainText("This channel's videos", { timeout: 15_000 });
+  await expect(pagePanel(page)).toContainText('rounded');
+  await expect(pagePanel(page)).toContainText('×N for 25 of 30 videos');
+  await expect(page.locator('ytd-rich-item-renderer').first().locator('[data-viewproof-badge]')).toHaveText(/^×[\d.]+$/);
+  // The oldest video on the page has no older neighbours: no badge.
+  await expect(page.locator('ytd-rich-item-renderer').nth(2).locator('[data-viewproof-badge]')).toHaveCount(0);
+  await ctx.close();
+});
+
+test('search page: competition facts, and ×N for a result in its channel feed', async () => {
+  const ctx = await launch(200);
+  const page = await ctx.newPage();
+  await page.goto('https://www.youtube.com/results?search_query=pottery');
+  await expect(pagePanel(page)).toContainText('What ranks for "pottery"', { timeout: 15_000 });
+  await expect(pagePanel(page)).toContainText('Median views');
+  await expect(pagePanel(page)).toContainText('×N shown for 1 of', { timeout: 15_000 });
+  await expect(page.locator('ytd-video-renderer').first().locator('[data-viewproof-badge]')).toHaveText('×68.7');
+  await expect(page.locator('ytd-video-renderer').nth(1).locator('[data-viewproof-badge]')).toHaveCount(0);
+  await ctx.close();
+});
+
+test('switching channel pages off in settings hides the panel, live', async () => {
+  const ctx = await launch(200);
+  const page = await ctx.newPage();
+  await page.goto('https://www.youtube.com/@fixture/videos');
+  await expect(pagePanel(page)).toContainText("This channel's videos", { timeout: 15_000 });
+  const sw = ctx.serviceWorkers()[0] ?? await ctx.waitForEvent('serviceworker');
+  const id = new URL(sw.url()).host;
+  const opts = await ctx.newPage();
+  await opts.goto(`chrome-extension://${id}/options.html`);
+  await opts.locator('#panel-channel').uncheck();
+  await expect(pagePanel(page)).toHaveCount(0, { timeout: 10_000 });
+  await expect(page.locator('[data-viewproof-badge]')).toHaveCount(0);
+  await opts.locator('#panel-channel').check();
+  await expect(pagePanel(page)).toContainText("This channel's videos", { timeout: 15_000 });
   await ctx.close();
 });
