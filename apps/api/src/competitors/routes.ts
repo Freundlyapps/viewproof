@@ -4,6 +4,7 @@ import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
 import { accessFor } from '../channel-data';
 import { readSession } from '../session';
+import { chunked } from '../sql';
 import { ingestFeed, pollChannel, pollStale } from './poll';
 import type { StatsAuth } from './stats';
 
@@ -41,14 +42,14 @@ export async function saveStats(deps: Deps, ids: string[], auth: StatsAuth): Pro
 }
 
 /** The channel's latest 15 feed videos with each one's latest snapshot count. */
-async function feedOf(deps: Deps, channelIds: string[]): Promise<Map<string, (FeedVideo & { title: string })[]>> {
+export async function feedOf(deps: Deps, channelIds: string[]): Promise<Map<string, (FeedVideo & { title: string })[]>> {
   const out = new Map<string, (FeedVideo & { title: string })[]>();
-  if (!channelIds.length) return out;
-  const rows = (await deps.db.prepare(
+  const rows = await chunked([...new Set(channelIds)], async (ids, ph) => (await deps.db.prepare(
     `SELECT v.video_id, v.channel_id, v.title, v.published_at, v.format,
             (SELECT views FROM video_snapshots s WHERE s.video_id = v.video_id ORDER BY at DESC LIMIT 1) AS views
-     FROM feed_videos v WHERE v.channel_id IN (${channelIds.map(() => '?').join(',')}) ORDER BY v.published_at DESC`,
-  ).bind(...channelIds).all<{ video_id: string; channel_id: string; title: string; published_at: string; format: string; views: number | null }>()).results;
+     FROM feed_videos v WHERE v.channel_id IN (${ph}) ORDER BY v.published_at DESC`,
+  ).bind(...ids).all<{ video_id: string; channel_id: string; title: string; published_at: string; format: string; views: number | null }>()).results);
+  rows.sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));
   for (const r of rows) {
     const list = out.get(r.channel_id) ?? [];
     if (list.length < FEED_SIZE) list.push({ platform: 'youtube', videoId: r.video_id, title: r.title, publishedAt: r.published_at, views: r.views, format: r.format as Format });
@@ -57,11 +58,10 @@ async function feedOf(deps: Deps, channelIds: string[]): Promise<Map<string, (Fe
   return out;
 }
 
-async function historyOf(deps: Deps, videoIds: string[]) {
+export async function historyOf(deps: Deps, videoIds: string[]) {
   const out = new Map<string, { views: number; at: string }[]>();
-  if (!videoIds.length) return out;
-  const rows = (await deps.db.prepare(`SELECT video_id, at, views FROM video_snapshots WHERE video_id IN (${videoIds.map(() => '?').join(',')}) ORDER BY at`)
-    .bind(...videoIds).all<{ video_id: string; at: string; views: number }>()).results;
+  const rows = await chunked([...new Set(videoIds)], async (ids, ph) => (await deps.db.prepare(`SELECT video_id, at, views FROM video_snapshots WHERE video_id IN (${ph}) ORDER BY at`)
+    .bind(...ids).all<{ video_id: string; at: string; views: number }>()).results);
   for (const r of rows) out.set(r.video_id, [...(out.get(r.video_id) ?? []), { views: r.views, at: r.at }]);
   return out;
 }

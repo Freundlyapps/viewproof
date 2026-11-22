@@ -2,7 +2,12 @@ import { isPlayerMessage, NavigationGuard } from '../src/bridge';
 import { handlePlayer } from '../src/flow';
 import { type PanelState, renderPanel } from '../src/panel';
 import { chromeStore } from '../src/store';
-import { isSearchMessage, searchStore } from '../src/search';
+import { isSearchMessage, searchQueryOf, searchStore } from '../src/search';
+import { fromSearch, fromWatch, parsePlayerResponse, parseSearchPage, type PoolObservation } from '@viewproof/core';
+import { poolStore } from '../src/pool';
+
+/** Ask the background script to send once this many observations are queued. */
+const FLUSH_AT = 50;
 
 const HOST_ID = 'viewproof-panel';
 const MOUNT_WAIT_MS = 10_000;
@@ -22,6 +27,13 @@ export default defineContentScript({
       render: (state: PanelState) => void mount().then((host) => host && renderPanel(host, state)),
     };
 
+    // Opt-in pool (plan 5b): public facts of the videos on this page, queued only with consent and a linked server.
+    const pool = poolStore(browser.storage.local);
+    const share = (items: (PoolObservation | null)[]) => {
+      const list = items.filter((x): x is PoolObservation => x !== null);
+      void pool.enqueue(list).then((n) => { if (n >= FLUSH_AT) void browser.runtime.sendMessage({ kind: 'pool-flush' }).catch(() => undefined); });
+    };
+
     // Searches the user makes on YouTube are kept in this browser so the ViewProof web app can show their facts.
     const searches = searchStore(browser.storage.local);
     window.addEventListener('message', (e) => {
@@ -29,11 +41,16 @@ export default defineContentScript({
       void searches.save(e.data.url, e.data.response, Date.now()).then((r) => {
         if (typeof r === 'object') console.warn('[ViewProof]', r.error);
       });
+      const q = searchQueryOf(e.data.url);
+      const page = q ? parseSearchPage(e.data.response, q) : null;
+      if (page && !('error' in page)) share(page.results.map((r) => fromSearch(r, new Date().toISOString())));
     });
 
     window.addEventListener('message', (e) => {
       if (!isPlayerMessage(e, window, location.origin)) return;
       void handlePlayer(e.data, deps); // handles its own errors, and only for the current video
+      const v = e.data.payload ? parsePlayerResponse(e.data.payload) : null;
+      if (v?.ok) share([fromWatch(v.value, new Date().toISOString())]);
     });
 
     // The moment navigation starts, the old video's numbers must go.

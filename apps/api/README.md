@@ -35,11 +35,34 @@ The keyword report can show relative YouTube search interest (Google Trends with
 
 Test the Cron job locally with `npx wrangler dev --test-scheduled`, then `curl "http://localhost:8787/__scheduled?cron=17+*+*+*+*"`.
 
+## Data pool
+
+- **Routes:**
+  - `POST /api/pool/tokens` links a browser (the session plus an app-origin check);
+  - `GET` and `DELETE /api/pool/browsers[/:id]`;
+  - `POST /api/pool/contribute` takes the bearer token only, no cookie;
+  - `GET /api/outliers`.
+- **Cron budget per hourly run:** `CRON_FEED_BUDGET` feeds, default 10. Up to ⌈2/3⌉ of them go to user-tracked channels; the rest, at most ⌈1/3⌉, to pool channels seen in the last 30 days. A pool channel whose feed never read is retried once a week.
+  - Each feed costs about 4 D1 queries, and Workers Free allows 50 queries per invocation, so keep the default there.
+  - On Workers Paid (1,000 queries), set `CRON_FEED_BUDGET=45`.
+  - Archive and prune run before polling.
+- **Retention:**
+  - observations in D1 for 90 days;
+  - pool channels not seen for 30 days are removed with their videos.
+- **Archive:** at 04:xx UTC the previous day's accepted observations go to R2 as `pool/YYYY/MM/DD.ndjson.gz` (binding `POOL`, bucket `viewproof-pool`). Without the binding, the archive step is skipped.
+- **R2 setup:** create the bucket and the 36-month lifecycle rule once:
+
+  ```sh
+  npx wrangler r2 bucket create viewproof-pool
+  npx wrangler r2 bucket lifecycle add viewproof-pool expire-36m --expire-days 1095 -y
+  ```
+
 ## What is stored
 
 - Your Google account id, email and name; your plan.
 - Each connected channel's id, title, handle, picture and the permissions you gave. Google's refresh token is stored **encrypted** (AES-256-GCM with `TOKEN_KEY`); it never appears in exports or API responses.
 - Login sessions: only a hash of the session id (the id itself is in your browser's cookie).
+- Browsers you linked to the data pool (a label, dates, status), a hash of each browser's token, and how many items each sent and had rejected per day. Pool observations themselves (video id, time, view count, watch/search) carry no user or browser id.
 - The channels you track as competitors, and how many new keyword lookups you made each day. Tracked channels' public feed data (titles, upload times, view counts over time) is shared by every user who tracks them, and is deleted when nobody does.
 
 **Export** (Account → Export my data) downloads all of it as JSON, without secrets. **Remove** a channel or **Delete account** revokes ViewProof's Google access and deletes the rows.

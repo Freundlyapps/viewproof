@@ -12,8 +12,10 @@ export function fixtureSnapshot(query = 'pottery wheel for beginners', capturedA
 
 /** Answers window messages exactly like the extension's content script on ViewProof pages. Returns a remover. */
 export function fakeExtension(opts: { snapshots?: Record<string, KeywordSnapshot>; suggestions?: KeywordSuggestions | null; suggestionsError?: string | null; delayMs?: number } = {}) {
+  const links: string[] = [];
   const onMsg = (e: MessageEvent) => {
-    const d = e.data as { type?: string; id?: string; q?: string };
+    const d = e.data as { type?: string; id?: string; q?: string; token?: string };
+    if (d?.type === 'viewproof:link') { links.push(d.token!); window.postMessage({ type: 'viewproof:linked', id: d.id }, '*'); }
     if (d?.type === 'viewproof:hello') window.postMessage({ type: 'viewproof:here', version: '0.2.0' }, '*');
     if (d?.type === 'viewproof:kw-request') {
       setTimeout(() => window.postMessage({
@@ -23,5 +25,5 @@ export function fakeExtension(opts: { snapshots?: Record<string, KeywordSnapshot
     }
   };
   window.addEventListener('message', onMsg);
-  return { remove: () => window.removeEventListener('message', onMsg), updated: (q: string) => window.postMessage({ type: 'viewproof:kw-updated', q }, '*') };
+  return { links, remove: () => window.removeEventListener('message', onMsg), updated: (q: string) => window.postMessage({ type: 'viewproof:kw-updated', q }, '*') };
 }

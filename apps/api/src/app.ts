@@ -5,6 +5,8 @@ import type { YouTubeClient } from './youtube';
 import type { FeedResult } from './competitors/poll';
 import type { ChannelStatsClient } from './competitors/stats';
 import { competitorRoutes } from './competitors/routes';
+import { poolRoutes } from './pool/routes';
+import { outlierRoutes } from './pool/outliers';
 import type { KeywordProvider } from '@viewproof/providers';
 import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
@@ -25,6 +27,8 @@ export interface Deps {
   fetchFeed: (channelId: string) => Promise<FeedResult>;
   /** Data API counts for other channels (key or user token). */
   channelStats: ChannelStatsClient;
+  /** R2 bucket for the pool archive; absent on servers without one. */
+  pool?: R2Bucket;
   now: () => number;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
   assets?: { fetch(req: Request): Promise<Response> };
@@ -45,7 +49,9 @@ export function createApp(deps: Deps): Hono {
 
   // Forms post with the browser's Origin header; anything else changing state is refused.
   app.use('*', async (c, next) => {
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && originOf(c.req.header('origin')) !== deps.config.appOrigin) {
+    // The pool contribution route takes no cookie: its bearer token is the credential (sent by the extension).
+    const bearerOnly = c.req.path === '/api/pool/contribute';
+    if (!bearerOnly && !['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && originOf(c.req.header('origin')) !== deps.config.appOrigin) {
       return c.text('Request blocked (wrong origin)', 403);
     }
     await next();
@@ -74,5 +80,7 @@ export function createApp(deps: Deps): Hono {
   channelRoutes(app, deps);
   keywordRoutes(app, deps);
   competitorRoutes(app, deps);
+  poolRoutes(app, deps);
+  outlierRoutes(app, deps);
   return app;
 }

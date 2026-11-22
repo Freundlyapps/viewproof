@@ -1,10 +1,13 @@
-import { parseChannelFeed } from '@viewproof/core';
+import { parseChannelFeed, parseFeedChannel } from '@viewproof/core';
 import type { Deps } from '../app';
 
 /** A channel's feed is fetched at most once per window, whatever the number of users tracking it. */
 export const POLL_EVERY_MS = 3 * 3_600_000;
 const SNAPSHOT_KEEP_DAYS = 90;
 const STATS_KEEP_DAYS = 30;
+/** A pool channel is polled and kept while a contribution saw it within this many days. */
+export const POOL_SEEN_DAYS = 30;
+const POOL_OBSERVATIONS_KEEP_DAYS = 90;
 const DAY_MS = 86_400_000;
 
 export type FeedResult = { ok: true; xml: string } | { ok: false; reason: string };
@@ -38,6 +41,7 @@ export async function ingestFeed(deps: Deps, channelId: string, xml: string): Pr
   const iso = new Date(now).toISOString();
   const parsed = parseChannelFeed(xml);
   if (!parsed.ok) return { error: parsed.reason };
+  const meta = parseFeedChannel(xml);
   const latest = new Map(
     (await deps.db.prepare(
       `SELECT s.video_id, s.views, s.at FROM video_snapshots s JOIN feed_videos v USING (video_id)
@@ -60,19 +64,29 @@ export async function ingestFeed(deps: Deps, channelId: string, xml: string): Pr
   // a frozen count must not keep showing as a current one.
   const keep = parsed.value.map((v) => v.videoId);
   stmts.push(deps.db.prepare(`DELETE FROM feed_videos WHERE channel_id = ?${keep.length ? ` AND video_id NOT IN (${keep.map(() => '?').join(',')})` : ''}`).bind(channelId, ...keep));
+  // Channels get renamed, and pool channels start with their id as the title.
+  if (meta) stmts.push(deps.db.prepare('UPDATE tracked_channels SET title = ? WHERE channel_id = ?').bind(meta.title, channelId));
   stmts.push(deps.db.prepare('UPDATE tracked_channels SET last_poll_ok_at = ?, last_poll_error = NULL WHERE channel_id = ?').bind(iso, channelId));
   await deps.db.batch(stmts);
   return 'ok';
 }
 
 /** Poll up to `max` channels whose window has passed, never-polled and oldest first. Returns how many were tried. */
-export async function pollStale(deps: Deps, max: number, channelIds?: string[]): Promise<number> {
+export async function pollStale(deps: Deps, max: number, channelIds?: string[], kind?: 'tracked' | 'pool'): Promise<number> {
+  if (max <= 0) return 0;
   const cutoff = new Date(deps.now() - POLL_EVERY_MS).toISOString();
+  const poolCutoff = new Date(deps.now() - POOL_SEEN_DAYS * DAY_MS).toISOString();
   const scope = channelIds ? ` AND channel_id IN (${channelIds.map(() => '?').join(',') || "''"})` : '';
+  const tracked = 'channel_id IN (SELECT channel_id FROM user_competitors)';
+  // Pool channels: seen by a contribution in the last 30 days and tracked by nobody (tracked ones have their own budget).
+  // A pool channel whose feed never read (junk or deleted id) is retried once a week, so it can't crowd out real ones.
+  const kindSql = kind === 'tracked' ? ` AND ${tracked}` : kind === 'pool'
+    ? ` AND NOT ${tracked} AND channel_id IN (SELECT channel_id FROM pool_channels WHERE last_seen_at >= ?) AND NOT (last_poll_ok_at IS NULL AND last_polled_at IS NOT NULL AND last_polled_at >= ?)`
+    : '';
   const due = (await deps.db.prepare(
-    `SELECT channel_id FROM tracked_channels WHERE (last_polled_at IS NULL OR last_polled_at < ?)${scope}
+    `SELECT channel_id FROM tracked_channels WHERE (last_polled_at IS NULL OR last_polled_at < ?)${scope}${kindSql}
      ORDER BY last_polled_at IS NOT NULL, last_polled_at LIMIT ?`,
-  ).bind(cutoff, ...(channelIds ?? []), max).all<{ channel_id: string }>()).results;
+  ).bind(cutoff, ...(channelIds ?? []), ...(kind === 'pool' ? [poolCutoff, new Date(deps.now() - 7 * DAY_MS).toISOString()] : []), max).all<{ channel_id: string }>()).results;
   for (const d of due) await pollChannel(deps, d.channel_id);
   return due.length;
 }
@@ -81,7 +95,9 @@ export async function pollStale(deps: Deps, max: number, channelIds?: string[]):
 export async function pruneCompetitors(deps: Deps): Promise<void> {
   const now = deps.now();
   await deps.db.batch([
-    deps.db.prepare('DELETE FROM tracked_channels WHERE channel_id NOT IN (SELECT channel_id FROM user_competitors)'),
+    deps.db.prepare('DELETE FROM pool_channels WHERE last_seen_at < ?').bind(new Date(now - POOL_SEEN_DAYS * DAY_MS).toISOString()),
+    deps.db.prepare('DELETE FROM pool_observations WHERE at < ?').bind(new Date(now - POOL_OBSERVATIONS_KEEP_DAYS * DAY_MS).toISOString()),
+    deps.db.prepare('DELETE FROM tracked_channels WHERE channel_id NOT IN (SELECT channel_id FROM user_competitors) AND channel_id NOT IN (SELECT channel_id FROM pool_channels)'),
     deps.db.prepare('DELETE FROM video_snapshots WHERE at < ?').bind(new Date(now - SNAPSHOT_KEEP_DAYS * DAY_MS).toISOString()),
     deps.db.prepare('UPDATE tracked_channels SET subscribers = NULL, total_views = NULL, video_count = NULL, stats_at = NULL WHERE stats_at < ?')
       .bind(new Date(now - STATS_KEEP_DAYS * DAY_MS).toISOString()),

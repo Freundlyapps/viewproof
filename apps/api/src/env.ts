@@ -14,6 +14,10 @@ export interface Env {
   DATAFORSEO_DISPLAY_OK?: string;
   /** Optional YouTube Data API key: competitor @handles and current subscriber counts. */
   YOUTUBE_API_KEY?: string;
+  /** Optional R2 bucket for the data pool archive. */
+  POOL?: R2Bucket;
+  /** Feed fetches per hourly Cron run (default 10 fits Workers Free: ~4 D1 queries each, 50 per invocation). Paid: 45. */
+  CRON_FEED_BUDGET?: string;
 }
 
 export interface Config {
@@ -26,6 +30,7 @@ export interface Config {
   googleClientSecret: string;
   tokenKey: string;
   youtubeApiKey: string | null;
+  cronFeedBudget: number;
 }
 
 export function parseConfig(env: Env): Config {
@@ -49,5 +54,6 @@ export function parseConfig(env: Env): Config {
     googleClientSecret: env.GOOGLE_CLIENT_SECRET,
     tokenKey: env.TOKEN_KEY,
     youtubeApiKey: env.YOUTUBE_API_KEY || null,
+    cronFeedBudget: Math.min(Math.max(Number(env.CRON_FEED_BUDGET) || 10, 1), 200),
   };
 }

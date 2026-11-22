@@ -24,3 +24,8 @@ SELF_HOSTED = "false"
 
 [triggers]
 crons = ["17 * * * *"]
+
+# Data pool archive (plan 5b): pool/YYYY/MM/DD.ndjson.gz, deleted after 36 months by a lifecycle rule (see README).
+[[r2_buckets]]
+binding = "POOL"
+bucket_name = "viewproof-pool"

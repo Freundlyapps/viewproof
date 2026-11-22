@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1 — plans 1–4 and 5a done: browser extension; server with Google sign-in and channel connect; web app with My channel; keyword research; competitor tracking. Next: 5b, the opt-in data pool and Outliers.
+License: AGPL-3.0. Status: Phase 1 — plans 1–4, 5a and 5b done: browser extension; server with Google sign-in and channel connect; web app with My channel; keyword research; competitor tracking; opt-in data pool and Outliers. Next: 5c, extension panels on channel and search pages.
 
 ## The browser extension (Chrome, Edge)
 
@@ -15,7 +15,26 @@ Live and upcoming videos show "No data" with the reason instead of a misleading 
 
 ### Privacy
 
-The extension sends nothing to the ViewProof server or anyone else. It talks only to YouTube: it reads the data the page already loaded, fetches the channel's public RSS feed without cookies, and, when you open a keyword report, asks YouTube's autocomplete (`suggestqueries-clients6.youtube.com`, at most 60 requests an hour, paused for 24 hours if YouTube refuses). Your past view-count sightings and the searches you make on YouTube (the first results page, up to 50 searches for 30 days; filtered searches are skipped) are stored only in your browser (`chrome.storage.local`). The ViewProof web page open in the same browser can read them through a small script the extension runs on ViewProof's own pages; nothing is uploaded.
+By default the extension sends nothing to the ViewProof server or anyone else (the opt-in data pool is below). Otherwise it talks only to YouTube: it reads the data the page already loaded, fetches the channel's public RSS feed without cookies, and, when you open a keyword report, asks YouTube's autocomplete (`suggestqueries-clients6.youtube.com`, at most 60 requests an hour, paused for 24 hours if YouTube refuses). Your past view-count sightings and the searches you make on YouTube (the first results page, up to 50 searches for 30 days; filtered searches are skipped) are stored only in your browser (`chrome.storage.local`). The ViewProof web page open in the same browser can read them through a small script the extension runs on ViewProof's own pages; nothing is uploaded.
+
+### Data pool (opt-in)
+
+You can share the public facts of the videos you see on YouTube. They let Outliers find videos in your niche. It is off until you do both of these:
+1. Link the browser: ViewProof → Settings → Extension & data → **Link this browser**.
+2. Agree on the extension's data-sharing page, which opens after linking.
+
+- **Sent:** video and channel ids, title, view count, upload time or age, length, Short or long, from watch and search pages you open. Batches go every 5 minutes, only to the server you linked.
+- **Never sent:** who you are on YouTube, cookies, watch time, or the words you type into YouTube's search box. The facts of the results you see are sent.
+- **On the server:** observations are stored without your name or browser, at hour precision; when a video or channel was seen, and when a browser last sent, are kept to the day. So no timestamp can pair a person with what they watched. The server keeps only how many items each linked browser sent per day.
+- **Checks:** before anything is kept, the server checks each item:
+  - its format;
+  - YouTube id shapes;
+  - view counts can't fall more than 1 % or grow faster than 1 million an hour;
+  - at most 300 items per batch and 3,000 per browser per day.
+  Counts are compared with the channel's own public feed, never with what other browsers sent, so one browser can't make others fail. More than 200 malformed items from a browser in a day pause the whole account for 7 days. An account can link up to 5 browsers, and each browser can introduce at most 200 new channels a day.
+- **Never shown as numbers:** the values a browser sent are not shown directly. Outliers shows views, views per hour and ×N from each channel's public feed. Shared facts only tell the server which videos and channels to look at.
+- **Your record:** the extension's data-sharing page lists every item it sent. Stop sharing, unlink or clear the list there at any time.
+- **Self-hosting:** the store build links only to `viewproof.app`. To link to your own server, add your origin to `src/app-origins.ts` and build the extension yourself.
 
 ### Install from source
 
@@ -73,6 +92,13 @@ The report reads the extension through a small script on ViewProof's own pages. 
 - **Views over time**: open a channel and pick a video. The line is its public view count at each of ViewProof's checks.
 
 Where the data comes from: each channel's public RSS feed, which lists its latest 15 uploads with view counts. The server fetches a feed at most once every 3 hours, however many people track the channel. An hourly job checks up to 60 feeds. Subscriber counts and adding by @handle need the YouTube Data API: either the server's `YOUTUBE_API_KEY` or your own connected channel. Without either, paste the channel's /channel/ link. Those counts are kept for at most 30 days and are never charted.
+
+## Outliers
+
+**Research → Outliers** lists videos that beat their channel's usual views, among videos the network of opted-in browsers found in the last 30 days. It is not all of YouTube.
+- **×N** is the same formula as the extension and Competitors: views ÷ the median views of the channel's earlier uploads of the same type, from its public feed. It needs 5 earlier uploads; otherwise there is no ×N and the video isn't listed.
+- **Filters:** keyword in the title, long or Shorts, uploaded within 7 / 30 / 90 days or 12 months, channel size (the channel's usual views: under 10k, 10k–100k, over 100k) and a minimum ×N.
+- **Waiting channels:** a channel the network has just found waits for its first feed check (the hourly job checks up to 15 new channels an hour). The page says how many are waiting.
 
 ## Repository layout
 
