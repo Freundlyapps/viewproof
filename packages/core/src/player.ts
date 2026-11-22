@@ -14,6 +14,12 @@ export interface WatchVideo {
   isLive: boolean;
   isUpcoming: boolean;
   format: Format;
+  /** Full description text ('' when the player data has none). */
+  description: string;
+  /** Caption tracks: uploaded or edited by the creator vs auto-generated. */
+  captions: { manual: number; auto: number };
+  /** End-screen elements in the player data; the key is absent when there is no end screen. */
+  endScreenElements: number;
 }
 
 function formatFromUrl(url: string | undefined): Format {
@@ -49,6 +55,10 @@ export function parsePlayerResponse(raw: unknown): ParseResult<WatchVideo> {
     const viewCount = str(vd.viewCount);
     const hasCount = !!viewCount && /^\d+$/.test(viewCount);
     if (!hasCount && !isUpcoming) return { ok: false, reason: 'videoDetails.viewCount missing' };
+    const tracks = obj(obj(root?.captions)?.playerCaptionsTracklistRenderer)?.captionTracks;
+    const trackList = Array.isArray(tracks) ? tracks.map(obj).filter((t): t is Node => !!t) : [];
+    const auto = trackList.filter((t) => t.kind === 'asr').length;
+    const elements = obj(obj(root?.endscreen)?.endscreenRenderer)?.elements;
     const tags = Array.isArray(vd.keywords) ? vd.keywords.filter((k): k is string => typeof k === 'string') : [];
     return {
       ok: true,
@@ -64,6 +74,9 @@ export function parsePlayerResponse(raw: unknown): ParseResult<WatchVideo> {
         isLive,
         isUpcoming,
         format: formatFromUrl(str(mf?.canonicalUrl)),
+        description: typeof vd.shortDescription === 'string' ? vd.shortDescription : '',
+        captions: { manual: trackList.length - auto, auto },
+        endScreenElements: Array.isArray(elements) ? elements.length : 0,
       },
     };
   } catch (e) {

@@ -13,3 +13,4 @@ export * from './upload-grid';
 export * from './keywords';
 export * from './competitors';
 export * from './pool';
+export * from './checklist';
