@@ -1,4 +1,4 @@
-import { MIN_DELTA_MINUTES, type ViewObservation, buildScorecard, parsePlayerResponse } from '@viewproof/core';
+import { type ChecklistSettings, DEFAULT_CHECKLIST, MIN_DELTA_MINUTES, type ViewObservation, buildScorecard, parsePlayerResponse } from '@viewproof/core';
 import { type BaselineCache, getBaseline } from './baseline';
 import type { NavigationGuard } from './bridge';
 import type { PanelState } from './panel';
@@ -12,6 +12,8 @@ export interface FlowDeps {
   now: () => number;
   currentUrl: () => string;
   render: (state: PanelState) => void;
+  /** The user's checklist rules (extension settings); defaults when absent. */
+  checklist?: () => Promise<ChecklistSettings>;
 }
 
 /** One player-data message → one panel render, unless the user has moved on. */
@@ -33,6 +35,7 @@ async function run(msg: { url: string; payload: unknown; reason?: string }, d: F
   if (!parsed.ok) return show({ kind: 'error', reason: parsed.reason });
   const video = parsed.value;
   const nowIso = new Date(d.now()).toISOString();
+  const checklist = d.checklist ? await d.checklist().catch(() => DEFAULT_CHECKLIST) : DEFAULT_CHECKLIST;
 
   let previous: ViewObservation | null = null;
   try {
@@ -47,10 +50,10 @@ async function run(msg: { url: string; payload: unknown; reason?: string }, d: F
   }
 
   // Show this video's own numbers at once; ×N follows when the channel feed arrives.
-  const pending = buildScorecard({ video, previous, baseline: { ok: false, reason: 'loading' }, now: nowIso });
+  const pending = buildScorecard({ video, previous, baseline: { ok: false, reason: 'loading' }, now: nowIso, checklist });
   show({ kind: 'ok', card: pending, outlierPending: true });
 
   const baseline = await getBaseline(video.channelId, { fetch: d.fetch, now: d.now, cache: d.cache });
   if (!d.guard.isCurrent(seq, d.currentUrl())) return;
-  show({ kind: 'ok', card: buildScorecard({ video, previous, baseline, now: nowIso }) });
+  show({ kind: 'ok', card: buildScorecard({ video, previous, baseline, now: nowIso, checklist }) });
 }

@@ -1,12 +1,17 @@
 // @vitest-environment happy-dom
 import type { Scorecard } from '@viewproof/core';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderPanel } from '../src/panel';
 
 const card: Scorecard = {
   platform: 'youtube', videoId: 'vid00000001', title: 'Test video', age: { kind: 'value', value: 72, formula: 'hours since publishing', inputs: {} }, tags: ['pottery', 'bowl'],
   vph: { kind: 'value', value: 1240, formula: 'views ÷ hours since upload (average)', inputs: { mode: 'since_upload', views: 90000, hours: 72 } },
   outlier: { kind: 'value', value: 3, formula: '…', inputs: { views: 90000, baselineMedian: 30000, baselineCount: 5, mixedFormats: false, negative: false } },
+  checklist: [
+    { id: 'title', label: 'Title length', rule: 'Title between 20 and 70 characters', status: 'fail', detail: '81 characters (aim for 20–70)' },
+    { id: 'tags', label: 'Tags', rule: 'At least 3 tags', status: 'pass', detail: '2 tags' },
+    { id: 'chapters', label: 'Chapters', rule: 'Chapters by YouTube rules', status: 'skip', detail: 'Shorts have no chapters' },
+  ],
 };
 const text = (h: HTMLElement) => h.shadowRoot!.textContent ?? '';
 
@@ -87,5 +92,52 @@ describe('renderPanel', () => {
     renderPanel(host, { kind: 'loading' });
     expect(text(host)).not.toContain('Test video');
     expect(text(host)).toContain('Loading');
+  });
+});
+
+describe('checklist and tag copying', () => {
+  let host: HTMLElement;
+  beforeEach(() => { host = document.createElement('div'); document.body.append(host); });
+  const actions = () => ({ copy: vi.fn(async () => undefined), openOptions: vi.fn() });
+
+  test('one row per item with a written status, detail and rule', () => {
+    renderPanel(host, { kind: 'ok', card }, actions());
+    const rows = [...host.shadowRoot!.querySelectorAll('.check')].map((r) => r.textContent ?? '');
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toContain('Fail');
+    expect(rows[0]).toContain('Title length');
+    expect(rows[0]).toContain('81 characters (aim for 20–70)');
+    expect(rows[0]).toContain('Title between 20 and 70 characters');
+    expect(rows[1]).toContain('Pass');
+    expect(rows[2]).toContain('Skipped');
+    expect(text(host)).toContain('Checklist');
+  });
+
+  test('Copy tags copies them comma-separated and says so', async () => {
+    const a = actions();
+    renderPanel(host, { kind: 'ok', card }, a);
+    const b = [...host.shadowRoot!.querySelectorAll('button')].find((x) => x.textContent === 'Copy tags')!;
+    b.click();
+    await vi.waitFor(() => expect(b.textContent).toBe('Copied'));
+    expect(a.copy).toHaveBeenCalledWith('pottery, bowl');
+  });
+
+  test('Edit rules opens the settings', () => {
+    const a = actions();
+    renderPanel(host, { kind: 'ok', card }, a);
+    [...host.shadowRoot!.querySelectorAll('button')].find((x) => x.textContent === 'Edit rules')!.click();
+    expect(a.openOptions).toHaveBeenCalled();
+  });
+
+  test('no tags, no copy button; empty checklist, no section', () => {
+    renderPanel(host, { kind: 'ok', card: { ...card, tags: [], checklist: [] } }, actions());
+    const labels = [...host.shadowRoot!.querySelectorAll('button')].map((x) => x.textContent);
+    expect(labels).not.toContain('Copy tags');
+    expect(text(host)).not.toContain('Checklist');
+  });
+
+  test('page text stays text', () => {
+    renderPanel(host, { kind: 'ok', card: { ...card, tags: ['<img src=x onerror=alert(1)>'] } }, actions());
+    expect(host.shadowRoot!.querySelector('img')).toBeNull();
   });
 });

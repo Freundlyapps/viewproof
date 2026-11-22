@@ -24,3 +24,13 @@
 .tag { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 2px 8px; font-size: 12px; }
 .err { color: var(--muted); }
 .head .sfx { color: var(--on-accent); opacity: 0.85; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+.btn { font: inherit; font-size: 12px; color: var(--accent); background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 2px 8px; cursor: pointer; }
+.checklist { display: grid; gap: 4px; border-top: 1px solid var(--border); padding-top: 8px; }
+.checklist .row { display: flex; justify-content: space-between; align-items: center; }
+.check { font-size: 12px; }
+.check .mark { display: inline-block; width: 14px; font-weight: 700; }
+.check.pass .mark { color: var(--accent); } .check.fail .mark { color: var(--hi); } .check.skip { color: var(--muted); }
+.check .st { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.check .lbl { font-weight: 600; }
+.check .rule { display: block; color: var(--muted); font-size: 11px; margin-left: 14px; }

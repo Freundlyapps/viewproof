@@ -1,10 +1,12 @@
-import { isPlayerMessage, NavigationGuard } from '../src/bridge';
+import { isPlayerMessage, NavigationGuard, type PlayerMessage } from '../src/bridge';
 import { handlePlayer } from '../src/flow';
 import { type PanelState, renderPanel } from '../src/panel';
 import { chromeStore } from '../src/store';
 import { isSearchMessage, searchQueryOf, searchStore } from '../src/search';
 import { fromSearch, fromWatch, parsePlayerResponse, parseSearchPage, type PoolObservation } from '@viewproof/core';
 import { poolStore } from '../src/pool';
+import { whenIdle } from '../src/idle';
+import { DEFAULT_TOGGLES, type PanelToggles, settingsChanged, settingsStore } from '../src/settings';
 
 /** Ask the background script to send once this many observations are queued. */
 const FLUSH_AT = 50;
@@ -17,6 +19,11 @@ export default defineContentScript({
   matches: ['https://www.youtube.com/*'],
   runAt: 'document_idle',
   main() {
+    const settings = settingsStore(browser.storage.local);
+    let toggles: PanelToggles = DEFAULT_TOGGLES;
+    const ready = settings.getToggles().then((t) => { toggles = t; }, () => undefined);
+    let lastPlayer: PlayerMessage | null = null;
+
     const deps = {
       guard: new NavigationGuard(),
       store: chromeStore(browser.storage.local),
@@ -24,8 +31,28 @@ export default defineContentScript({
       fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
       now: () => Date.now(),
       currentUrl: () => location.href,
-      render: (state: PanelState) => void mount().then((host) => host && renderPanel(host, state)),
+      render: (state: PanelState) => {
+        if (!toggles.watch) return;
+        void whenIdle(mount).then((host) => host && toggles.watch && renderPanel(host, state));
+      },
+      checklist: () => settings.getChecklist(),
     };
+
+    // Settings changed on the options page: apply them without a reload.
+    browser.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local') return;
+      const c = settingsChanged(changes);
+      if (c.toggles) {
+        void settings.getToggles().then((t) => {
+          const wasOn = toggles.watch;
+          toggles = t;
+          const host = document.getElementById(HOST_ID);
+          if (!t.watch && host) host.style.display = 'none';
+          if (t.watch && !wasOn && lastPlayer && location.pathname === '/watch') void handlePlayer(lastPlayer, deps);
+        });
+      }
+      if (c.checklist && toggles.watch && lastPlayer && location.pathname === '/watch') void handlePlayer(lastPlayer, deps);
+    });
 
     // Opt-in pool (plan 5b): public facts of the videos on this page, queued only with consent and a linked server.
     const pool = poolStore(browser.storage.local);
@@ -48,7 +75,8 @@ export default defineContentScript({
 
     window.addEventListener('message', (e) => {
       if (!isPlayerMessage(e, window, location.origin)) return;
-      void handlePlayer(e.data, deps); // handles its own errors, and only for the current video
+      lastPlayer = e.data;
+      void ready.then(() => handlePlayer(e.data, deps)); // handles its own errors, and only for the current video
       const v = e.data.payload ? parsePlayerResponse(e.data.payload) : null;
       if (v?.ok) share([fromWatch(v.value, new Date().toISOString())]);
     });
@@ -62,7 +90,7 @@ export default defineContentScript({
     // Hide the panel on pages that are not videos.
     document.addEventListener('yt-navigate-finish', () => {
       const host = document.getElementById(HOST_ID);
-      if (host) host.style.display = location.pathname === '/watch' ? '' : 'none';
+      if (host) host.style.display = location.pathname === '/watch' && toggles.watch ? '' : 'none';
     });
   },
 });
