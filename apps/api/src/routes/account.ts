@@ -1,6 +1,7 @@
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
+import { poolBrowsersOf } from '../pool/routes';
 import { REVOKED_REASON, UNREADABLE_REASON } from '../channel-data';
 import { releaseGrant, tryDecrypt } from '../grants';
 import { SCOPES } from '../google';
@@ -125,6 +126,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       competitors: (await deps.db.prepare('SELECT t.channel_id, t.title, u.added_at FROM user_competitors u JOIN tracked_channels t USING (channel_id) WHERE u.user_id = ? ORDER BY u.added_at').bind(u.id).all<{ channel_id: string; title: string; added_at: string }>()).results.map((x) => ({
         channelId: x.channel_id, title: x.title, addedAt: x.added_at,
       })),
+      linkedBrowsers: (await poolBrowsersOf(deps, u.id)).map((b) => ({ label: b.label, createdAt: b.createdAt, lastUsedAt: b.lastUsedAt, acceptedTotal: b.acceptedTotal, status: b.status })),
       keywordLookups: (await deps.db.prepare('SELECT day, count FROM keyword_lookups WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
       sessions: (await deps.db.prepare('SELECT created_at, expires_at FROM sessions WHERE user_id = ? ORDER BY created_at').bind(u.id).all<{ created_at: string; expires_at: string }>()).results.map((x) => ({
         createdAt: x.created_at, expiresAt: x.expires_at,
@@ -155,6 +157,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM user_competitors WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM keyword_lookups WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM competitor_lookups WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM pool_tokens WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);

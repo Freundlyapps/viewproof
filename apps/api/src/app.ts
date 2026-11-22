@@ -5,6 +5,7 @@ import type { YouTubeClient } from './youtube';
 import type { FeedResult } from './competitors/poll';
 import type { ChannelStatsClient } from './competitors/stats';
 import { competitorRoutes } from './competitors/routes';
+import { poolRoutes } from './pool/routes';
 import type { KeywordProvider } from '@viewproof/providers';
 import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
@@ -45,7 +46,9 @@ export function createApp(deps: Deps): Hono {
 
   // Forms post with the browser's Origin header; anything else changing state is refused.
   app.use('*', async (c, next) => {
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && originOf(c.req.header('origin')) !== deps.config.appOrigin) {
+    // The pool contribution route takes no cookie: its bearer token is the credential (sent by the extension).
+    const bearerOnly = c.req.path === '/api/pool/contribute';
+    if (!bearerOnly && !['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && originOf(c.req.header('origin')) !== deps.config.appOrigin) {
       return c.text('Request blocked (wrong origin)', 403);
     }
     await next();
@@ -74,5 +77,6 @@ export function createApp(deps: Deps): Hono {
   channelRoutes(app, deps);
   keywordRoutes(app, deps);
   competitorRoutes(app, deps);
+  poolRoutes(app, deps);
   return app;
 }
