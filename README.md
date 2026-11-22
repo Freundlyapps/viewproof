@@ -130,3 +130,7 @@ Where the data comes from: each channel's public RSS feed, which lists its lates
 - `packages/providers`: keyword data providers behind one interface (`KeywordProvider`); DataForSEO is the first.
 - `packages/db`: database migrations.
 - `docs/`: design spec, UI prototype and build plans.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests run a privacy check (`pnpm check:privacy`), the type check and all tests in CI.
