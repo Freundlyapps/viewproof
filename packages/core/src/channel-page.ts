@@ -59,7 +59,8 @@ export function parseRoundedCount(text: string): RoundedCount | null {
   if (/[.,\s  ]\d{3}[.,\s  ]/.test(n!)) return null;
   const unit = UNIT[unitRaw.toLowerCase()]!;
   const [int, dec = ''] = n!.split(/[.,]/);
-  const step = unit / 10 ** dec.length;
+  // YouTube drops a ".0": "2M" means 2.0–2.09M, never 1.5M (that would read "1.5M"). Two digits ("21M") carry no decimal.
+  const step = unit / 10 ** (dec.length || (int!.length === 1 ? 1 : 0));
   const mid = Math.round(Number(`${int}.${dec || '0'}`) * unit);
   return { lo: mid - step / 2, hi: mid + step - 1, mid, exact: false };
 }

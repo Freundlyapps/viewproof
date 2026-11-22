@@ -55,15 +55,21 @@ function toSec(t: string): number {
   return t.split(':').reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
-const STAMP = /^\s*((?:\d{1,2}:)?\d{1,2}:\d{2})\s*[-–—:|]?\s+(.+?)\s*$/;
+const TIME = '[\\[(]?((?:\\d{1,2}:)?\\d{1,2}:\\d{2})[\\])]?';
+/** "0:00 Intro", "[0:00] Intro", "- 0:00 Intro", "0:00-Intro"… */
+const STAMP_FIRST = new RegExp(`^\\s*(?:[-•*·]\\s*)?${TIME}\\s*[-–—:|]?\\s*(\\S.*?)\\s*$`);
+/** "Intro 0:00", "Intro - 0:00"… */
+const STAMP_LAST = new RegExp(`^\\s*(?:[-•*·]\\s*)?(\\S.*?)\\s*[-–—:|]?\\s*${TIME}\\s*$`);
 
 /** Chapters per YouTube's rules: listed at line starts, first at 0:00, at least 3, ascending, each at least 10 seconds. */
 export function parseChapters(description: string, lengthSec: number):
   { ok: true; chapters: { startSec: number; title: string }[] } | { ok: false; reason: string } {
   const chapters: { startSec: number; title: string }[] = [];
   for (const line of description.split(/\r?\n/)) {
-    const m = STAMP.exec(line);
-    if (m) chapters.push({ startSec: toSec(m[1]!), title: m[2]! });
+    const first = STAMP_FIRST.exec(line);
+    const last = first ? null : STAMP_LAST.exec(line);
+    if (first) chapters.push({ startSec: toSec(first[1]!), title: first[2]! });
+    else if (last) chapters.push({ startSec: toSec(last[2]!), title: last[1]! });
   }
   if (chapters.length === 0) return { ok: false, reason: 'No timestamps at the start of description lines' };
   if (chapters[0]!.startSec !== 0) return { ok: false, reason: 'First timestamp must be 0:00' };
@@ -72,6 +78,8 @@ export function parseChapters(description: string, lengthSec: number):
     if (chapters[i]!.startSec <= chapters[i - 1]!.startSec) return { ok: false, reason: `Timestamps must be ascending (${chapters[i]!.title})` };
   }
   for (let i = 0; i < chapters.length; i++) {
+    // Length 0 means unknown (a live stream): the last chapter can't be checked.
+    if (i + 1 === chapters.length && lengthSec <= 0) break;
     const end = i + 1 < chapters.length ? chapters[i + 1]!.startSec : lengthSec;
     if (end - chapters[i]!.startSec < CHAPTER_MIN_SEC) return { ok: false, reason: `Each chapter must be at least ${CHAPTER_MIN_SEC} seconds ("${chapters[i]!.title}")` };
   }
@@ -120,6 +128,8 @@ export function runChecklist(v: WatchVideo, s: ChecklistSettings): ChecklistItem
   const add = (id: ChecklistRuleId, status: ChecklistItem['status'], detail: string) =>
     out.push({ id, label: CHECKLIST_LABELS[id], rule: ruleText(id, s), status, detail });
   const short = v.format === 'short';
+  const notFinished = v.isLive || v.isUpcoming;
+  const LIVE = 'Live or upcoming video';
 
   if (s.title.on) {
     const n = chars(v.title);
@@ -134,19 +144,22 @@ export function runChecklist(v: WatchVideo, s: ChecklistSettings): ChecklistItem
     add('tags', n >= s.tags.min ? 'pass' : 'fail', n === 0 ? 'No tags' : plural(n, 'tag'));
   }
   if (s.chapters.on) {
-    if (short) add('chapters', 'skip', 'Shorts have no chapters');
+    if (notFinished) add('chapters', 'skip', LIVE);
+    else if (short) add('chapters', 'skip', 'Shorts have no chapters');
     else {
       const c = parseChapters(v.description, v.lengthSeconds);
       add('chapters', c.ok ? 'pass' : 'fail', c.ok ? plural(c.chapters.length, 'chapter') : c.reason);
     }
   }
   if (s.endScreen.on) {
-    if (short) add('endScreen', 'skip', 'Shorts have no end screens');
+    if (notFinished) add('endScreen', 'skip', LIVE);
+    else if (short) add('endScreen', 'skip', 'Shorts have no end screens');
     else add('endScreen', v.endScreenElements > 0 ? 'pass' : 'fail', v.endScreenElements > 0 ? plural(v.endScreenElements, 'element') : "No end screen in YouTube's player data");
   }
   if (s.captions.on) {
     const { manual, auto } = v.captions;
-    add('captions', manual > 0 ? 'pass' : 'fail',
+    if (notFinished) add('captions', 'skip', LIVE);
+    else add('captions', manual > 0 ? 'pass' : 'fail',
       manual > 0 ? plural(manual, 'caption track') : auto > 0 ? 'Auto-generated captions only' : 'No captions');
   }
   return out;

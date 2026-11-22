@@ -1,5 +1,5 @@
 import { isPlayerMessage, NavigationGuard, type PlayerMessage } from '../src/bridge';
-import { handlePlayer } from '../src/flow';
+import { handlePlayer, idleRenderer, withChecklist } from '../src/flow';
 import { type PanelState, renderPanel } from '../src/panel';
 import { chromeStore } from '../src/store';
 import { isSearchMessage, searchQueryOf, searchStore } from '../src/search';
@@ -31,6 +31,9 @@ export default defineContentScript({
     let toggles: PanelToggles = DEFAULT_TOGGLES;
     const ready = settings.getToggles().then((t) => { toggles = t; }, () => undefined);
     let lastPlayer: PlayerMessage | null = null;
+    /** What the watch panel shows now; re-drawn (never re-computed) when settings change. */
+    let lastState: PanelState | null = null;
+    const painter = idleRenderer({ whenIdle, mount, paint: renderPanel, currentUrl: () => location.href, enabled: () => toggles.watch });
 
     const deps = {
       guard: new NavigationGuard(),
@@ -39,10 +42,7 @@ export default defineContentScript({
       fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
       now: () => Date.now(),
       currentUrl: () => location.href,
-      render: (state: PanelState) => {
-        if (!toggles.watch) return;
-        void whenIdle(mount).then((host) => host && toggles.watch && renderPanel(host, state));
-      },
+      render: (state: PanelState) => { lastState = state; painter.render(state); },
       checklist: () => settings.getChecklist(),
     };
 
@@ -61,7 +61,7 @@ export default defineContentScript({
     };
     /** Show (or update) the card and badges, unless the user has navigated since `seq`. */
     const showPage = (seq: number, model: CardModel, badges: Map<string, Badge>, place: (h: HTMLElement) => boolean) => {
-      void whenIdle(() => mountHost(PAGE_HOST, place)).then((host) => {
+      void whenIdle(() => (seq === pageSeq ? mountHost(PAGE_HOST, (h) => seq === pageSeq && place(h)) : null)).then((host) => {
         if (!host || seq !== pageSeq) return;
         renderPagePanel(host, model);
         currentBadges = badges;
@@ -101,14 +101,20 @@ export default defineContentScript({
           toggles = t;
           const host = document.getElementById(HOST_ID);
           if (!t.watch && host) host.style.display = 'none';
-          if (t.watch && !wasOn && lastPlayer && location.pathname === '/watch') void handlePlayer(lastPlayer, deps);
+          if (t.watch && !wasOn && lastState && location.pathname === '/watch') painter.render(lastState);
           if (lastPage) {
             if (!t[lastPage.kind]) resetPage();
             else if (!document.getElementById(PAGE_HOST)) lastPage.run();
           }
         });
       }
-      if (c.checklist && toggles.watch && lastPlayer && location.pathname === '/watch') void handlePlayer(lastPlayer, deps);
+      if (c.checklist && lastState && lastPlayer && location.pathname === '/watch') {
+        const player = lastPlayer;
+        void settings.getChecklist().then((rules) => {
+          const next = lastState && withChecklist(lastState, player.payload, rules);
+          if (next) deps.render(next);
+        });
+      }
     });
 
     // Opt-in pool (plan 5b): public facts of the videos on this page, queued only with consent and a linked server.
@@ -175,6 +181,8 @@ export default defineContentScript({
 
     // The moment navigation starts, the old video's numbers must go.
     document.addEventListener('yt-navigate-start', () => {
+      painter.invalidate();
+      lastState = null;
       resetPage();
       lastPage = null;
       const host = document.getElementById(HOST_ID);

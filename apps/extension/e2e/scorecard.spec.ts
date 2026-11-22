@@ -60,6 +60,8 @@ function searchPage(): string {
   <script>window.ytInitialData = ${FIX('search-results-en.json')};</script></body></html>`;
 }
 
+let holdSearchFeed: Promise<void> | null = null;
+
 async function launch(feedStatus: number): Promise<BrowserContext> {
   // Chromium 159+ ignores --load-extension: keep extensions enabled and load the build through the DevTools protocol.
   const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'vp-e2e-')), {
@@ -72,6 +74,7 @@ async function launch(feedStatus: number): Promise<BrowserContext> {
   await ctx.route('https://www.youtube.com/**', (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/feeds/videos.xml' && url.searchParams.get('channel_id') === SEARCH_CHANNEL && feedStatus === 200) {
+      if (holdSearchFeed) return holdSearchFeed.then(() => route.fulfill({ status: 200, contentType: 'application/xml', body: feed(SEARCH_VIDEO) }));
       return route.fulfill({ status: 200, contentType: 'application/xml', body: feed(SEARCH_VIDEO) });
     }
     if (url.pathname === '/feeds/videos.xml') {
@@ -200,5 +203,32 @@ test('switching channel pages off in settings hides the panel, live', async () =
   await expect(page.locator('[data-viewproof-badge]')).toHaveCount(0);
   await opts.locator('#panel-channel').check();
   await expect(pagePanel(page)).toContainText("This channel's videos", { timeout: 15_000 });
+  await ctx.close();
+});
+
+test('a new search while the old feeds are pending: no ×N from the old search', async () => {
+  let release!: () => void;
+  holdSearchFeed = new Promise((r) => { release = r; });
+  const ctx = await launch(200);
+  const page = await ctx.newPage();
+  await page.goto('https://www.youtube.com/results?search_query=pottery');
+  await expect(pagePanel(page)).toContainText('Checking channel feeds', { timeout: 15_000 });
+  // Search B: the same tiles stay in the DOM (YouTube reuses them), but B's results don't include the held video.
+  const b = JSON.parse(FIX('search-results-en.json'));
+  const items = b.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents[0].itemSectionRenderer.contents;
+  b.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents[0].itemSectionRenderer.contents =
+    items.filter((i: { videoRenderer?: { videoId?: string } }) => i.videoRenderer?.videoId !== SEARCH_VIDEO);
+  await page.evaluate((data) => {
+    document.dispatchEvent(new Event('yt-navigate-start'));
+    history.pushState({}, '', '/results?search_query=glaze');
+    document.dispatchEvent(new CustomEvent('yt-navigate-finish', { detail: { response: { response: data } } }));
+  }, b);
+  await expect(pagePanel(page)).toContainText('What ranks for "glaze"', { timeout: 15_000 });
+  release();
+  holdSearchFeed = null;
+  await expect(pagePanel(page)).toContainText('×N shown for 0 of', { timeout: 15_000 });
+  await page.waitForTimeout(1500);
+  await expect(page.locator('[data-viewproof-badge]')).toHaveCount(0);
+  await expect(pagePanel(page)).not.toContainText('pottery');
   await ctx.close();
 });
