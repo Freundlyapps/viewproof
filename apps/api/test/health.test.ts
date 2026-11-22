@@ -8,7 +8,7 @@ import { noProvider } from '@viewproof/providers';
 
 describe('health', () => {
   test('GET /health', async () => {
-    const app = createApp({ db: env.DB, config: parseConfig(env), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('test'), now: () => Date.now() });
+    const app = createApp({ db: env.DB, config: parseConfig(env), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('test'), fetchFeed: async () => ({ ok: false, reason: 'test' }), now: () => Date.now() });
     const res = await app.request('/health');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
