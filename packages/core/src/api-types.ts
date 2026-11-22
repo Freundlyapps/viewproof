@@ -119,3 +119,13 @@ export interface Outliers {
   /** `olderThanFeed`: found videos no longer among their channel's latest 15 uploads — the feed gives no ×N for them. */
   coverage: { videos: number; channels: number; channelsWaiting: number; olderThanFeed: number; days: 30 };
 }
+
+/** Plan 6b: one of the user's videos with its own top search terms (YouTube Analytics, last 90 days). */
+export interface OptimizeVideo {
+  video: { videoId: string; channelId: string; title: string; description: string; tags: string[]; publishedAt: string; durationSec: number | null };
+  terms: { term: string; views: number }[];
+  /** Why there are no terms, when YouTube lists none. */
+  termsNote: string | null;
+  period: { start: string; end: string };
+  fetchedAt: string;
+}

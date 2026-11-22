@@ -6,11 +6,13 @@ export function fakeYouTube(over: Partial<YouTubeClient> = {}): YouTubeClient & 
   const base: YouTubeClient = {
     report: async () => ({ columns: [], rows: [] }),
     uploads: async () => [],
+    video: async () => null,
   };
   const m = { ...base, ...over };
   return {
     report: (t, q) => (calls.push({ method: 'report', arg: q }), m.report(t, q)),
     uploads: (t, n) => (calls.push({ method: 'uploads', arg: n }), m.uploads(t, n)),
+    video: (t, id) => (calls.push({ method: 'video', arg: id }), m.video(t, id)),
     calls,
   };
 }
