@@ -114,4 +114,8 @@ export interface PoolBrowser {
   acceptedToday: number; rejectedToday: number; acceptedTotal: number; status: 'active' | 'suspended';
 }
 export type OutlierRow = import('./competitors').CompetitorVideo & { channelId: string; channelTitle: string; channelMedian: Measured<number> };
-export interface Outliers { rows: OutlierRow[]; coverage: { videos: number; channels: number; channelsWaiting: number; days: 30 } }
+export interface Outliers {
+  rows: OutlierRow[];
+  /** `olderThanFeed`: found videos no longer among their channel's latest 15 uploads — the feed gives no ×N for them. */
+  coverage: { videos: number; channels: number; channelsWaiting: number; olderThanFeed: number; days: 30 };
+}

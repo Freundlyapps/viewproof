@@ -71,10 +71,11 @@ describe('outliers', () => {
     expect((await get('?min=1.5&format=long')).rows.map((x) => x.channelTitle)).toEqual(['Small Pottery', 'Medium Clay']);
   });
 
-  test('unpolled channel: not listed, counted as waiting', async () => {
+  test('unpolled channel: not listed, counted as waiting; videos older than the feed counted', async () => {
+    await env.DB.prepare("INSERT OR REPLACE INTO pool_videos VALUES ('saold000000', 'UCaaaaaaaaaaaaaaaaaaaaaa', 'an old one', NULL, 'unknown', NULL, ?, ?)").bind(iso(T0 - D), iso(T0 - D)).run();
     const r = await get('?min=1.5&days=365');
     expect(r.rows.map((x) => x.channelTitle)).not.toContain('Not polled yet');
-    expect(r.coverage).toEqual({ videos: 6, channels: 6, channelsWaiting: 1, days: 30 });
+    expect(r.coverage).toEqual({ videos: 7, channels: 6, channelsWaiting: 1, olderThanFeed: 1, days: 30 });
   });
 
   test('bad filter values fall back to defaults', async () => {

@@ -60,9 +60,11 @@ export async function findOutliers(deps: Deps, query: ReturnType<typeof parseOut
   const cov = await deps.db.prepare(
     `SELECT (SELECT COUNT(*) FROM pool_videos pv JOIN pool_channels pc USING (channel_id) WHERE pc.last_seen_at >= ?1) AS videos,
             (SELECT COUNT(*) FROM pool_channels WHERE last_seen_at >= ?1) AS channels,
-            (SELECT COUNT(*) FROM pool_channels pc LEFT JOIN tracked_channels t USING (channel_id) WHERE pc.last_seen_at >= ?1 AND t.last_poll_ok_at IS NULL) AS waiting`,
-  ).bind(seen).first<{ videos: number; channels: number; waiting: number }>();
-  return { rows: rows.slice(0, MAX_ROWS), coverage: { videos: cov!.videos, channels: cov!.channels, channelsWaiting: cov!.waiting, days: 30 } };
+            (SELECT COUNT(*) FROM pool_channels pc LEFT JOIN tracked_channels t USING (channel_id) WHERE pc.last_seen_at >= ?1 AND t.last_poll_ok_at IS NULL) AS waiting,
+            (SELECT COUNT(*) FROM pool_videos pv JOIN pool_channels pc USING (channel_id) JOIN tracked_channels t USING (channel_id)
+              WHERE pc.last_seen_at >= ?1 AND t.last_poll_ok_at IS NOT NULL AND pv.video_id NOT IN (SELECT video_id FROM feed_videos)) AS older`,
+  ).bind(seen).first<{ videos: number; channels: number; waiting: number; older: number }>();
+  return { rows: rows.slice(0, MAX_ROWS), coverage: { videos: cov!.videos, channels: cov!.channels, channelsWaiting: cov!.waiting, olderThanFeed: cov!.older, days: 30 } };
 }
 
 export function outlierRoutes(app: Hono, deps: Deps): void {

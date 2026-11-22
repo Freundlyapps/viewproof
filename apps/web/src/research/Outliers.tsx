@@ -60,6 +60,7 @@ function Results(props: { r: ReturnType<typeof useApi<OutliersData>>; min: strin
       <h2 style={{ marginTop: 0 }}>Videos our network found <Badge kind="real">REAL · public feed</Badge></h2>
       <p className="small muted">
         {c.videos} videos from {c.channels} channels that our network found in the last {c.days} days — not all of YouTube.
+        {c.olderThanFeed ? ` ${c.olderThanFeed} of them are older than their channel's latest 15 uploads, so the public feed gives no ×N for them.` : ''}
         {c.channelsWaiting ? ` ${c.channelsWaiting} channels are waiting for their first feed check.` : ''}
         {' '}×N = views ÷ the median views of the channel's earlier uploads of the same type, from its public feed (latest 15 uploads).
       </p>

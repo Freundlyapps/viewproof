@@ -11,7 +11,7 @@ const row = (id: string, title: string, ch: string, n: number, over: Record<stri
   videoId: id, title, publishedAt: '2026-11-19T12:00:00Z', format: 'long', views: v(50000), vph: v(700), outlier: v(n), history: [],
   channelId: `UC${ch}`, channelTitle: ch, channelMedian: v(5000), ...over,
 });
-function api(rows: unknown[], coverage = { videos: 40, channels: 12, channelsWaiting: 3, days: 30 }) {
+function api(rows: unknown[], coverage = { videos: 40, channels: 12, channelsWaiting: 3, olderThanFeed: 25, days: 30 }) {
   const seen = mockApi({ '/api/me': ME, '/api/channels': [channel()], '/api/outliers': { rows, coverage } });
   return seen;
 }
@@ -31,6 +31,7 @@ describe('outliers', () => {
     expect(within(items[1]!).getByText('No data: Published less than an hour ago')).toBeTruthy();
     expect(screen.getByText(/40 videos from 12 channels that our network found in the last 30 days/)).toBeTruthy();
     expect(screen.getByText(/3 channels are waiting for their first feed check/)).toBeTruthy();
+    expect(screen.getByText(/25 of them are older than their channel's latest 15 uploads, so the public feed gives no ×N for them/)).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Outliers' })).toBeTruthy();
   });
 
@@ -49,7 +50,7 @@ describe('outliers', () => {
   });
 
   test('empty pool says how to start', async () => {
-    api([], { videos: 0, channels: 0, channelsWaiting: 0, days: 30 });
+    api([], { videos: 0, channels: 0, channelsWaiting: 0, olderThanFeed: 0, days: 30 });
     renderAt('/research/outliers');
     expect(await screen.findByText((_c, el) => el?.tagName === 'P' && el.textContent === "Your network hasn't found videos yet. Link your browser in Settings → Extension & data.")).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Settings → Extension & data' }).getAttribute('href')).toBe('/settings/extension');
