@@ -147,6 +147,20 @@ describe('competitors', () => {
     expect(l2[0]!.subscribers).toEqual({ kind: 'no_data', reason: 'Subscriber counts need a YouTube API key on this server (or your connected channel)' });
   });
 
+  test("without a key, missing or day-old counts refresh with the user's connected channel", async () => {
+    const cookie = await user('cp-tokstats', true);
+    const id = idN(650);
+    await env.DB.prepare("INSERT INTO tracked_channels (channel_id, title, last_polled_at, created_at) VALUES (?, 'Seeded', ?, ?)").bind(id, new Date(T0).toISOString(), new Date(T0).toISOString()).run();
+    await env.DB.prepare("INSERT INTO user_competitors SELECT id, ?, ? FROM users WHERE google_sub = 'cp-tokstats'").bind(id, new Date(T0).toISOString()).run();
+    const s = setup();
+    const list = await (await json(s.app, 'GET', '/api/competitors', cookie)).json<Competitor[]>();
+    expect(s.statsCalls).toContainEqual({ method: 'byIds', auth: { token: 'user-token' } });
+    expect(list[0]!.subscribers).toMatchObject({ kind: 'value', value: 1234 });
+    const again = setup({ now: () => T0 + 2 * H });
+    await json(again.app, 'GET', '/api/competitors', cookie);
+    expect(again.statsCalls.filter((c) => c.method === 'byIds')).toHaveLength(0);
+  });
+
   test('scheduled run polls stale channels, refreshes stats daily, prunes orphans after account deletion', async () => {
     await env.DB.prepare('DELETE FROM tracked_channels').run(); // only this test's channel is due
     const cookie = await user('cp-cron');

@@ -80,6 +80,17 @@ function toCompetitor(deps: Deps, r: Row, feed: FeedVideo[]): Competitor {
   };
 }
 
+const STATS_FRESH_MS = 86_400_000;
+
+/** Without a server key nothing refreshes counts daily: refresh missing or day-old ones with this user's access. */
+async function refreshStaleStats(deps: Deps, userId: string, rows: Row[]): Promise<void> {
+  if (deps.config.youtubeApiKey) return; // the daily Cron job keeps them fresh
+  const stale = rows.filter((r) => !r.stats_at || deps.now() - Date.parse(r.stats_at) >= STATS_FRESH_MS).map((r) => r.channel_id);
+  if (!stale.length) return;
+  const auth = await statsAuth(deps, userId);
+  if (auth) await saveStats(deps, stale, auth);
+}
+
 const rowsOf = (deps: Deps, userId: string, channelId?: string) =>
   deps.db.prepare(`SELECT t.*, u.added_at FROM user_competitors u JOIN tracked_channels t USING (channel_id) WHERE u.user_id = ?${channelId ? ' AND t.channel_id = ?' : ''} ORDER BY u.added_at`)
     .bind(...(channelId ? [userId, channelId] : [userId])).all<Row>();
@@ -91,8 +102,9 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
   app.get('/api/competitors', async (c) => {
     const uid = await session(c);
     if (!uid) return signedOut(c);
-    const ids = (await rowsOf(deps, uid)).results.map((r) => r.channel_id);
-    await pollStale(deps, 3, ids);
+    const before = (await rowsOf(deps, uid)).results;
+    await pollStale(deps, 3, before.map((r) => r.channel_id));
+    await refreshStaleStats(deps, uid, before);
     const rows = (await rowsOf(deps, uid)).results;
     const feeds = await feedOf(deps, rows.map((r) => r.channel_id));
     return c.json(rows.map((r) => toCompetitor(deps, r, feeds.get(r.channel_id) ?? [])));
@@ -119,8 +131,10 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     const uid = await session(c);
     if (!uid) return signedOut(c);
     const id = c.req.param('channelId');
-    if (!(await rowsOf(deps, uid, id)).results[0]) return err(c, 404, 'not_found', 'You are not tracking this channel.');
+    const before = (await rowsOf(deps, uid, id)).results;
+    if (!before[0]) return err(c, 404, 'not_found', 'You are not tracking this channel.');
     await pollChannel(deps, id);
+    await refreshStaleStats(deps, uid, before);
     const r = (await rowsOf(deps, uid, id)).results[0]!;
     const feed = (await feedOf(deps, [id])).get(id) ?? [];
     const hist = await historyOf(deps, feed.map((v) => v.videoId));

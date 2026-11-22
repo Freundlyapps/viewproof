@@ -81,7 +81,7 @@ describe('competitors', () => {
     const alpha = within(table).getByRole('row', { name: /Alpha/ });
     expect(within(alpha).getByText('1,234,567')).toBeTruthy();
     expect(within(alpha).getByText(/as of/)).toBeTruthy();
-    expect(within(alpha).getByText("6 of the feed's latest 15")).toBeTruthy();
+    expect(within(alpha).getByText("of the feed's latest 15")).toBeTruthy();
     expect(within(alpha).getByText('50,000')).toBeTruthy();
     const beta = within(table).getByRole('row', { name: /Beta/ });
     expect(within(beta).getByText('Feed check failed: HTTP 404')).toBeTruthy();

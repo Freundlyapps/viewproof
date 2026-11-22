@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1 — plans 1–4 of 8 done: browser extension; server with Google sign-in and channel connect; web app with My channel; keyword research.
+License: AGPL-3.0. Status: Phase 1 — plans 1–4 and 5a done: browser extension; server with Google sign-in and channel connect; web app with My channel; keyword research; competitor tracking. Next: 5b, the opt-in data pool and Outliers.
 
 ## The browser extension (Chrome, Edge)
 
@@ -61,6 +61,18 @@ Run it locally: set up `apps/api` (see [apps/api/README.md](apps/api/README.md))
 ViewProof shows no "monthly searches" number. YouTube publishes search volume to no one, and every tool's figure is a model built from clickstream or Google web-search data.
 
 The report reads the extension through a small script on ViewProof's own pages. The store build runs it only on `viewproof.app`. For a local server (`http://localhost:8787`), load the development build instead: run `pnpm --filter extension build:dev`, then load `apps/extension/.output/chrome-mv3-dev`.
+
+## Competitors
+
+**Competitors** tracks up to 25 YouTube channels. Paste a channel link (`youtube.com/channel/UC…`), its UC… id, or its @handle.
+
+- **New uploads** (REAL · public feed): the latest uploads across your tracked channels, sortable by newest, views, views per hour and ×N.
+  - **Views per hour**: the view change between two of ViewProof's checks at least an hour apart; otherwise the average since upload, and it says which.
+  - **×N**: a video's views ÷ the median views of the channel's earlier uploads of the same type (long or Short), the same formula as the extension. Fewer than 5 earlier videos gives "No data" with the reason.
+- **Channels**: per channel, the subscriber count (REAL · YouTube Data API, shown "as of" its date), how many of the feed's latest 15 uploads came in the last 30 days, median views of long videos and Shorts, and when the feed was last checked. A feed that fails says so, and the last data stays.
+- **Views over time**: open a channel and pick a video. The line is its public view count at each of ViewProof's checks.
+
+Where the data comes from: each channel's public RSS feed, which lists its latest 15 uploads with view counts. The server fetches a feed at most once every 3 hours, however many people track the channel. An hourly job checks up to 60 feeds. Subscriber counts and adding by @handle need the YouTube Data API: either the server's `YOUTUBE_API_KEY` or your own connected channel. Without either, paste the channel's /channel/ link. Those counts are kept for at most 30 days and are never charted.
 
 ## Repository layout
 

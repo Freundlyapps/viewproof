@@ -95,22 +95,23 @@ function Uploads(props: { version: number }) {
 function ChannelsTable(props: { list: Competitor[]; onRemove: (id: string) => void }) {
   const count = (n: number) => fmt.count(n);
   return (
-    <div className="card">
+    <div className="card" style={{ overflowX: 'auto' }}>
+      <h2 style={{ marginTop: 0 }}>Tracked channels <Badge kind="real">REAL · public feed</Badge> <Badge kind="real">Subscribers: REAL · YouTube Data API</Badge></h2>
       <table aria-label="Tracked channels">
         <thead><tr>
-          <th>Channel</th><th className="num">Subscribers <Badge kind="real">REAL · YouTube Data API</Badge></th><th>Latest upload</th><th>Last 30 days</th>
-          <th className="num">Median views, long</th><th className="num">Median views, Shorts</th><th>Checked</th><th />
+          <th>Channel</th><th className="num">Subscribers</th><th>Latest upload</th><th>Last 30 days</th>
+          <th className="num">Median views, long</th><th className="num">Median views, Shorts</th><th />
         </tr></thead>
         <tbody>
           {props.list.map((c) => (
             <tr key={c.channelId}>
-              <td><Link to={`/competitors/${c.channelId}`}>{c.title}</Link>{c.handle ? <div className="small muted">{c.handle}</div> : null}</td>
+              <td><Link to={`/competitors/${c.channelId}`}>{c.title}</Link>
+                <div className="small muted">{c.checkError ? <span className="nodata">{c.checkError}</span> : <>feed checked {ago(c.lastCheckedAt)}</>}</div></td>
               <td className="num"><Value m={c.subscribers} format={count} />{c.subscribers.kind === 'value' && typeof c.subscribers.inputs.asOf === 'string' ? <div className="small muted">as of {dateOnly(c.subscribers.inputs.asOf)}</div> : null}</td>
               <td>{ago(c.summary.latestUploadAt)}</td>
-              <td>{c.summary.inLast30Days.count} of the feed's latest {c.summary.inLast30Days.ofFeed}</td>
+              <td>{c.summary.inLast30Days.count} <div className="small muted">of the feed's latest {c.summary.inLast30Days.ofFeed}</div></td>
               <td className="num"><Value m={c.summary.medianViewsLong} format={count} /></td>
               <td className="num"><Value m={c.summary.medianViewsShorts} format={count} /></td>
-              <td>{c.checkError ? <span className="nodata">{c.checkError}</span> : ago(c.lastCheckedAt)}</td>
               <td><button type="button" className="btn" onClick={() => props.onRemove(c.channelId)}>Remove</button></td>
             </tr>
           ))}

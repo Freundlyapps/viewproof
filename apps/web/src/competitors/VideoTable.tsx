@@ -32,18 +32,20 @@ export function SortChips(props: { by: SortKey; set: (k: SortKey) => void }) {
 export function VideoTable(props: { label: string; videos: (CompetitorVideo & { channelTitle?: string })[]; channel?: boolean; onHistory?: (v: CompetitorVideo) => void }) {
   const count = (n: number) => fmt.count(n);
   return (
-    <table aria-label={props.label}>
+    <div style={{ overflowX: 'auto' }}><table aria-label={props.label}>
       <thead><tr><th>Video</th>{props.channel ? <th>Channel</th> : null}<th>Uploaded</th><th className="num">Views</th><th className="num">Views / hour</th><th>×N</th>{props.onHistory ? <th /> : null}</tr></thead>
       <tbody>
         {props.videos.map((v) => (
           <tr key={v.videoId}>
-            <td><div className="row" style={{ gap: 8 }}>
-              <img src={`https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`} alt="" width={96} height={54} loading="lazy" />
-              <a href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noreferrer">{v.title}</a>
-              {v.format === 'short' ? <span className="small muted">Short</span> : null}
+            <td><div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 260 }}>
+              <img src={`https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`} alt="" width={96} height={54} loading="lazy" style={{ flex: 'none', borderRadius: 6, objectFit: 'cover', background: 'var(--surface-2)' }} />
+              <div style={{ minWidth: 0 }}>
+                <a href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noreferrer">{v.title}</a>
+                {v.format === 'short' ? <div className="small muted">Short</div> : null}
+              </div>
             </div></td>
             {props.channel ? <td>{v.channelTitle}</td> : null}
-            <td title={new Date(v.publishedAt).toLocaleString()}>{ago(v.publishedAt)}</td>
+            <td title={new Date(v.publishedAt).toLocaleString()} style={{ whiteSpace: 'nowrap' }}>{ago(v.publishedAt)}</td>
             <td className="num"><Value m={v.views} format={count} /></td>
             <td className="num"><Value m={v.vph} format={count} /></td>
             <td><Outlier m={v.outlier} /></td>
@@ -51,6 +53,6 @@ export function VideoTable(props: { label: string; videos: (CompetitorVideo & { 
           </tr>
         ))}
       </tbody>
-    </table>
+    </table></div>
   );
 }
