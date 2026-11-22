@@ -1,6 +1,7 @@
 import { type ReactElement, useEffect, useState } from 'react';
 import { API_OK } from './useApi';
 import { Route, Routes } from 'react-router';
+import { AskAi } from './ai/AskAi';
 import { type ChannelInfo, type Me, getJson, isApiError } from './api';
 import { Settings } from './Settings';
 import { NAV } from './shell/nav';
@@ -64,6 +65,7 @@ export function App() {
         <Route path="/research/:tab?" element={<Research channel={current} />} />
         <Route path="/channel/:tab?" element={needsChannel(<MyChannel channel={current!} />)} />
         <Route path="/competitors/:channelId?" element={<Competitors />} />
+        <Route path="/ai" element={<AskAi channel={current?.id ?? null} />} />
         <Route path="/settings/*" element={<Settings />} />
         {NAV.flatMap((n) => (n !== '-' && n.soon ? [<Route key={n.to} path={`${n.to}/*`} element={<Soon title={n.label} text={n.soon} />} />] : []))}
         <Route path="*" element={<Soon title="Not found" sub="Check the address" text="This page doesn't exist." />} />

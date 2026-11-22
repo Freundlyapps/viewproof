@@ -143,3 +143,21 @@ a.nav{text-decoration:none}
 .nodata{color:var(--muted);font-size:.85rem;font-weight:400}
 .empty{color:var(--muted);padding:12px 0}
 .screen{display:flex}
+/* Plan 6a: Ask AI */
+.stack{display:flex;flex-direction:column;gap:12px}
+.stack-s{display:flex;flex-direction:column;gap:6px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.err-text{color:var(--loss,#b91c1c)}
+.err-note{border-color:var(--loss,#b91c1c)}
+.results{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.results li{border-bottom:1px solid var(--border);padding-bottom:10px}
+.ai-text{white-space:pre-wrap;overflow-wrap:anywhere;flex:1;min-width:0}
+.chip.cite{padding:1px 8px;font-size:.75rem;margin:0 2px}
+.data-used summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.sources{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:8px}
+.sources>li{border:1px solid var(--border);border-radius:9px;padding:8px 10px}
+.sources>li.hl{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.lines{margin:6px 0 0;padding-left:18px;overflow-wrap:anywhere}
+.turn{border-radius:12px;padding:10px 12px}
+.turn.me{background:var(--surface-2);align-self:flex-end;max-width:85%}
+.turn.ai{border:1px dashed var(--border)}

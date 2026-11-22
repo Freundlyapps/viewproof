@@ -7,7 +7,7 @@ import { noProvider } from '@viewproof/providers';
 
 export const APP = 'http://localhost:8787';
 export function makeDeps(over: Partial<Deps> = {}, envOver: Partial<typeof env> = {}): Deps {
-  return { db: env.DB, config: parseConfig({ ...env, ...envOver }), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('not configured in this test'), fetchFeed: async () => ({ ok: false, reason: 'not configured in this test' }), channelStats: { byIds: async () => ({ error: 'not configured in this test' }), byHandle: async () => ({ error: 'not configured in this test' }) }, now: () => Date.now(), ...over };
+  return { db: env.DB, config: parseConfig({ ...env, ...envOver }), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('not configured in this test'), fetchFeed: async () => ({ ok: false, reason: 'not configured in this test' }), channelStats: { byIds: async () => ({ error: 'not configured in this test' }), byHandle: async () => ({ error: 'not configured in this test' }) }, now: () => Date.now(), llm: () => { throw new Error('llm not configured in this test'); }, ...over };
 }
 export async function addUser(id: string, plan = 'free') {
   await env.DB.prepare("INSERT INTO users (id, google_sub, email, name, plan, created_at) VALUES (?, ?, ?, ?, ?, '2026-11-21T00:00:00Z')")
@@ -65,4 +65,37 @@ export async function signIn(opts: { sub: string; channel?: MyChannel; scopes?: 
 
 export function post(app: ReturnType<typeof createApp>, path: string, cookie: string, form: Record<string, string> = {}) {
   return app.request(path, { method: 'POST', headers: { origin: APP, cookie, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form).toString() });
+}
+
+import { sha256Hex } from '../src/crypto';
+import type { LlmClient, LlmError, LlmRequest, LlmResult } from '@viewproof/providers';
+
+/** A signed-in cookie for an existing user, without the OAuth flow. */
+export async function sessionCookie(userId: string): Promise<string> {
+  const id = `sess-${userId}-${Math.random().toString(36).slice(2)}`;
+  await env.DB.prepare('INSERT INTO sessions (id_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+    .bind(await sha256Hex(id), userId, '2026-11-01T00:00:00Z', '2099-01-01T00:00:00Z').run();
+  return `vp_session=${id}`;
+}
+
+/** Fake LLM factory: records every client built and every request, answers from `reply`. */
+export function fakeLlm(reply: (r: LlmRequest, model: string) => LlmResult | LlmError | string = () => 'OK') {
+  const built: { provider: string; apiKey: string; model: string; baseUrl?: string | null }[] = [];
+  const requests: { model: string; req: LlmRequest }[] = [];
+  const llm = (o: { provider: any; apiKey: string; model: string; baseUrl?: string | null }): LlmClient => {
+    built.push({ provider: o.provider, apiKey: o.apiKey, model: o.model, baseUrl: o.baseUrl });
+    return {
+      provider: o.provider, model: o.model,
+      async complete(req) {
+        requests.push({ model: o.model, req });
+        const r = reply(req, o.model);
+        return typeof r === 'string' ? { text: r, model: o.model, inputTokens: 10, outputTokens: 5 } : r;
+      },
+    };
+  };
+  return { llm, built, requests };
+}
+
+export function sendJsonReq(app: ReturnType<typeof createApp>, method: string, path: string, cookie: string, body?: unknown) {
+  return app.request(path, { method, headers: { origin: APP, cookie, 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
 }
