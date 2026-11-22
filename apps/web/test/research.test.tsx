@@ -17,7 +17,7 @@ let ext: ReturnType<typeof fakeExtension> | null = null;
 afterEach(() => { ext?.remove(); ext = null; });
 
 describe('research', () => {
-  test('Research nav opens Keywords; Outliers says soon', async () => {
+  test('Research nav opens Keywords; Outliers tab opens the finder', async () => {
     api();
     renderAt('/research');
     expect(await screen.findByRole('heading', { name: 'Research' })).toBeTruthy();
@@ -27,7 +27,7 @@ describe('research', () => {
     expect(research.className).toContain('on');
     expect(within(research).queryByText('soon')).toBeNull();
     await userEvent.click(screen.getByRole('tab', { name: /Outliers/ }));
-    expect(await screen.findByText('Not built yet')).toBeTruthy();
+    expect(await screen.findByLabelText('Keyword in title')).toBeTruthy();
   });
 
   test('no extension', async () => {

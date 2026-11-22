@@ -1,10 +1,9 @@
 import { NavLink, useParams } from 'react-router';
 import type { ChannelInfo } from '../api';
 import { KeywordPage } from './KeywordReport';
+import { OutliersPage } from './Outliers';
 
-const OUTLIERS = "Videos that beat their channel's usual views in your niche, from the shared data pool (next plan).";
-
-/** Research (spec §15): Keywords now, Outliers later. */
+/** Research (spec §15): Keywords and Outliers. */
 export function Research(props: { channel: ChannelInfo | null }) {
   const { tab = 'keywords' } = useParams();
   return (
@@ -12,11 +11,9 @@ export function Research(props: { channel: ChannelInfo | null }) {
       <div><h1>Research</h1><p className="sub">Every number says where it comes from.</p></div>
       <div className="tabs" role="tablist">
         <NavLink to="/research/keywords" role="tab" aria-selected={tab === 'keywords'} className={`tab${tab === 'keywords' ? ' on' : ''}`}>Keywords</NavLink>
-        <NavLink to="/research/outliers" role="tab" aria-selected={tab === 'outliers'} className={`tab${tab === 'outliers' ? ' on' : ''}`}>Outliers (soon)</NavLink>
+        <NavLink to="/research/outliers" role="tab" aria-selected={tab === 'outliers'} className={`tab${tab === 'outliers' ? ' on' : ''}`}>Outliers</NavLink>
       </div>
-      {tab === 'outliers'
-        ? <div className="card"><p className="sub">Not built yet</p><p style={{ margin: 0 }}>{OUTLIERS}</p></div>
-        : <KeywordPage channel={props.channel} />}
+      {tab === 'outliers' ? <OutliersPage /> : <KeywordPage channel={props.channel} />}
     </section>
   );
 }

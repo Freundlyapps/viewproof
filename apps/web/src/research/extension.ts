@@ -40,3 +40,14 @@ export function onKeywordUpdated(cb: (q: string) => void): () => void {
   window.addEventListener('message', onMsg);
   return () => window.removeEventListener('message', onMsg);
 }
+
+/** Is the ViewProof extension installed in this browser (its content script answers on this page)? */
+export async function extensionInstalled(helloMs = 1500): Promise<boolean> {
+  return (await waitFor((d) => d.type === 'viewproof:here', helloMs, () => window.postMessage({ type: 'viewproof:hello' }, location.origin))) !== null;
+}
+
+/** Hand the extension a pool contribution token for this server (plan 5b). True once it confirms. */
+export async function linkExtension(token: string, answerMs = 5000): Promise<boolean> {
+  const id = `link${++seq}-${Date.now()}`;
+  return (await waitFor((d) => d.type === 'viewproof:linked' && d.id === id, answerMs, () => window.postMessage({ type: 'viewproof:link', id, token }, location.origin))) !== null;
+}
