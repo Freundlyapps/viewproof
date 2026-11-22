@@ -1,4 +1,4 @@
-import { type Coverage, type Earnings, type Measured, type Overview, type SearchTerm, type SearchTerms, type UploadTimes, type Pair, type RangeKey, type VideoRow, type Videos, type YourTerms, containsKeyword, coverage, noData, parseRange, periodFor, todayPacific, value } from '@viewproof/core';
+import { type OptimizeVideo, type Coverage, type Earnings, type Measured, type Overview, type SearchTerm, type SearchTerms, type UploadTimes, type Pair, type RangeKey, type VideoRow, type Videos, type YourTerms, containsKeyword, coverage, noData, parseRange, periodFor, todayPacific, value } from '@viewproof/core';
 import type { ChannelRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
@@ -155,6 +155,9 @@ export async function channelReport<T>(deps: Deps, ch: ChannelRow, key: string, 
   return r as T;
 }
 
+/** A shaped body, or a Response the shape chose instead (e.g. a 404). */
+const reply = (c: Context, out: unknown) => (out instanceof Response ? out : c.json(out as object));
+
 export function serve<T>(
   deps: Deps, key: (range: RangeKey, c: Context) => string, load: (deps: Deps, a: ChannelAccess, range: RangeKey, c: Context) => Promise<T | GoogleError>,
   ttl: Ttl<T> = REPORT_TTL_MS, before?: (c: Context, ch: ChannelRow) => Response | null,
@@ -170,7 +173,7 @@ export function serve<T>(
       const early = before?.(c, ch);
       if (early) return early;
       const hit = await peek(deps, ch.id, k, ttl);
-      if (hit !== undefined) return c.json(shape(hit, c) as object);
+      if (hit !== undefined) return reply(c, shape(hit, c));
     }
     const a = await accessFor(deps, ch);
     if ('error' in a) return accessError(c, a);
@@ -179,7 +182,7 @@ export function serve<T>(
     const r = await cached(deps, ch.id, k, ttl, () => load(deps, a, range, c));
     if (isErr(r)) return googleFailure(c, deps, ch, r);
     if (ch.status === 'reconnect') await markActive(deps, ch);
-    return c.json(shape(r as T, c) as object);
+    return reply(c, shape(r as T, c));
   };
 }
 
@@ -308,6 +311,22 @@ export function channelRoutes(app: Hono, deps: Deps): void {
   app.get('/api/channels/:id/overview', serve(deps, (r) => `overview:${r}:${today(deps)}`, loadOverview));
   // The creator's real search terms containing a keyword: the cached 90-day search terms, filtered.
   app.get('/api/channels/:id/keyword-terms', (c) => (keywordParam(c) ? keywordTerms(c) : c.json(BAD_KEYWORD, 400)));
+  const VIDEO_ID = /^[\w-]{11}$/;
+  const NOT_THIS_CHANNEL = 'Video not found on this channel.';
+  app.get('/api/channels/:id/optimize/:videoId', serve<OptimizeVideo | { missing: true }>(deps, (_r, c) => `optimize:${c.req.param('videoId')}:${today(deps)}`, async (d, a, _r, c) => {
+    const videoId = c.req.param('videoId')!;
+    const v = await d.youtube.video(a.accessToken, videoId);
+    if (isErr(v)) return v;
+    if (!v || v.channelId !== a.channel.channel_id) return { missing: true };
+    const daily = await dailyFor(d, a, '90d');
+    if (isErr(daily)) return daily;
+    const p = daily.coverage.period;
+    const t = await terms(d, a, p.start, p.end, videoId);
+    if (isErr(t)) return t;
+    const list = rowsBy(t, 'insightTrafficSourceDetail').map(({ key, o }) => ({ term: key, views: Number(o.views) })).filter((x) => Number.isFinite(x.views));
+    return { video: v, terms: list, termsNote: list.length ? null : NO_TERMS, period: { start: p.start, end: p.end }, fetchedAt: new Date(d.now()).toISOString() };
+  }, REPORT_TTL_MS, (c) => (VIDEO_ID.test(c.req.param('videoId') ?? '') ? null : json(c, { error: 'bad_request', message: 'That is not a YouTube video id.' }, 400)),
+  (b, c) => ('missing' in b ? c.json({ error: 'not_found', message: NOT_THIS_CHANNEL }, 404) : b)));
   const keywordTerms = serve(deps, () => `terms:90d:${today(deps)}`, (d, a) => loadSearchTerms(d, a, '90d'), REPORT_TTL_MS, undefined, (t, c) => matchingTerms(t, keywordParam(c)!, deps));
   app.get('/api/channels/:id/videos', serve(deps, (r) => `videos:${r}:${today(deps)}`, loadVideos));
 }

@@ -25,10 +25,15 @@ export interface Upload {
   thumbnailUrl: string | null;
 }
 
+/** One video's editable fields (Optimize). `tags` is [] when YouTube omits it, which it does when there are none. */
+export interface VideoDetails { videoId: string; channelId: string; title: string; description: string; tags: string[]; publishedAt: string; durationSec: number | null }
+
 export interface YouTubeClient {
   report(accessToken: string, q: ReportQuery): Promise<Report | GoogleError>;
   /** The channel's newest uploads, newest first, at most `max`. */
   uploads(accessToken: string, max: number): Promise<Upload[] | GoogleError>;
+  /** One video (1 quota unit); null when YouTube returns no item. */
+  video(accessToken: string, videoId: string): Promise<VideoDetails | null | GoogleError>;
 }
 
 const REPORTS_URL = 'https://youtubeanalytics.googleapis.com/v2/reports';
@@ -125,6 +130,19 @@ export function httpYouTubeClient(fetchFn: typeof fetch): YouTubeClient {
         }
       }
       return out.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+    },
+    async video(token, videoId) {
+      const p = new URLSearchParams({ part: 'snippet,contentDetails', id: videoId });
+      const page = await call(fetchFn, `${DATA_URL}/videos?${p}`, token);
+      if (isError(page)) return page;
+      const it = obj(((page.items as unknown[] | undefined) ?? [])[0]);
+      const sn = obj(it?.snippet);
+      if (!it || !sn || str(it.id) !== videoId) return null;
+      const tags = Array.isArray(sn.tags) ? sn.tags.filter((t): t is string => typeof t === 'string') : [];
+      return {
+        videoId, channelId: str(sn.channelId) ?? '', title: str(sn.title) ?? '', description: str(sn.description) ?? '', tags,
+        publishedAt: str(sn.publishedAt) ?? '', durationSec: durationSeconds(str(obj(it.contentDetails)?.duration)),
+      };
     },
   };
 }
