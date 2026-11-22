@@ -56,7 +56,7 @@ export function DataUsed(props: { sources: AiSource[]; missing: AiMissing[]; hig
 export function sentTo(ai: AiInfo, usage: AiUsage, task: 'quick' | 'coach'): string {
   const u = usage[task];
   const count = ai.via === 'included' && u.limit !== null ? ` · ${u.used} of ${u.limit} this month` : '';
-  return `Sent to ${ai.label} (${ai.model}) · ${ai.via === 'own' ? 'your key' : 'included AI'}${count}`;
+  return `Sent to ${ai.label}, model ${ai.model} · ${ai.via === 'own' ? 'your key' : 'included AI'}${count}`;
 }
 
 /** A refusal or failure, with the next step. */

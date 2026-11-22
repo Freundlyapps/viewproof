@@ -121,6 +121,15 @@ Where the data comes from: each channel's public RSS feed, which lists its lates
 - **Filters:** keyword in the title, long or Shorts, uploaded within 7 / 30 / 90 days or 12 months, channel size (the channel's usual views: under 10k, 10k–100k, over 100k) and a minimum ×N.
 - **Waiting channels:** a channel the network has just found waits for its first feed check (the hourly job checks up to 15 new channels an hour). The page says how many are waiting.
 
+## AI
+
+**Ask AI** writes titles, descriptions, tags and video ideas, and answers questions about your channel. Every answer lists the data it used, line by line, and cites it as [S1], [S2]…
+- **What it may use:** your channel's last 28 days, your top videos and real search terms from the last 90 days (YouTube Analytics), your tracked competitors' latest uploads (public feeds), and outliers the network found in the last 30 days. Whatever isn't available is listed with the reason. Nothing else is sent.
+- **Where it goes:** the answer names the provider and model. Nothing about your questions or the answers is stored.
+- **Included AI or your own key:** a server can include an AI (the hosted service uses Claude Haiku 5.5 for quick actions and Claude Sonnet 5.5 for Ask AI). Hosted limits each month: Free 20 quick actions; Pro 500 quick actions and 150 Ask AI messages. Self-hosted installs have no limits. In **Settings → AI & apps** you can add your own key instead (Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter; and on self-hosted installs any OpenAI-compatible server such as Ollama). The key is tested before it's saved, stored encrypted per user, and your own key is never counted.
+- **Server setup** (optional, `.dev.vars` or Wrangler secrets): `AI_API_KEY`, and optionally `AI_PROVIDER` (`anthropic` by default; `openai`, `gemini`, `deepseek`, `openrouter`, `custom`), `AI_BASE_URL` (for `custom`), `AI_QUICK_MODEL`, `AI_COACH_MODEL` (required for providers other than Anthropic). With `AI_PROVIDER=custom` and `AI_BASE_URL`, no key is needed (local models).
+- **Live check:** `VP_SESSION=<vp_session cookie> node apps/api/scripts/ai-live-check.mjs http://localhost:8787` runs one titles action and one question (at most 3 AI calls) and prints what came back.
+
 ## Repository layout
 
 - `packages/core`: scores, parsers and API types shared by every part (views per hour, outlier ×N, feed and player parsers, My channel rules).

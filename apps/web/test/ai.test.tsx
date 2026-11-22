@@ -47,7 +47,7 @@ describe('Ask AI', () => {
     expect(src.className).toContain('hl');
     expect(within(src).getByText('"okay meaning" — 300 views')).toBeTruthy();
     expect(screen.getByText(/You don't track any competitors yet/)).toBeTruthy();
-    expect(screen.getByText(/Sent to Anthropic \(Claude\) \(claude-haiku-5-5\) · included AI · 4 of 20 this month/)).toBeTruthy();
+    expect(screen.getByText(/Sent to Anthropic \(Claude\), model claude-haiku-5-5 · included AI · 4 of 20 this month/)).toBeTruthy();
   });
 
   test('ask: unknown citation stays plain text with a warning; answer is never HTML', async () => {
@@ -61,7 +61,7 @@ describe('Ask AI', () => {
     expect(screen.getAllByRole('button', { name: 'S1' }).length).toBeGreaterThan(0);
     expect(container.querySelector('img')).toBeNull();
     expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeTruthy();
-    expect(screen.getByText(/Sent to Anthropic \(Claude\) \(claude-sonnet-5-5\) · your key$/)).toBeTruthy();
+    expect(screen.getByText(/Sent to Anthropic \(Claude\), model claude-sonnet-5-5 · your key$/)).toBeTruthy();
   });
 
   test('limit refusal offers adding a key', async () => {

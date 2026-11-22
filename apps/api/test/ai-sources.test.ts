@@ -42,6 +42,12 @@ describe('gatherSources', () => {
     expect(r.sources[2]!.lines[0]).toContain('"Why "OK" means okay" — 5,000 views');
   });
 
+  test('one view is singular', async () => {
+    const u = uid(); await addUser(u); const ch = await channel(u);
+    await cache(ch, `terms:90d:${day()}`, { ...terms, terms: [{ term: 'rare', views: 1, watchMinutes: 0, previousViews: none, topVideo: null }] });
+    expect((await gatherSources(deps(), u, ['terms'], ch)).sources[0]!.lines).toEqual(['"rare" — 1 view']);
+  });
+
   test('a missing metric is left out, not shown as zero', async () => {
     const u = uid(); await addUser(u); const ch = await channel(u);
     await cache(ch, `overview:28d:${day()}`, overview(null));
@@ -75,6 +81,13 @@ describe('gatherSources', () => {
     const r = await gatherSources(deps(), a, ['terms'], chB);
     expect(r.sources).toHaveLength(0);
     expect(r.missing[0]!.reason).toBe('No channel connected');
+  });
+
+  test("no search terms → YouTube's own note is the reason", async () => {
+    const u = uid(); await addUser(u); const ch = await channel(u);
+    await cache(ch, `terms:90d:${day()}`, { range: '90d', terms: [], note: "YouTube lists search terms only once enough people searched; it doesn't publish the threshold." });
+    const r = await gatherSources(deps(), u, ['terms'], ch);
+    expect(r.missing[0]!.reason).toBe("YouTube lists search terms only once enough people searched; it doesn't publish the threshold.");
   });
 
   test('empty pool → Missing with a reason', async () => {

@@ -10,3 +10,8 @@ TOKEN_KEY=
 # DATAFORSEO_DISPLAY_OK=
 # Optional: YouTube Data API key — competitor @handles and subscriber counts.
 # YOUTUBE_API_KEY=
+# Optional included AI (README "AI"). Leave empty for none; users can still add their own key.
+AI_API_KEY=
+# AI_PROVIDER=anthropic
+# AI_QUICK_MODEL=
+# AI_COACH_MODEL=

@@ -23,6 +23,7 @@ const LABELS: Record<SourceKind, { label: string; detail: string; provenance: Ai
 const NO_CHANNEL = 'No channel connected';
 
 const num = (n: number) => Math.round(n).toLocaleString('en-US');
+const views = (n: number) => `${num(n)} ${Math.round(n) === 1 ? 'view' : 'views'}`;
 const val = (m: Measured<number> | undefined) => (m && m.kind === 'value' ? m.value : null);
 const date = (iso: string) => iso.slice(0, 10);
 
@@ -44,13 +45,13 @@ export function sourceBlock(sources: AiSource[]): string {
 
 function channelLines(o: Overview): string[] {
   const t = o.totals;
-  const views = val(t.views.current);
+  const v = val(t.views.current);
   const minutes = val(t.watchMinutes.current);
   const avd = val(t.averageViewDuration.current);
   const gained = val(t.subscribersGained.current);
   const lost = val(t.subscribersLost.current);
   const out: string[] = [];
-  if (views !== null) out.push(`${num(views)} views`);
+  if (v !== null) out.push(views(v));
   if (minutes !== null) out.push(`${num(minutes / 60)} watch hours`);
   if (avd !== null) out.push(`average view duration ${Math.floor(avd / 60)}:${String(Math.round(avd % 60)).padStart(2, '0')}`);
   if (gained !== null && lost !== null) out.push(`${num(gained - lost)} net subscribers (${num(gained)} gained, ${num(lost)} lost)`);
@@ -66,11 +67,11 @@ function videoLines(v: Videos): string[] {
     .map((r) => {
       const avd = val(r.averageViewDuration);
       const pct = avd !== null && r.durationSec ? `, ${Math.round((avd / r.durationSec) * 100)}% average viewed` : '';
-      return flatten(`"${flatten(r.title, 100)}" — ${num(val(r.views)!)} views${pct}, published ${date(r.publishedAt)}`);
+      return flatten(`"${flatten(r.title, 100)}" — ${views(val(r.views)!)}${pct}, published ${date(r.publishedAt)}`);
     });
 }
 
-const termLines = (t: SearchTerms) => t.terms.slice(0, MAX_LINES).map((x) => flatten(`"${flatten(x.term, 100)}" — ${num(x.views)} views`));
+const termLines = (t: SearchTerms) => t.terms.slice(0, MAX_LINES).map((x) => flatten(`"${flatten(x.term, 100)}" — ${views(x.views)}`));
 
 async function firstChannel(deps: Deps, userId: string, channelRowId: string | null): Promise<ChannelRow | null> {
   if (channelRowId) return ownedChannel(deps, userId, channelRowId);
@@ -97,7 +98,8 @@ export async function gatherSources(deps: Deps, userId: string, kinds: SourceKin
         case 'terms': {
           if (!ch) return NO_CHANNEL;
           const r = await channelReport<SearchTerms>(deps, ch, `terms:90d:${day}`, (d, a) => loadSearchTerms(d, a, '90d'));
-          return 'reason' in r ? r.reason : termLines(r);
+          if ('reason' in r) return r.reason;
+          return r.terms.length || !r.note ? termLines(r) : r.note;
         }
         case 'competitors': {
           const tracked = await deps.db.prepare('SELECT COUNT(*) AS n FROM user_competitors WHERE user_id = ?').bind(userId).first<{ n: number }>();
@@ -105,17 +107,17 @@ export async function gatherSources(deps: Deps, userId: string, kinds: SourceKin
           const ups = await latestUploads(deps, userId, 20);
           if (!ups.length) return 'No uploads checked yet for your competitors';
           return ups.map((u) => {
-            const views = val(u.views);
+            const n = val(u.views);
             const x = val(u.outlier);
-            return flatten(`${flatten(u.channelTitle, 60)}: "${flatten(u.title, 100)}" — ${views === null ? 'views unknown' : `${num(views)} views`}${x === null ? '' : `, ×${x}`}, published ${date(u.publishedAt)}`);
+            return flatten(`${flatten(u.channelTitle, 60)}: "${flatten(u.title, 100)}" — ${n === null ? 'views unknown' : views(n)}${x === null ? '' : `, ×${x}`}, published ${date(u.publishedAt)}`);
           });
         }
         case 'outliers': {
           const r = await findOutliers(deps, { format: 'any', days: 30, min: 3, size: 'any', q: '' });
           if (!r.rows.length) return 'No outliers in the pool for the last 30 days';
           return r.rows.slice(0, 15).map((o) => {
-            const views = val(o.views);
-            return flatten(`"${flatten(o.title, 100)}" (${flatten(o.channelTitle, 60)}) — ×${val(o.outlier)}${views === null ? '' : `, ${num(views)} views`}`);
+            const n = val(o.views);
+            return flatten(`"${flatten(o.title, 100)}" (${flatten(o.channelTitle, 60)}) — ×${val(o.outlier)}${n === null ? '' : `, ${views(n)}`}`);
           });
         }
       }
