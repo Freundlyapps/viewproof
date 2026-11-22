@@ -14,14 +14,20 @@ function Editor(props: { data: OptimizeVideo }) {
   const [description, setDescription] = useState(v.description);
   const [tags, setTags] = useState(v.tags.join(', '));
   const [keyword, setKeyword] = useState(props.data.terms[0]?.term ?? '');
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no');
   const tagList = splitTags(tags);
   const coverage = termCoverage(props.data.terms, { title, description, tags: tagList });
   const copyAll = async () => {
-    await navigator.clipboard?.writeText(`${title}\n\n${description}\n\nTags: ${tagList.join(', ')}`).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      if (!navigator.clipboard) throw new Error('no clipboard');
+      await navigator.clipboard.writeText(`${title}\n\n${description}\n\nTags: ${tagList.join(', ')}`);
+      setCopied('yes');
+      setTimeout(() => setCopied('no'), 1500);
+    } catch {
+      setCopied('failed');
+    }
   };
+  const at = props.data.fetchedAt;
   const mark = (b: boolean) => (b ? '✓' : '—');
   return (
     <div className="stack">
@@ -48,10 +54,11 @@ function Editor(props: { data: OptimizeVideo }) {
       <div className="field"><label htmlFor="vo-tags">Tags (comma-separated)</label><input id="vo-tags" className="input" value={tags} onChange={(e) => setTags(e.target.value)} /></div>
       <Checks label="Tag checks" checks={checkTags(tagList)} />
       <div className="row">
-        <button type="button" className="btn pri" onClick={() => void copyAll()}>{copied ? 'Copied' : 'Copy all'}</button>
+        <button type="button" className="btn pri" onClick={() => void copyAll()}>{copied === 'yes' ? 'Copied' : 'Copy all'}</button>
         <a className="btn" href={`https://studio.youtube.com/video/${v.videoId}/edit`} target="_blank" rel="noopener noreferrer">Open in YouTube Studio</a>
       </div>
-      <p className="note">Nothing is written to YouTube. Paste into YouTube Studio to change the video.</p>
+      {copied === 'failed' && <p className="err-text" role="alert">Couldn't copy. Select the text and copy it yourself.</p>}
+      <p className="note">Loaded from YouTube on {at.slice(0, 10)} at {at.slice(11, 16)} UTC (kept up to 6 hours). Nothing is written to YouTube. Paste into YouTube Studio to change the video.</p>
     </div>
   );
 }

@@ -9,46 +9,58 @@ export const KEYWORD_WITHIN = 40;
 export const SNIPPET_CHARS = 150;
 export const TAGS_LIMIT = 500;
 
-const WORD = /[\p{L}\p{N}]+/gu;
 const chars = (s: string) => [...s].length;
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
-/** Words of a text, normalised like keywords (NFKC, lower case); punctuation splits words. */
-const words = (s: string) => normalizeKeyword(s).match(WORD) ?? [];
-const kw = (k: string | null) => (k ? words(k) : []);
 
-/** All keyword words appear as words in the text. */
-function hasWords(text: string, keyword: string[]): boolean {
-  if (!keyword.length) return false;
-  const have = new Set(words(text));
-  return keyword.every((w) => have.has(w));
+// Words: letters, digits and combining marks (so Hindi vowel signs or decomposed accents don't split words).
+const WORD = /[\p{L}\p{N}\p{M}]+/gu;
+// Scripts written without spaces between words: match the keyword as a substring instead of as words.
+const NO_SPACES = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}]/u;
+
+/** Text normalised once for every comparison: NFKC, lower case, accents composed, Turkish İ folded to i. */
+const norm = (s: string) => normalizeKeyword(s).replace(/i\u0307/g, 'i').normalize('NFC');
+const words = (s: string) => norm(s).match(WORD) ?? [];
+
+interface Keyword { words: string[]; joined: string; noSpaces: boolean }
+function kw(k: string | null): Keyword {
+  const w = k ? words(k) : [];
+  return { words: w, joined: w.join(' '), noSpaces: NO_SPACES.test(w.join('')) };
 }
 
-/** 1-based character (code point) position where the keyword's first word first appears as a word, or null. */
-function wordPosition(text: string, first: string): number | null {
-  for (const m of text.matchAll(WORD)) {
-    if (normalizeKeyword(m[0]) === first) return chars(text.slice(0, m.index)) + 1;
+/** Whether the keyword is in the text, and the 1-based character where it starts. Both from the same normalised text. */
+function find(text: string, k: Keyword): { found: boolean; pos: number | null } {
+  if (!k.words.length) return { found: false, pos: null };
+  const t = norm(text);
+  if (k.noSpaces) {
+    const at = t.indexOf(k.words.join(''));
+    const atSpaced = at < 0 ? t.indexOf(k.joined) : at;
+    return atSpaced < 0 ? { found: false, pos: null } : { found: true, pos: chars(t.slice(0, atSpaced)) + 1 };
   }
-  return null;
+  const tokens = [...t.matchAll(WORD)];
+  const have = new Set(tokens.map((m) => m[0]));
+  if (!k.words.every((w) => have.has(w))) return { found: false, pos: null };
+  const first = tokens.find((m) => m[0] === k.words[0])!;
+  return { found: true, pos: chars(t.slice(0, first.index)) + 1 };
 }
+const hasWords = (text: string, k: Keyword) => find(text, k).found;
 
 export function checkTitle(title: string, keyword: string | null): OptimizeCheck[] {
   const n = chars(title);
   const { min, max } = DEFAULT_CHECKLIST.title;
   const k = kw(keyword);
-  const label = k.join(' ');
+  const label = k.joined;
   const out: OptimizeCheck[] = [
     { id: 'length', status: n >= min && n <= max ? 'pass' : 'fail', rule: `Title between ${min} and ${max} characters`, detail: plural(n, 'character') },
     { id: 'limit', status: n <= TITLE_LIMIT ? 'pass' : 'fail', rule: `At most ${TITLE_LIMIT} characters (YouTube's limit)`, detail: n <= TITLE_LIMIT ? plural(n, 'character') : `${plural(n, 'character')} — YouTube won't accept it` },
   ];
   const early = `Keyword starts within the first ${KEYWORD_WITHIN} characters`;
-  if (!k.length) {
+  if (!k.words.length) {
     out.push({ id: 'keyword', status: 'skip', rule: 'Contains the keyword', detail: 'No keyword given' });
     out.push({ id: 'keywordEarly', status: 'skip', rule: early, detail: 'No keyword given' });
     return out;
   }
-  const found = hasWords(title, k);
+  const { found, pos } = find(title, k);
   out.push({ id: 'keyword', status: found ? 'pass' : 'fail', rule: `Contains "${label}"`, detail: found ? 'In the title' : 'Not in the title' });
-  const pos = found ? wordPosition(title, k[0]!) : null;
   out.push(pos === null
     ? { id: 'keywordEarly', status: 'skip', rule: early, detail: 'The keyword is not in the title' }
     : { id: 'keywordEarly', status: pos <= KEYWORD_WITHIN ? 'pass' : 'fail', rule: early, detail: `Starts at character ${pos}` });
@@ -62,11 +74,11 @@ export function checkDescription(description: string, keyword: string | null, le
   const out: OptimizeCheck[] = [
     { id: 'length', status: n >= min ? 'pass' : 'fail', rule: `Description at least ${min} characters`, detail: n ? plural(n, 'character') : 'No description' },
   ];
-  if (!k.length) out.push({ id: 'keywordSnippet', status: 'skip', rule: `Keyword in the first ${SNIPPET_CHARS} characters`, detail: 'No keyword given' });
+  if (!k.words.length) out.push({ id: 'keywordSnippet', status: 'skip', rule: `Keyword in the first ${SNIPPET_CHARS} characters`, detail: 'No keyword given' });
   else {
     const head = [...description].slice(0, SNIPPET_CHARS).join('');
     const ok = hasWords(head, k);
-    out.push({ id: 'keywordSnippet', status: ok ? 'pass' : 'fail', rule: `"${k.join(' ')}" in the first ${SNIPPET_CHARS} characters`, detail: ok ? 'Yes' : 'Not in the first two lines' });
+    out.push({ id: 'keywordSnippet', status: ok ? 'pass' : 'fail', rule: `"${k.joined}" in the first ${SNIPPET_CHARS} characters`, detail: ok ? 'Yes' : 'Not in the first two lines' });
   }
   const rule = 'Chapters (timestamps starting at 0:00)';
   if (lengthSec > 0 && lengthSec <= 60) out.push({ id: 'chapters', status: 'skip', rule, detail: 'Short video' });
@@ -95,7 +107,7 @@ export interface TermPlace { term: string; views: number; inTitle: boolean; inDe
 
 export function termCoverage(terms: { term: string; views: number }[], v: { title: string; description: string; tags: string[] }): TermPlace[] {
   return terms.map(({ term, views }) => {
-    const k = words(term);
+    const k = kw(term);
     return { term, views, inTitle: hasWords(v.title, k), inDescription: hasWords(v.description, k), inTags: v.tags.some((t) => hasWords(t, k)) };
   });
 }
@@ -106,7 +118,8 @@ const QUESTION_START = /^(how|what|why|when|who|which|can|do|does|is|are)\b/i;
 export function titleFacts(titles: string[], keyword: string): { ok: true; facts: TitleFacts } | { ok: false; reason: string } {
   if (!titles.length) return { ok: false, reason: 'No outlier titles for this keyword yet; need 5 to compare' };
   if (titles.length < 5) return { ok: false, reason: `Only ${titles.length} outlier ${titles.length === 1 ? 'title' : 'titles'} for this keyword; need 5 to compare` };
-  const first = kw(keyword)[0];
+  const k = kw(keyword);
+  if (!k.words.length) return { ok: false, reason: 'Enter a keyword with letters or numbers to compare' };
   return {
     ok: true,
     facts: {
@@ -114,7 +127,7 @@ export function titleFacts(titles: string[], keyword: string): { ok: true; facts
       medianLength: median(titles.map(chars))!,
       withNumber: titles.filter((t) => /\p{N}/u.test(t)).length,
       question: titles.filter((t) => t.trim().endsWith('?') || QUESTION_START.test(t.trim())).length,
-      keywordEarly: first ? titles.filter((t) => { const p = wordPosition(t, first); return p !== null && p <= KEYWORD_WITHIN; }).length : 0,
+      keywordEarly: titles.filter((t) => { const f = find(t, k); return f.pos !== null && f.pos <= KEYWORD_WITHIN; }).length,
     },
   };
 }

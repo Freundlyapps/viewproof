@@ -36,6 +36,26 @@ describe('checkTitle', () => {
   });
 });
 
+describe('languages without spaces and special letters', () => {
+  test('Chinese and Japanese keywords are found inside the title', () => {
+    expect(by(checkTitle('如何学习编程的基础知识课程', '编程')).keyword.status).toBe('pass');
+    expect(by(checkTitle('如何学习编程的基础知识课程', '编程')).keywordEarly).toMatchObject({ status: 'pass', detail: 'Starts at character 5' });
+    expect(by(checkTitle('プログラミング入門 完全ガイド 2026', 'プログラミング')).keyword.status).toBe('pass');
+    expect(by(checkTitle('如何学习编程的基础知识课程', '烹饪')).keyword.status).toBe('fail');
+  });
+  test('found and position agree for Turkish and decomposed accents', () => {
+    const t = by(checkTitle('İstanbul travel vlog for everyone', 'istanbul'));
+    expect(t.keyword.status).toBe('pass');
+    expect(t.keywordEarly).toMatchObject({ status: 'pass', detail: 'Starts at character 1' });
+    const c = by(checkTitle('Cafe\u0301 tour through the old town', 'café'));
+    expect(c.keyword.status).toBe('pass');
+    expect(c.keywordEarly.status).toBe('pass');
+  });
+  test('termCoverage finds a CJK term in the title', () => {
+    expect(termCoverage([{ term: '编程', views: 3 }], { title: '如何学习编程', description: '', tags: [] })[0]!.inTitle).toBe(true);
+  });
+});
+
 describe('checkDescription', () => {
   const chapters = '0:00 Intro\n1:00 Middle\n2:00 End';
   test('empty description', () => {
@@ -76,6 +96,11 @@ test('termCoverage marks where each real term appears', () => {
 describe('titleFacts', () => {
   test('fewer than 5 titles → no data with the count', () => {
     expect(titleFacts(['a', 'b', 'c', 'd'], 'x')).toEqual({ ok: false, reason: 'Only 4 outlier titles for this keyword; need 5 to compare' });
+  });
+  test('keyword early needs every keyword word; no usable keyword → no data', () => {
+    const titles = ['Minecraft speedrun one', 'Minecraft speedrun two', 'Minecraft house build', 'Minecraft house tour', 'Minecraft house tips'];
+    expect(titleFacts(titles, 'minecraft house')).toMatchObject({ ok: true, facts: { keywordEarly: 3 } });
+    expect(titleFacts(titles, '!!!')).toEqual({ ok: false, reason: 'Enter a keyword with letters or numbers to compare' });
   });
   test('none at all reads naturally', () => {
     expect(titleFacts([], 'x')).toEqual({ ok: false, reason: 'No outlier titles for this keyword yet; need 5 to compare' });

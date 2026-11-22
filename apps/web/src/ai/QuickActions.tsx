@@ -12,13 +12,18 @@ const ACTIONS: { id: Action; label: string; topicOptional?: boolean }[] = [
 ];
 
 function CopyButton(props: { text: string }) {
-  const [done, setDone] = useState(false);
+  const [state, setState] = useState<'no' | 'yes' | 'failed'>('no');
   return (
-    <button type="button" className="btn" onClick={async () => {
-      await navigator.clipboard?.writeText(props.text).catch(() => {});
-      setDone(true);
-      setTimeout(() => setDone(false), 1500);
-    }}>{done ? 'Copied' : 'Copy'}</button>
+    <button type="button" className="btn" title={state === 'failed' ? 'Select the text and copy it yourself' : undefined} onClick={async () => {
+      try {
+        if (!navigator.clipboard) throw new Error('no clipboard');
+        await navigator.clipboard.writeText(props.text);
+        setState('yes');
+        setTimeout(() => setState('no'), 1500);
+      } catch {
+        setState('failed');
+      }
+    }}>{state === 'yes' ? 'Copied' : state === 'failed' ? "Couldn't copy" : 'Copy'}</button>
   );
 }
 

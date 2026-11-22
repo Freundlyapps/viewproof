@@ -64,6 +64,17 @@ describe('Ask AI', () => {
     expect(screen.getByText(/Sent to Anthropic \(Claude\), model claude-sonnet-5-5 · your key$/)).toBeTruthy();
   });
 
+  test('Copy says when copying failed', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => { throw new Error('denied'); } }, configurable: true });
+    mockApi({ ...base, '/api/ai/quick': { items: [{ text: 'T', why: '', sources: [] }], sources: [], missing: [], ai: AI, usage: USAGE } });
+    renderAt('/ai');
+    await userEvent.click(await screen.findByRole('button', { name: 'Titles' }));
+    await userEvent.type(screen.getByLabelText('Topic or keyword'), 'x');
+    await userEvent.click(screen.getByRole('button', { name: 'Write' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Copy' }));
+    expect(await screen.findByRole('button', { name: "Couldn't copy" })).toBeTruthy();
+  });
+
   test('limit refusal offers adding a key', async () => {
     mockApi({ ...base, '/api/ai/ask': json({ error: 'limit', message: 'Ask AI uses the deeper model, included with Pro. Add your own key to use it now.', used: 0, limit: 0 }, 402) });
     renderAt('/ai');

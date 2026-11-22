@@ -82,6 +82,23 @@ describe('Your videos', () => {
     expect(write).toHaveBeenCalledWith('What OK means\n\nThe origin of OK.\n\nTags: word history, etymology');
   });
 
+  test('Copy all says when copying failed', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(async () => { throw new Error('denied'); }) }, configurable: true });
+    mockApi({ ...base, '/api/outliers': outliers([]), '/api/channels/row1/videos': videos([vrow('abcdefghijk', 'What OK means')]), '/api/channels/row1/optimize/abcdefghijk': VIDEO });
+    renderAt('/optimize');
+    await userEvent.selectOptions(await screen.findByLabelText('Video'), 'abcdefghijk');
+    await userEvent.click(await screen.findByRole('button', { name: 'Copy all' }));
+    expect(await screen.findByText("Couldn't copy. Select the text and copy it yourself.")).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Copied' })).toBeNull();
+  });
+
+  test('shows when the video was loaded from YouTube', async () => {
+    mockApi({ ...base, '/api/outliers': outliers([]), '/api/channels/row1/videos': videos([vrow('abcdefghijk', 'What OK means')]), '/api/channels/row1/optimize/abcdefghijk': VIDEO });
+    renderAt('/optimize');
+    await userEvent.selectOptions(await screen.findByLabelText('Video'), 'abcdefghijk');
+    expect(await screen.findByText(/Loaded from YouTube on 2026-11-21 at 12:00 UTC/)).toBeTruthy();
+  });
+
   test("a video that isn't on the channel shows the server's message", async () => {
     mockApi({ ...base, '/api/outliers': outliers([]), '/api/channels/row1/videos': videos([vrow('abcdefghijk', 'Gone')]), '/api/channels/row1/optimize/': json({ error: 'not_found', message: 'Video not found on this channel.' }, 404) });
     renderAt('/optimize');
