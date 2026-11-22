@@ -8,6 +8,9 @@ import { ingestFeed, pollChannel, pollStale } from './poll';
 import type { StatsAuth } from './stats';
 
 export const MAX_COMPETITORS = 25;
+/** New-channel lookups (feed fetch or @handle resolution) per user per UTC day. */
+export const DAILY_ADDS = 50;
+const STATS_KEEP_MS = 30 * 86_400_000;
 const FEED_SIZE = 15;
 const API_SOURCE = 'YouTube Data API';
 const HANDLE_HELP = "To add by @handle, connect your channel (Account) or paste the channel's /channel/UC… link.";
@@ -64,7 +67,8 @@ async function historyOf(deps: Deps, videoIds: string[]) {
 }
 
 function counts(deps: Deps, r: Row): { subscribers: Measured<number>; totalViews: Measured<number> } {
-  if (!r.stats_at) {
+  // Data API values are never shown past 30 days (policy III.E.4.a), even where the Cron prune doesn't run.
+  if (!r.stats_at || deps.now() - Date.parse(r.stats_at) >= STATS_KEEP_MS) {
     const why = deps.config.youtubeApiKey ? 'Not fetched yet' : NO_STATS;
     return { subscribers: noData(why), totalViews: noData(why) };
   }
@@ -152,6 +156,16 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     if (parsed.kind === 'invalid') return err(c, 400, 'bad_request', parsed.reason);
     let channelId: string;
     let handle: string | null = null;
+    const known0 = parsed.kind === 'id' && (await deps.db.prepare('SELECT 1 FROM tracked_channels WHERE channel_id = ?').bind(parsed.channelId).first());
+    if (!known0) {
+      // Each new lookup costs a YouTube fetch or Data API quota shared by everyone: cap it per user per day.
+      const day = new Date(deps.now()).toISOString().slice(0, 10);
+      const counted = await deps.db.prepare(
+        `INSERT INTO competitor_lookups (user_id, day, count) VALUES (?, ?, 1)
+         ON CONFLICT(user_id, day) DO UPDATE SET count = count + 1 WHERE count < ? RETURNING count`,
+      ).bind(uid, day, DAILY_ADDS).first<{ count: number }>();
+      if (!counted) return err(c, 429, 'limit', `You looked up ${DAILY_ADDS} new channels today. More tomorrow.`);
+    }
     const auth = await statsAuth(deps, uid);
     if (parsed.kind === 'handle') {
       if (!auth) return err(c, 400, 'bad_request', HANDLE_HELP);
@@ -173,8 +187,9 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     if (!known) {
       // A channel nobody tracks yet: its public feed proves it exists and gives its title.
       const feed = await deps.fetchFeed(channelId);
+      if (!feed.ok && feed.reason === 'HTTP 404' && parsed.kind === 'id') return err(c, 404, 'not_found', `No YouTube channel found for ${input.trim()}.`);
       const meta = feed.ok ? parseFeedChannel(feed.xml) : null;
-      if (!feed.ok || !meta) return err(c, 404, 'not_found', `No YouTube channel found for ${input.trim()}.`);
+      if (!feed.ok || !meta) return err(c, 502, 'google_failed', `Couldn't read the channel's feed (${feed.ok ? 'not a YouTube feed' : feed.reason}). Try again later.`);
       await deps.db.prepare('INSERT OR IGNORE INTO tracked_channels (channel_id, title, handle, last_polled_at, created_at) VALUES (?, ?, ?, ?, ?)')
         .bind(channelId, meta.title, handle, now, now).run();
       await ingestFeed(deps, channelId, feed.xml);

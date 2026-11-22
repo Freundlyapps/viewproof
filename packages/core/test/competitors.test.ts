@@ -35,7 +35,7 @@ describe('videoStats', () => {
   const base = { videoId: 'v1', title: 'T', publishedAt: '2026-11-20T12:00:00.000Z', format: 'long' as const, views: 5000 };
   test('two snapshots 2 h apart → delta mode', () => {
     const s = videoStats(base, [{ views: 4000, at: '2026-11-21T10:00:00.000Z' }, { views: 5000, at: '2026-11-21T12:00:00.000Z' }], feed(), now);
-    expect(s.vph).toMatchObject({ kind: 'value', value: 500, inputs: { mode: 'delta' } });
+    expect(s.vph).toMatchObject({ kind: 'value', value: 500, inputs: { mode: 'delta' }, formula: "view change ÷ hours between two of ViewProof's feed checks" });
     expect(s.views).toMatchObject({ kind: 'value', value: 5000 });
     expect(s.history).toHaveLength(2);
   });
@@ -46,6 +46,10 @@ describe('videoStats', () => {
   test('video stats edge cases', () => {
     const young = videoStats({ ...base, publishedAt: '2026-11-21T11:30:00.000Z' }, [{ views: 10, at: now }], feed(), now);
     expect(young.vph).toEqual({ kind: 'no_data', reason: 'Published less than an hour ago' });
+    expect(young.outlier).toEqual({ kind: 'no_data', reason: 'Published less than an hour ago' });
+    const zero = videoStats({ ...base, views: 0 }, [{ views: 0, at: now }], feed(), now);
+    expect(zero.vph).toEqual({ kind: 'no_data', reason: 'No public views yet: new, upcoming or live' });
+    expect(zero.outlier).toEqual({ kind: 'no_data', reason: 'No public views yet: new, upcoming or live' });
     const hidden = videoStats({ ...base, views: null }, [], feed(), now);
     expect(hidden.views).toEqual({ kind: 'no_data', reason: 'The feed shows no view count for this video' });
     expect(hidden.vph.kind).toBe('no_data');

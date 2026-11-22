@@ -52,15 +52,26 @@ export function videoStats(
     const why = 'The feed shows no view count for this video';
     return { ...base, views: noData(why), vph: noData(why), outlier: noData(why) };
   }
+  const young = Date.parse(nowIso) - Date.parse(v.publishedAt) < HOUR_MS;
+  if (v.views === 0) {
+    // The feed lists scheduled premieres and live streams with 0 views; it can't tell them from a brand-new upload.
+    const why = 'No public views yet: new, upcoming or live';
+    return { ...base, views: value(0, FEED, { at: nowIso }), vph: noData(why), outlier: noData(why) };
+  }
   const latest = snapshots.at(-1);
   const current = latest && latest.views === v.views ? latest : { views: v.views, at: nowIso };
   const previous = [...snapshots].reverse().find((s) => Date.parse(current.at) - Date.parse(s.at) >= HOUR_MS) ?? null;
   return {
     ...base,
     views: value(v.views, FEED, { at: current.at }),
-    vph: viewsPerHour({ current, previous, publishedAt: v.publishedAt }),
-    outlier: outlierScore({ video: { ...v, isLive: false, isUpcoming: false }, baseline: feed }),
+    vph: serverChecks(viewsPerHour({ current, previous, publishedAt: v.publishedAt })),
+    outlier: young ? noData('Published less than an hour ago') : outlierScore({ video: { ...v, isLive: false, isUpcoming: false }, baseline: feed }),
   };
+}
+
+/** The core formula text speaks of the user's own visits; here the two observations are ViewProof's feed checks. */
+function serverChecks(m: Measured<number>): Measured<number> {
+  return m.kind === 'value' && m.inputs.mode === 'delta' ? { ...m, formula: "view change ÷ hours between two of ViewProof's feed checks" } : m;
 }
 
 const DAY_MS = 86_400_000;

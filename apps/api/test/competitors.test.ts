@@ -25,7 +25,7 @@ function setup(opts: { stats?: Partial<ChannelStatsClient>; key?: string; now?: 
   };
   const deps = makeDeps({
     channelStats, now: opts.now ?? (() => T0), google: fakeGoogle({ refresh: async () => ({ accessToken: 'user-token' }) }),
-    fetchFeed: async (id) => { fetched.push(id); const x = opts.feeds?.[id] ?? (id.startsWith('UCx') ? undefined : feedFor(id)); return x ? { ok: true, xml: x } : { ok: false, reason: 'HTTP 404' }; },
+    fetchFeed: async (id) => { fetched.push(id); if (id.startsWith('UCy')) return { ok: false, reason: 'HTTP 503' }; const x = opts.feeds?.[id] ?? (id.startsWith('UCx') ? undefined : feedFor(id)); return x ? { ok: true, xml: x } : { ok: false, reason: 'HTTP 404' }; },
   }, opts.key ? { YOUTUBE_API_KEY: opts.key } : {});
   return { app: createApp(deps), deps, fetched, statsCalls };
 }
@@ -88,6 +88,25 @@ describe('competitors', () => {
     const again = await json(app, 'POST', '/api/competitors', cookie, { input: VERI });
     expect(again.status).toBe(409);
   });
+
+  test('a feed that fails to load is not reported as a missing channel', async () => {
+    const cookie = await user('cp-feedfail');
+    const r = await json(setup().app, 'POST', '/api/competitors', cookie, { input: 'UCyyyyyyyyyyyyyyyyyyyyyy' });
+    expect(r.status).toBe(502);
+    expect(await r.json()).toEqual({ error: 'google_failed', message: "Couldn't read the channel's feed (HTTP 503). Try again later." });
+    const s = setup({ key: 'k', stats: { byHandle: async () => 'UCyyyyyyyyyyyyyyyyyyyyyz' } });
+    const h = await json(s.app, 'POST', '/api/competitors', cookie, { input: '@realone' });
+    expect(h.status).toBe(502);
+  });
+
+  test('new-channel lookups are capped per user per day', async () => {
+    const cookie = await user('cp-addcap');
+    const { app } = setup();
+    for (let i = 0; i < 50; i++) await json(app, 'POST', '/api/competitors', cookie, { input: `UCx${String(i).padStart(21, '0')}` });
+    const r = await json(app, 'POST', '/api/competitors', cookie, { input: idN(900) });
+    expect(r.status).toBe(429);
+    expect(await r.json()).toEqual({ error: 'limit', message: 'You looked up 50 new channels today. More tomorrow.' });
+  }, 120_000);
 
   test('limit 25', async () => {
     const cookie = await user('cp-limit');
@@ -159,6 +178,15 @@ describe('competitors', () => {
     const again = setup({ now: () => T0 + 2 * H });
     await json(again.app, 'GET', '/api/competitors', cookie);
     expect(again.statsCalls.filter((c) => c.method === 'byIds')).toHaveLength(0);
+  });
+
+  test('Data API counts older than 30 days are never shown', async () => {
+    const cookie = await user('cp-old');
+    const s = setup({ key: 'k' });
+    await json(s.app, 'POST', '/api/competitors', cookie, { input: idN(660) });
+    await env.DB.prepare('UPDATE tracked_channels SET stats_at = ? WHERE channel_id = ?').bind(new Date(T0 - 31 * 24 * H).toISOString(), idN(660)).run();
+    const list = await (await json(s.app, 'GET', '/api/competitors', cookie)).json<Competitor[]>();
+    expect(list[0]!.subscribers).toEqual({ kind: 'no_data', reason: 'Not fetched yet' });
   });
 
   test('scheduled run polls stale channels, refreshes stats daily, prunes orphans after account deletion', async () => {

@@ -56,6 +56,10 @@ export async function ingestFeed(deps: Deps, channelId: string, xml: string): Pr
       stmts.push(deps.db.prepare('INSERT OR IGNORE INTO video_snapshots (video_id, at, views) VALUES (?, ?, ?)').bind(v.videoId, iso, v.views));
     }
   }
+  // Videos no longer in the feed (deleted, made private, or older than its latest 15) go with their snapshots:
+  // a frozen count must not keep showing as a current one.
+  const keep = parsed.value.map((v) => v.videoId);
+  stmts.push(deps.db.prepare(`DELETE FROM feed_videos WHERE channel_id = ?${keep.length ? ` AND video_id NOT IN (${keep.map(() => '?').join(',')})` : ''}`).bind(channelId, ...keep));
   stmts.push(deps.db.prepare('UPDATE tracked_channels SET last_poll_ok_at = ?, last_poll_error = NULL WHERE channel_id = ?').bind(iso, channelId));
   await deps.db.batch(stmts);
   return 'ok';

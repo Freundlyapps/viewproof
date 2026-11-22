@@ -65,6 +65,19 @@ describe('pollChannel', () => {
   });
 });
 
+test('videos gone from the feed (deleted, private, aged out) are dropped with their snapshots', async () => {
+  const id = 'UCiiiiiiiiiiiiiiiiiiiiii';
+  await track(id);
+  let xml = feedXml.replaceAll(CH, id).replace(/<yt:videoId>([\w-]+)<\/yt:videoId>/g, (_m: string, v: string) => `<yt:videoId>i${v}</yt:videoId>`);
+  const f = feeds(() => xml);
+  await pollChannel(makeDeps({ fetchFeed: f.fetchFeed, now: () => T0 }), id);
+  const first = /<yt:videoId>([\w-]+)<\/yt:videoId>/.exec(xml)![1]!;
+  xml = xml.replace(/<entry>[\s\S]*?<\/entry>/, '');
+  await pollChannel(makeDeps({ fetchFeed: f.fetchFeed, now: () => T0 + 4 * H }), id);
+  expect(await count('SELECT COUNT(*) n FROM feed_videos WHERE channel_id = ?', id)).toBe(14);
+  expect(await count('SELECT COUNT(*) n FROM video_snapshots WHERE video_id = ?', first)).toBe(0);
+});
+
 test('pollStale: never-polled and oldest first, capped', async () => {
   await env.DB.prepare("DELETE FROM tracked_channels").run();
   await track('UCcccccccccccccccccccccc', '2026-11-21T01:00:00.000Z');

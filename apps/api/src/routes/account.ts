@@ -154,6 +154,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM channels WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM user_competitors WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM keyword_lookups WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM competitor_lookups WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);
