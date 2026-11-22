@@ -9,7 +9,10 @@ import { whenIdle } from '../src/idle';
 import { applyBadges, type Badge, badgeWatcher, clearBadges } from '../src/badges';
 import { channelBadges, channelCard, isChannelMessage, isChannelPath } from '../src/channel';
 import { type CardModel, mountHost, placeBefore, removeHost, renderPagePanel } from '../src/page-panel';
-import { gridOutliers, parseChannelPage } from '@viewproof/core';
+import { factsSummary, gridOutliers, parseChannelPage, topResultsFacts } from '@viewproof/core';
+import { getBaseline } from '../src/baseline';
+import { searchCard, searchFeedOutliers } from '../src/search-panel';
+import { badgeFor } from '../src/channel';
 import { DEFAULT_TOGGLES, type PanelToggles, settingsChanged, settingsStore } from '../src/settings';
 
 /** Ask the background script to send once this many observations are queued. */
@@ -66,6 +69,7 @@ export default defineContentScript({
         else watcher = badgeWatcher(() => applyBadges(document, currentBadges));
       });
     };
+    const placeSearch = (h: HTMLElement) => placeBefore(h, document.querySelector('ytd-search:not([hidden]) ytd-section-list-renderer'));
     const placeChannel = (h: HTMLElement) => placeBefore(h, document.querySelector('ytd-browse:not([hidden]) ytd-rich-grid-renderer'));
 
     window.addEventListener('message', (e) => {
@@ -124,6 +128,41 @@ export default defineContentScript({
       const q = searchQueryOf(e.data.url);
       const page = q ? parseSearchPage(e.data.response, q) : null;
       if (page && !('error' in page)) share(page.results.map((r) => fromSearch(r, new Date().toISOString())));
+      const { url, response } = e.data;
+      const run = () => {
+        if (!toggles.search || url !== location.href) return;
+        const query = searchQueryOf(url) ?? new URL(url).searchParams.get('search_query') ?? '';
+        const p = parseSearchPage(response, query);
+        const seq = pageSeq;
+        if ('error' in p) {
+          showPage(seq, { title: `What ranks for "${query}"`, stats: [], lines: [], error: p.error }, new Map(), placeSearch);
+          return;
+        }
+        const facts = topResultsFacts(p);
+        const summary = factsSummary(facts);
+        showPage(seq, searchCard(p, facts, summary, null), new Map(), placeSearch);
+        void searchFeedOutliers(p, {
+          baseline: (ch) => getBaseline(ch, { fetch: deps.fetch, now: deps.now, cache: deps.cache }),
+          isCurrent: () => seq === pageSeq,
+        }).then((r) => {
+          if (seq !== pageSeq) return;
+          const badges = new Map<string, Badge>();
+          for (const [id, m] of r.outliers) { const b = badgeFor(m); if (b) badges.set(id, b); }
+          const rows = p.results
+            .flatMap((x) => { const m = r.outliers.get(x.videoId); return m?.kind === 'value' ? [{ x, v: m.value }] : []; })
+            .sort((a, b) => b.v - a.v)
+            .slice(0, 5)
+            .map(({ x, v }) => ({
+              text: x.title || x.videoId,
+              href: `https://www.youtube.com/watch?v=${x.videoId}`,
+              badge: `×${v}`,
+              note: `${x.views.kind === 'value' ? `${x.views.value.toLocaleString('en-US')} views` : ''}${x.ageLabel ? ` · ${x.ageLabel}` : ''} · ${x.channelName}`,
+            }));
+          showPage(seq, searchCard(p, facts, summary, { withXn: badges.size, total: p.results.length, stopped: r.stopped, rows }), badges, placeSearch);
+        });
+      };
+      lastPage = { kind: 'search', run };
+      void ready.then(run);
     });
 
     window.addEventListener('message', (e) => {
