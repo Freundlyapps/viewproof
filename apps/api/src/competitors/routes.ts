@@ -99,6 +99,17 @@ const rowsOf = (deps: Deps, userId: string, channelId?: string) =>
   deps.db.prepare(`SELECT t.*, u.added_at FROM user_competitors u JOIN tracked_channels t USING (channel_id) WHERE u.user_id = ?${channelId ? ' AND t.channel_id = ?' : ''} ORDER BY u.added_at`)
     .bind(...(channelId ? [userId, channelId] : [userId])).all<Row>();
 
+/** Newest uploads across a user's tracked channels, from stored feeds (never fetches). */
+export async function latestUploads(deps: Deps, uid: string, max: number): Promise<CompetitorUploads['uploads']> {
+  const rows = (await rowsOf(deps, uid)).results;
+  const feeds = await feedOf(deps, rows.map((r) => r.channel_id));
+  const all = rows.flatMap((r) => (feeds.get(r.channel_id) ?? []).map((v) => ({ v, r })))
+    .sort((a, b) => Date.parse(b.v.publishedAt) - Date.parse(a.v.publishedAt)).slice(0, max);
+  const hist = await historyOf(deps, all.map((x) => x.v.videoId));
+  const now = new Date(deps.now()).toISOString();
+  return all.map(({ v, r }) => ({ ...videoStats(v, hist.get(v.videoId) ?? [], feeds.get(r.channel_id) ?? [], now), channelId: r.channel_id, channelTitle: r.title }));
+}
+
 export function competitorRoutes(app: Hono, deps: Deps): void {
   const session = async (c: Context) => (await readSession(c, deps))?.userId ?? null;
   const signedOut = (c: Context) => err(c, 401, 'signed_out', 'Sign in first.');
@@ -119,15 +130,7 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     if (!uid) return signedOut(c);
     const ids = (await rowsOf(deps, uid)).results.map((r) => r.channel_id);
     await pollStale(deps, 3, ids);
-    const rows = (await rowsOf(deps, uid)).results;
-    const feeds = await feedOf(deps, rows.map((r) => r.channel_id));
-    const all = rows.flatMap((r) => (feeds.get(r.channel_id) ?? []).map((v) => ({ v, r })))
-      .sort((a, b) => Date.parse(b.v.publishedAt) - Date.parse(a.v.publishedAt)).slice(0, 50);
-    const hist = await historyOf(deps, all.map((x) => x.v.videoId));
-    const now = new Date(deps.now()).toISOString();
-    const body: CompetitorUploads = {
-      uploads: all.map(({ v, r }) => ({ ...videoStats(v, hist.get(v.videoId) ?? [], feeds.get(r.channel_id) ?? [], now), channelId: r.channel_id, channelTitle: r.title })),
-    };
+    const body: CompetitorUploads = { uploads: await latestUploads(deps, uid, 50) };
     return c.json(body);
   });
 

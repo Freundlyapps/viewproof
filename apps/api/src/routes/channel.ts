@@ -70,7 +70,7 @@ async function dailyFor(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<
   });
 }
 
-async function loadOverview(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Overview | GoogleError> {
+export async function loadOverview(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Overview | GoogleError> {
   const d = await dailyFor(deps, a, range);
   if (isErr(d)) return d;
   const p = d.coverage.period;
@@ -103,7 +103,7 @@ export function uploadsOf(deps: Deps, a: ChannelAccess) {
   return cached(deps, a.channel.id, `uploads:${today(deps)}`, REPORT_TTL_MS, () => deps.youtube.uploads(a.accessToken, 200));
 }
 
-async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Videos | GoogleError> {
+export async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Videos | GoogleError> {
   const [ups, d] = await Promise.all([uploadsOf(deps, a), dailyFor(deps, a, range)]);
   if (isErr(ups)) return ups;
   if (isErr(d)) return d;
@@ -134,6 +134,27 @@ async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey): Promis
  * GET handler: channel → cached answer (no Google call) → else fresh access → load → JSON, with Google errors mapped.
  * Cached answers are only served for channels in good standing, so a broken connection still shows.
  */
+/**
+ * One cached report for code outside a request (the AI): same peek → access → cache path and cache keys as `serve`,
+ * so a report the page already fetched is reused. Failures come back as a reason, never thrown.
+ */
+export async function channelReport<T>(deps: Deps, ch: ChannelRow, key: string, load: (deps: Deps, a: ChannelAccess) => Promise<T | GoogleError>, ttl: Ttl<T> = REPORT_TTL_MS): Promise<T | { reason: string }> {
+  if (ch.status === 'gone') return { reason: ch.status_reason ?? 'This channel no longer exists' };
+  if (ch.status === 'active') {
+    const hit = await peek(deps, ch.id, key, ttl);
+    if (hit !== undefined) return hit;
+  }
+  const a = await accessFor(deps, ch);
+  if ('error' in a) return { reason: a.message };
+  const r = await cached(deps, ch.id, key, ttl, () => load(deps, a));
+  if (isErr(r)) {
+    if (r.kind === 'revoked') await deps.db.prepare("UPDATE channels SET status = 'reconnect', status_reason = ? WHERE id = ?").bind(REVOKED_REASON, ch.id).run();
+    return { reason: r.kind === 'revoked' ? REVOKED_REASON : r.reason };
+  }
+  if (ch.status === 'reconnect') await markActive(deps, ch);
+  return r as T;
+}
+
 export function serve<T>(
   deps: Deps, key: (range: RangeKey, c: Context) => string, load: (deps: Deps, a: ChannelAccess, range: RangeKey, c: Context) => Promise<T | GoogleError>,
   ttl: Ttl<T> = REPORT_TTL_MS, before?: (c: Context, ch: ChannelRow) => Response | null,
@@ -181,7 +202,7 @@ async function titles(deps: Deps, a: ChannelAccess): Promise<Map<string, string>
   return new Map(isErr(ups) ? [] : ups.map((u) => [u.videoId, u.title]));
 }
 
-async function loadSearchTerms(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<SearchTerms | GoogleError> {
+export async function loadSearchTerms(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<SearchTerms | GoogleError> {
   const d = await dailyFor(deps, a, range);
   if (isErr(d)) return d;
   const p = d.coverage.period;
