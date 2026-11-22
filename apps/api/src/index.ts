@@ -1,3 +1,4 @@
+import { llmClient } from '@viewproof/providers';
 import { createApp } from './app';
 import type { FeedResult } from './competitors/poll';
 import { runCron } from './competitors/cron';
@@ -28,7 +29,7 @@ function depsFor(env: Env) {
     clientSecret: config.googleClientSecret,
     redirectUri: `${config.appUrl}/auth/google/callback`,
   }), TOKENS, () => Date.now());
-  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), now: () => Date.now(), assets: env.ASSETS, pool: env.POOL };
+  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), llm: (o: Parameters<typeof llmClient>[0]) => llmClient({ ...o, fetchFn: (input, init) => fetch(input, init) }), now: () => Date.now(), assets: env.ASSETS, pool: env.POOL };
 }
 
 export default {

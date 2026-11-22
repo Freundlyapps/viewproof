@@ -1,3 +1,4 @@
+import { LLM_PRESETS, type LlmProviderId } from '@viewproof/providers';
 /** Worker bindings. Secrets come from .dev.vars locally and Wrangler secrets in production. */
 export interface Env {
   DB: D1Database;
@@ -18,7 +19,15 @@ export interface Env {
   POOL?: R2Bucket;
   /** Feed fetches per hourly Cron run (default 10 fits Workers Free: ~4 D1 queries each, 50 per invocation). Paid: 45. */
   CRON_FEED_BUDGET?: string;
+  /** Included AI (spec S6). Provider defaults to anthropic; models default from the provider preset. */
+  AI_PROVIDER?: string;
+  AI_API_KEY?: string;
+  AI_BASE_URL?: string;
+  AI_QUICK_MODEL?: string;
+  AI_COACH_MODEL?: string;
 }
+
+export interface AiConfig { provider: LlmProviderId; apiKey: string; baseUrl: string | null; quickModel: string; coachModel: string }
 
 export interface Config {
   appUrl: string;
@@ -31,6 +40,8 @@ export interface Config {
   tokenKey: string;
   youtubeApiKey: string | null;
   cronFeedBudget: number;
+  /** Included AI, or null when the server has none. */
+  ai: AiConfig | null;
 }
 
 export function parseConfig(env: Env): Config {
@@ -54,6 +65,21 @@ export function parseConfig(env: Env): Config {
     googleClientSecret: env.GOOGLE_CLIENT_SECRET,
     tokenKey: env.TOKEN_KEY,
     youtubeApiKey: env.YOUTUBE_API_KEY || null,
+    ai: parseAi(env),
     cronFeedBudget: Math.min(Math.max(Number(env.CRON_FEED_BUDGET) || 10, 1), 200),
   };
+}
+
+function parseAi(env: Env): AiConfig | null {
+  const provider = (env.AI_PROVIDER || 'anthropic') as LlmProviderId;
+  if (!(provider in LLM_PRESETS)) throw new Error(`AI_PROVIDER must be one of: ${Object.keys(LLM_PRESETS).join(', ')}`);
+  const baseUrl = provider === 'custom' ? env.AI_BASE_URL || null : null;
+  // A local model behind a custom URL needs no key.
+  if (!env.AI_API_KEY && !(provider === 'custom' && baseUrl)) return null;
+  if (provider === 'custom' && !baseUrl) throw new Error('AI_BASE_URL is required when AI_PROVIDER=custom');
+  const preset = LLM_PRESETS[provider];
+  const quickModel = env.AI_QUICK_MODEL || preset.quickModel;
+  const coachModel = env.AI_COACH_MODEL || preset.coachModel;
+  if (!quickModel || !coachModel) throw new Error(`AI_QUICK_MODEL and AI_COACH_MODEL are required for ${provider}`);
+  return { provider, apiKey: env.AI_API_KEY ?? '', baseUrl, quickModel, coachModel };
 }

@@ -1,3 +1,5 @@
+import { aiKeyRoutes } from './ai/keys';
+import type { LlmClient, LlmProviderId } from '@viewproof/providers';
 import { Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
@@ -30,6 +32,8 @@ export interface Deps {
   /** R2 bucket for the pool archive; absent on servers without one. */
   pool?: R2Bucket;
   now: () => number;
+  /** Builds an LLM client (spec S6); tests pass a fake. */
+  llm: (o: { provider: LlmProviderId; apiKey: string; model: string; baseUrl?: string | null }) => LlmClient;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
   assets?: { fetch(req: Request): Promise<Response> };
 }
@@ -82,5 +86,6 @@ export function createApp(deps: Deps): Hono {
   competitorRoutes(app, deps);
   poolRoutes(app, deps);
   outlierRoutes(app, deps);
+  aiKeyRoutes(app, deps);
   return app;
 }
