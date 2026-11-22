@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
 import type { YouTubeClient } from './youtube';
+import type { FeedResult } from './competitors/poll';
+import type { ChannelStatsClient } from './competitors/stats';
+import { competitorRoutes } from './competitors/routes';
 import type { KeywordProvider } from '@viewproof/providers';
 import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
@@ -18,6 +21,10 @@ export interface Deps {
   youtube: YouTubeClient;
   /** Optional keyword trends (vendor or "off"). */
   keywords: KeywordProvider;
+  /** A channel's public RSS feed (S4). */
+  fetchFeed: (channelId: string) => Promise<FeedResult>;
+  /** Data API counts for other channels (key or user token). */
+  channelStats: ChannelStatsClient;
   now: () => number;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
   assets?: { fetch(req: Request): Promise<Response> };
@@ -66,5 +73,6 @@ export function createApp(deps: Deps): Hono {
   accountRoutes(app, deps);
   channelRoutes(app, deps);
   keywordRoutes(app, deps);
+  competitorRoutes(app, deps);
   return app;
 }

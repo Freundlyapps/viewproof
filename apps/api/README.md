@@ -26,11 +26,21 @@ The keyword report can show relative YouTube search interest (Google Trends with
 - **Cache:** answers are kept for 30 days and shared by every user (table `keyword_cache`, which holds no personal data). Failed answers are not kept.
 - **Limit:** each user can look up 50 new keywords a day; keywords already in the cache don't count.
 
+## Competitors
+
+- **Feeds:** the hourly Cron Trigger (`17 * * * *` in `wrangler.toml`) fetches up to 60 public channel feeds. Opening a page fetches at most 3 more. No feed is fetched more than once in 3 hours.
+- **Snapshots:** a video's view count is stored when it changed, or once a day. Snapshots older than 90 days are deleted.
+- **Optional `YOUTUBE_API_KEY`:** a YouTube Data API key, used to add channels by @handle and for current subscriber/total-view counts. Counts are refreshed daily at 03:xx UTC (`channels.list`, 1 quota unit per 50 channels) and cleared after 30 days. Without a key, the adding user's own connected channel resolves @handles.
+- **Clean-up:** a channel nobody tracks any more is deleted with its videos and snapshots on the next Cron run.
+
+Test the Cron job locally with `npx wrangler dev --test-scheduled`, then `curl "http://localhost:8787/__scheduled?cron=17+*+*+*+*"`.
+
 ## What is stored
 
 - Your Google account id, email and name; your plan.
 - Each connected channel's id, title, handle, picture and the permissions you gave. Google's refresh token is stored **encrypted** (AES-256-GCM with `TOKEN_KEY`); it never appears in exports or API responses.
 - Login sessions: only a hash of the session id (the id itself is in your browser's cookie).
+- The channels you track as competitors, and how many new keyword lookups you made each day. Tracked channels' public feed data (titles, upload times, view counts over time) is shared by every user who tracks them, and is deleted when nobody does.
 
 **Export** (Account → Export my data) downloads all of it as JSON, without secrets. **Remove** a channel or **Delete account** revokes ViewProof's Google access and deletes the rows.
 

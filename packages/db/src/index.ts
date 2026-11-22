@@ -13,3 +13,9 @@ export interface ChannelRow {
 }
 export interface ReportCacheRow { channel_id: string; key: string; body: string; fetched_at: string }
 export interface KeywordCacheRow { keyword: string; country: string; provider: string; body: string; fetched_at: string }
+export interface TrackedChannelRow {
+  channel_id: string; title: string; handle: string | null; last_polled_at: string | null; last_poll_ok_at: string | null; last_poll_error: string | null;
+  subscribers: number | null; total_views: number | null; video_count: number | null; stats_at: string | null; created_at: string;
+}
+export interface FeedVideoRow { video_id: string; channel_id: string; title: string; published_at: string; format: string; first_seen_at: string }
+export interface VideoSnapshotRow { video_id: string; at: string; views: number }

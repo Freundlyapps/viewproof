@@ -90,3 +90,19 @@ export type KeywordTrends =
 
 /** The creator's own search terms (S1) that contain a keyword. */
 export interface YourTerms { keyword: string; coverage: Coverage; terms: SearchTerm[]; note: string | null; fetchedAt: string }
+
+/** A tracked competitor channel (plan 5a). Feed facts are public RSS data; `subscribers` is YouTube Data API data shown "as of". */
+export interface Competitor {
+  channelId: string;
+  title: string;
+  handle: string | null;
+  addedAt: string;
+  lastCheckedAt: string | null;
+  /** Why the latest feed check failed, when it did. */
+  checkError: string | null;
+  subscribers: Measured<number>;
+  totalViews: Measured<number>;
+  summary: import('./competitors').ChannelSummary;
+}
+export interface CompetitorDetail extends Competitor { videos: import('./competitors').CompetitorVideo[] }
+export interface CompetitorUploads { uploads: (import('./competitors').CompetitorVideo & { channelId: string; channelTitle: string })[] }

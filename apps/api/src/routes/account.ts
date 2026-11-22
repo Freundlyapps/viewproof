@@ -122,6 +122,10 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       pendingConnections: (await deps.db.prepare('SELECT * FROM pending_connections WHERE user_id = ?').bind(u.id).all<PendingConnectionRow>()).results.map((p) => ({
         channelId: p.channel_id, title: p.title, handle: p.handle, permissions: p.scopes.split(' '), createdAt: p.created_at,
       })),
+      competitors: (await deps.db.prepare('SELECT t.channel_id, t.title, u.added_at FROM user_competitors u JOIN tracked_channels t USING (channel_id) WHERE u.user_id = ? ORDER BY u.added_at').bind(u.id).all<{ channel_id: string; title: string; added_at: string }>()).results.map((x) => ({
+        channelId: x.channel_id, title: x.title, addedAt: x.added_at,
+      })),
+      keywordLookups: (await deps.db.prepare('SELECT day, count FROM keyword_lookups WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
       sessions: (await deps.db.prepare('SELECT created_at, expires_at FROM sessions WHERE user_id = ? ORDER BY created_at').bind(u.id).all<{ created_at: string; expires_at: string }>()).results.map((x) => ({
         createdAt: x.created_at, expiresAt: x.expires_at,
       })),
@@ -148,6 +152,9 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM oauth_states WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM pending_connections WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM channels WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM user_competitors WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM keyword_lookups WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM competitor_lookups WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);

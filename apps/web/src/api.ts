@@ -20,3 +20,21 @@ export async function getJson<T>(path: string): Promise<T | ApiError> {
     return { error: 'google_failed', message: e instanceof Error ? e.message : 'Network error' };
   }
 }
+
+/** POST/DELETE JSON to our API. Failures come back as ApiError, never thrown; 204 → null. */
+export async function sendJson<T>(method: 'POST' | 'DELETE', path: string, body?: unknown): Promise<T | null | ApiError> {
+  try {
+    const res = await fetch(path, {
+      method, credentials: 'same-origin',
+      headers: { accept: 'application/json', ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (res.status === 204) return null;
+    const out = (await res.json().catch(() => null)) as unknown;
+    if (res.status === 401) return { error: 'signed_out', message: 'Sign in first.' };
+    if (!res.ok) return isApiError(out) ? out : { error: 'google_failed', message: `Server error (HTTP ${res.status})` };
+    return out as T;
+  } catch (e) {
+    return { error: 'google_failed', message: e instanceof Error ? e.message : 'Network error' };
+  }
+}

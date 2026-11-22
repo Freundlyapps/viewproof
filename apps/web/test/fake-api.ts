@@ -1,19 +1,19 @@
 import { vi } from 'vitest';
 
-type Handler = unknown | ((url: URL) => Response | unknown);
+type Handler = unknown | ((url: URL, init?: RequestInit) => Response | unknown);
 /**
  * Replace fetch: each key is a path prefix ("/api/me"); value is a JSON body, a Response, or a function of the URL.
  * Returns the list of requested URLs (path + query).
  */
 export function mockApi(routes: Record<string, Handler>): string[] {
   const seen: string[] = [];
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://localhost:8787');
     seen.push(url.pathname + url.search);
     const key = Object.keys(routes).sort((a, b) => b.length - a.length).find((k) => url.pathname.startsWith(k));
     if (key === undefined) return new Response(JSON.stringify({ error: 'not_found', message: 'no mock' }), { status: 404 });
     const h = routes[key];
-    const out = typeof h === 'function' ? (h as (u: URL) => unknown)(url) : h;
+    const out = typeof h === 'function' ? (h as (u: URL, i?: RequestInit) => unknown)(url, init) : h;
     return out instanceof Response ? out : new Response(JSON.stringify(out), { status: 200, headers: { 'content-type': 'application/json' } });
   }));
   return seen;

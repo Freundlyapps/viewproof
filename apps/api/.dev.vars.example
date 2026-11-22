@@ -8,3 +8,5 @@ TOKEN_KEY=
 # DATAFORSEO_LOGIN=
 # DATAFORSEO_PASSWORD=
 # DATAFORSEO_DISPLAY_OK=
+# Optional: YouTube Data API key — competitor @handles and subscriber counts.
+# YOUTUBE_API_KEY=

@@ -22,7 +22,7 @@ describe('shell', () => {
     const items = within(nav).getAllByRole('link');
     expect(items.map((a) => a.getAttribute('data-label'))).toEqual(['Home', 'Research', 'My channel', 'Optimize video', 'Competitors', 'Ask AI', 'Tools', 'Settings']);
     const soon = items.filter((a) => within(a).queryByText('soon')).map((a) => a.getAttribute('data-label'));
-    expect(soon).toEqual(['Optimize video', 'Competitors', 'Ask AI', 'Tools']);
+    expect(soon).toEqual(['Optimize video', 'Ask AI', 'Tools']);
   });
 
   test('theme toggle flips and remembers', async () => {
@@ -65,8 +65,8 @@ describe('shell', () => {
 
   test('a soon page says what it will do, with no made-up data', async () => {
     mockApi({ '/api/me': ME, '/api/channels': [channel()] });
-    renderAt('/competitors');
-    expect(await screen.findByText(/Track up to 25 channels/)).toBeTruthy();
+    renderAt('/tools');
+    expect(await screen.findByText(/Tag extractor, chapter checker/)).toBeTruthy();
     expect(screen.getByText('Not built yet')).toBeTruthy();
   });
 });

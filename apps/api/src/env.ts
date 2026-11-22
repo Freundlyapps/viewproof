@@ -12,6 +12,8 @@ export interface Env {
   DATAFORSEO_LOGIN?: string;
   DATAFORSEO_PASSWORD?: string;
   DATAFORSEO_DISPLAY_OK?: string;
+  /** Optional YouTube Data API key: competitor @handles and current subscriber counts. */
+  YOUTUBE_API_KEY?: string;
 }
 
 export interface Config {
@@ -23,6 +25,7 @@ export interface Config {
   googleClientId: string;
   googleClientSecret: string;
   tokenKey: string;
+  youtubeApiKey: string | null;
 }
 
 export function parseConfig(env: Env): Config {
@@ -45,5 +48,6 @@ export function parseConfig(env: Env): Config {
     googleClientId: env.GOOGLE_CLIENT_ID,
     googleClientSecret: env.GOOGLE_CLIENT_SECRET,
     tokenKey: env.TOKEN_KEY,
+    youtubeApiKey: env.YOUTUBE_API_KEY || null,
   };
 }
