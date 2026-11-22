@@ -26,6 +26,8 @@ describe('parseChannelInput', () => {
 test('feed meta from fixture', () => {
   expect(parseFeedChannel(xml)).toEqual({ channelId: 'UCHnyfMqiRRG1u-2MsSQLbXA', title: 'Veritasium' });
   expect(parseFeedChannel('<html></html>')).toBeNull();
+  const digits = 'UC0000000000000000000300';
+  expect(parseFeedChannel(xml.replaceAll('UCHnyfMqiRRG1u-2MsSQLbXA', digits).replaceAll('HnyfMqiRRG1u-2MsSQLbXA', digits.slice(2)))).toEqual({ channelId: digits, title: 'Veritasium' });
 });
 
 describe('videoStats', () => {

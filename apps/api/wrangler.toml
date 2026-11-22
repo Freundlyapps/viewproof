@@ -21,3 +21,6 @@ migrations_dir = "../../packages/db/migrations"
 [vars]
 APP_URL = "http://localhost:8787"
 SELF_HOSTED = "false"
+
+[triggers]
+crons = ["17 * * * *"]

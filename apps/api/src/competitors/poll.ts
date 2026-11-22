@@ -28,9 +28,16 @@ export async function pollChannel(deps: Deps, channelId: string): Promise<'polle
   };
   const res = await deps.fetchFeed(channelId);
   if (!res.ok) return fail(res.reason);
-  const parsed = parseChannelFeed(res.xml);
-  if (!parsed.ok) return fail(parsed.reason);
+  const stored = await ingestFeed(deps, channelId, res.xml);
+  return stored === 'ok' ? 'polled' : fail(stored.error);
+}
 
+/** Store a fetched feed: upsert its videos, snapshot each count that changed (or is a day old), mark the check OK. */
+export async function ingestFeed(deps: Deps, channelId: string, xml: string): Promise<'ok' | { error: string }> {
+  const now = deps.now();
+  const iso = new Date(now).toISOString();
+  const parsed = parseChannelFeed(xml);
+  if (!parsed.ok) return { error: parsed.reason };
   const latest = new Map(
     (await deps.db.prepare(
       `SELECT s.video_id, s.views, s.at FROM video_snapshots s JOIN feed_videos v USING (video_id)
@@ -51,7 +58,7 @@ export async function pollChannel(deps: Deps, channelId: string): Promise<'polle
   }
   stmts.push(deps.db.prepare('UPDATE tracked_channels SET last_poll_ok_at = ?, last_poll_error = NULL WHERE channel_id = ?').bind(iso, channelId));
   await deps.db.batch(stmts);
-  return 'polled';
+  return 'ok';
 }
 
 /** Poll up to `max` channels whose window has passed, never-polled and oldest first. Returns how many were tried. */

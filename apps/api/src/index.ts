@@ -1,5 +1,7 @@
 import { createApp } from './app';
 import type { FeedResult } from './competitors/poll';
+import { runCron } from './competitors/cron';
+import { httpChannelStats } from './competitors/stats';
 import { type Env, parseConfig } from './env';
 import { httpGoogleClient } from './google';
 import { type TokenStore, memoizeRefresh } from './token-memo';
@@ -19,14 +21,21 @@ async function fetchFeed(channelId: string): Promise<FeedResult> {
   }
 }
 
+function depsFor(env: Env) {
+  const config = parseConfig(env);
+  const google = memoizeRefresh(httpGoogleClient((input, init) => fetch(input, init), {
+    clientId: config.googleClientId,
+    clientSecret: config.googleClientSecret,
+    redirectUri: `${config.appUrl}/auth/google/callback`,
+  }), TOKENS, () => Date.now());
+  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), now: () => Date.now(), assets: env.ASSETS };
+}
+
 export default {
   fetch(req: Request, env: Env, ctx: ExecutionContext) {
-    const config = parseConfig(env);
-    const google = memoizeRefresh(httpGoogleClient((input, init) => fetch(input, init), {
-      clientId: config.googleClientId,
-      clientSecret: config.googleClientSecret,
-      redirectUri: `${config.appUrl}/auth/google/callback`,
-    }), TOKENS, () => Date.now());
-    return createApp({ db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, now: () => Date.now(), assets: env.ASSETS }).fetch(req, env, ctx);
+    return createApp(depsFor(env)).fetch(req, env, ctx);
+  },
+  scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(runCron(depsFor(env), new Date(event.scheduledTime)));
   },
 } satisfies ExportedHandler<Env>;
