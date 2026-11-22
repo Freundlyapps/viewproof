@@ -42,3 +42,19 @@ export function parseChannelFeed(xml: string): ParseResult<FeedVideo[]> {
   }
   return { ok: true, value: out };
 }
+
+/** The channel a feed belongs to: id (UC…) and title. Null when the text isn't a YouTube channel feed. */
+export function parseFeedChannel(xml: string): { channelId: string; title: string } | null {
+  let doc: Node;
+  try {
+    doc = parser.parse(xml) as Node;
+  } catch {
+    return null;
+  }
+  const feed = obj(doc?.feed);
+  if (!feed) return null;
+  const raw = str(feed['yt:channelId']);
+  const channelId = raw ? (raw.startsWith('UC') ? raw : `UC${raw}`) : undefined;
+  const title = str(feed.title) ?? str(obj(feed.author)?.name);
+  return channelId && /^UC[\w-]{22}$/.test(channelId) && title ? { channelId, title } : null;
+}
