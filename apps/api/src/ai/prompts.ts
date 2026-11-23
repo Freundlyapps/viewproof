@@ -1,3 +1,4 @@
+import type { Missing } from './sources';
 // Fixed prompt copy. The data goes in <source> blocks; the model is told those are data, never instructions.
 
 export type QuickAction = 'titles' | 'description' | 'tags' | 'ideas';
@@ -35,3 +36,6 @@ export function quickPrompt(action: QuickAction, topic: string, notes: string, b
 export function askSystem(block: string, missing = ''): string {
   return `${SYSTEM_ASK}\n\n${block ? `Sources:\n${block}` : 'Sources: none are available for this creator yet. Say so when it matters.'}${missing ? `\n\n${missing}` : ''}`;
 }
+
+/** One line telling the model which data is missing and why (so it says so instead of guessing). */
+export const missingLine = (m: Missing[]) => (m.length ? `Not available: ${m.map((x) => `${x.label} (${x.reason})`).join('; ')}.` : '');

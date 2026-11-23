@@ -9,3 +9,4 @@ playwright-report/
 .env
 .dev.vars
 .wrangler/
+apps/api/eval/out/

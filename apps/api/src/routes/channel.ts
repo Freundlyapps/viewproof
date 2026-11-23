@@ -273,7 +273,7 @@ async function loadEarnings(deps: Deps, a: ChannelAccess, range: RangeKey): Prom
   };
 }
 
-async function loadUploadTimes(deps: Deps, a: ChannelAccess): Promise<UploadTimes | GoogleError> {
+export async function loadUploadTimes(deps: Deps, a: ChannelAccess): Promise<UploadTimes | GoogleError> {
   const ups = await uploadsOf(deps, a);
   if (isErr(ups)) return ups;
   const ripe = ups.filter((u) => deps.now() - Date.parse(u.publishedAt) >= 10 * DAY_MS).slice(0, 20);
@@ -302,6 +302,22 @@ function matchingTerms(t: SearchTerms, keyword: string, deps: Deps): YourTerms {
   return { keyword, coverage: t.coverage, terms, note: terms.length ? null : t.note ?? NO_MATCH, fetchedAt: new Date(deps.now()).toISOString() };
 }
 
+/** One of the creator's videos with its own top search terms (90 days); `missing` when it isn't this channel's. */
+export async function loadOptimize(d: Deps, a: ChannelAccess, videoId: string): Promise<OptimizeVideo | { missing: true } | GoogleError> {
+  const v = await d.youtube.video(a.accessToken, videoId);
+  if (isErr(v)) return v;
+  if (!v || v.channelId !== a.channel.channel_id) return { missing: true };
+  const daily = await dailyFor(d, a, '90d');
+  if (isErr(daily)) return daily;
+  const p = daily.coverage.period;
+  const t = await terms(d, a, p.start, p.end, videoId);
+  if (isErr(t)) return t;
+  const list = rowsBy(t, 'insightTrafficSourceDetail').map(({ key, o }) => ({ term: key, views: Number(o.views) })).filter((x) => Number.isFinite(x.views));
+  return { video: v, terms: list, termsNote: list.length ? null : NO_TERMS, period: { start: p.start, end: p.end }, fetchedAt: new Date(d.now()).toISOString() };
+}
+
+export const VIDEO_ID = /^[\w-]{11}$/;
+
 export function channelRoutes(app: Hono, deps: Deps): void {
   app.get('/api/channels/:id/search-terms', serve(deps, (r) => `terms:${r}:${today(deps)}`, loadSearchTerms));
   app.get('/api/channels/:id/upload-times', serve(deps, () => `upload-times:${today(deps)}`, (d, a) => loadUploadTimes(d, a)));
@@ -311,21 +327,10 @@ export function channelRoutes(app: Hono, deps: Deps): void {
   app.get('/api/channels/:id/overview', serve(deps, (r) => `overview:${r}:${today(deps)}`, loadOverview));
   // The creator's real search terms containing a keyword: the cached 90-day search terms, filtered.
   app.get('/api/channels/:id/keyword-terms', (c) => (keywordParam(c) ? keywordTerms(c) : c.json(BAD_KEYWORD, 400)));
-  const VIDEO_ID = /^[\w-]{11}$/;
+  
   const NOT_THIS_CHANNEL = 'Video not found on this channel.';
-  app.get('/api/channels/:id/optimize/:videoId', serve<OptimizeVideo | { missing: true }>(deps, (_r, c) => `optimize:${c.req.param('videoId')}:${today(deps)}`, async (d, a, _r, c) => {
-    const videoId = c.req.param('videoId')!;
-    const v = await d.youtube.video(a.accessToken, videoId);
-    if (isErr(v)) return v;
-    if (!v || v.channelId !== a.channel.channel_id) return { missing: true };
-    const daily = await dailyFor(d, a, '90d');
-    if (isErr(daily)) return daily;
-    const p = daily.coverage.period;
-    const t = await terms(d, a, p.start, p.end, videoId);
-    if (isErr(t)) return t;
-    const list = rowsBy(t, 'insightTrafficSourceDetail').map(({ key, o }) => ({ term: key, views: Number(o.views) })).filter((x) => Number.isFinite(x.views));
-    return { video: v, terms: list, termsNote: list.length ? null : NO_TERMS, period: { start: p.start, end: p.end }, fetchedAt: new Date(d.now()).toISOString() };
-  }, REPORT_TTL_MS, (c) => (VIDEO_ID.test(c.req.param('videoId') ?? '') ? null : json(c, { error: 'bad_request', message: 'That is not a YouTube video id.' }, 400)),
+  app.get('/api/channels/:id/optimize/:videoId', serve<OptimizeVideo | { missing: true }>(deps, (_r, c) => `optimize:${c.req.param('videoId')}:${today(deps)}`, (d, a, _r, c) => loadOptimize(d, a, c.req.param('videoId')!),
+    REPORT_TTL_MS, (c) => (VIDEO_ID.test(c.req.param('videoId') ?? '') ? null : json(c, { error: 'bad_request', message: 'That is not a YouTube video id.' }, 400)),
   (b, c) => ('missing' in b ? c.json({ error: 'not_found', message: NOT_THIS_CHANNEL }, 404) : b)));
   const keywordTerms = serve(deps, () => `terms:90d:${today(deps)}`, (d, a) => loadSearchTerms(d, a, '90d'), REPORT_TTL_MS, undefined, (t, c) => matchingTerms(t, keywordParam(c)!, deps));
   app.get('/api/channels/:id/videos', serve(deps, (r) => `videos:${r}:${today(deps)}`, loadVideos));

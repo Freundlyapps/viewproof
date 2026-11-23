@@ -8,17 +8,19 @@
     "dev": "pnpm --filter web build && wrangler dev --port 8787",
     "db:migrate:local": "wrangler d1 migrations apply viewproof --local",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.eval.json",
+    "eval": "vitest run --config vitest.eval.config.ts"
   },
   "dependencies": {
-    "hono": "^4.13.19",
-    "@viewproof/db": "workspace:*",
     "@viewproof/core": "workspace:*",
-    "@viewproof/providers": "workspace:*"
+    "@viewproof/db": "workspace:*",
+    "@viewproof/providers": "workspace:*",
+    "hono": "^4.13.19"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.23.0",
     "@cloudflare/workers-types": "^5.20261120.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@vitest/runner": "^4.1.0",
     "@vitest/snapshot": "^4.1.0",
     "vitest": "^4.1.0",

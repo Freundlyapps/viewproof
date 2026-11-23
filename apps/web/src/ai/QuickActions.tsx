@@ -11,7 +11,7 @@ const ACTIONS: { id: Action; label: string; topicOptional?: boolean }[] = [
   { id: 'ideas', label: 'Video ideas', topicOptional: true },
 ];
 
-function CopyButton(props: { text: string }) {
+export function CopyButton(props: { text: string }) {
   const [state, setState] = useState<'no' | 'yes' | 'failed'>('no');
   return (
     <button type="button" className="btn" title={state === 'failed' ? 'Select the text and copy it yourself' : undefined} onClick={async () => {
