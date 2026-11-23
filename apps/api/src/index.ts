@@ -8,6 +8,7 @@ import { httpGoogleClient } from './google';
 import { type TokenStore, memoizeRefresh } from './token-memo';
 import { httpYouTubeClient } from './youtube';
 import { keywordProviderFor } from './keyword-provider';
+import { httpStripe } from './billing/stripe';
 
 /** Access tokens reused across requests in this isolate (see token-memo). */
 const TOKENS: TokenStore = new Map();
@@ -29,7 +30,7 @@ function depsFor(env: Env) {
     clientSecret: config.googleClientSecret,
     redirectUri: `${config.appUrl}/auth/google/callback`,
   }), TOKENS, () => Date.now());
-  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), llm: (o: Parameters<typeof llmClient>[0]) => llmClient({ ...o, fetchFn: (input, init) => fetch(input, init) }), now: () => Date.now(), assets: env.ASSETS, pool: env.POOL };
+  return { db: env.DB, config, google, youtube: httpYouTubeClient((input, init) => fetch(input, init)), keywords: keywordProviderFor(env, (input, init) => fetch(input, init)), fetchFeed, channelStats: httpChannelStats((input, init) => fetch(input, init)), llm: (o: Parameters<typeof llmClient>[0]) => llmClient({ ...o, fetchFn: (input, init) => fetch(input, init) }), now: () => Date.now(), assets: env.ASSETS, pool: env.POOL, stripe: config.billing ? httpStripe((input, init) => fetch(input, init), config.billing.secretKey) : null };
 }
 
 export default {

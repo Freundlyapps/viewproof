@@ -7,7 +7,7 @@ import { noProvider } from '@viewproof/providers';
 
 export const APP = 'http://localhost:8787';
 export function makeDeps(over: Partial<Deps> = {}, envOver: Partial<typeof env> = {}): Deps {
-  return { db: env.DB, config: parseConfig({ ...env, ...envOver }), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('not configured in this test'), fetchFeed: async () => ({ ok: false, reason: 'not configured in this test' }), channelStats: { byIds: async () => ({ error: 'not configured in this test' }), byHandle: async () => ({ error: 'not configured in this test' }) }, now: () => Date.now(), llm: () => { throw new Error('llm not configured in this test'); }, ...over };
+  return { db: env.DB, config: parseConfig({ ...env, ...envOver }), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('not configured in this test'), fetchFeed: async () => ({ ok: false, reason: 'not configured in this test' }), channelStats: { byIds: async () => ({ error: 'not configured in this test' }), byHandle: async () => ({ error: 'not configured in this test' }) }, now: () => Date.now(), llm: () => { throw new Error('llm not configured in this test'); }, stripe: null, ...over };
 }
 export async function addUser(id: string, plan = 'free') {
   await env.DB.prepare("INSERT INTO users (id, google_sub, email, name, plan, created_at) VALUES (?, ?, ?, ?, ?, '2026-11-21T00:00:00Z')")

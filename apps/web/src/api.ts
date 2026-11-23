@@ -1,6 +1,6 @@
 import type { ApiError } from '@viewproof/core';
 
-export interface Me { id: string; email: string | null; name: string | null; plan: string; maxChannels: number | null }
+export interface Me { id: string; email: string | null; name: string | null; plan: string; maxChannels: number | null; maxCompetitors?: number | null }
 export interface ChannelInfo {
   id: string; platform: string; channelId: string; title: string | null; handle: string | null; avatarUrl: string | null;
   status: 'active' | 'reconnect' | 'gone'; statusReason: string | null; connectedAt: string; lastVerifiedAt: string; revenueAccess: boolean;

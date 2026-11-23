@@ -38,12 +38,16 @@ describe('Check a title', () => {
     const seen = mockApi({ ...base, '/api/outliers': () => outliers(rows) });
     renderAt('/optimize');
     await userEvent.type(await screen.findByLabelText('Keyword'), 'etymology');
+    await new Promise((r) => setTimeout(r, 700));
+    // Typing alone uses none of the daily outlier searches; the person asks for the comparison.
+    expect(seen.some((u) => u.startsWith('/api/outliers'))).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Compare with outlier titles' }));
     expect(await screen.findByText(/Only 3 outlier titles for this keyword; need 5 to compare/)).toBeTruthy();
     expect(seen.some((u) => u.startsWith('/api/outliers?') && u.includes('q=etymology') && u.includes('days=90') && u.includes('min=2'))).toBe(true);
     expect(screen.getByText('Etymology one')).toBeTruthy();
     rows = [...rows, row('Why etymology?'), row('Etymology in 5 words')];
     await userEvent.clear(screen.getByLabelText('Keyword'));
-    await new Promise((r) => setTimeout(r, 700)); // let the debounce see the empty keyword
+    // The same keyword again is the same search (free to repeat), so it reloads without another click.
     await userEvent.type(screen.getByLabelText('Keyword'), 'etymology');
     expect(await screen.findByText(/5 titles · median length 14 · 1 with a number · 1 question · 5 with the keyword in the first 40 characters/, {}, { timeout: 2000 })).toBeTruthy();
   });

@@ -1,6 +1,7 @@
 import { type Format, type Measured, type OutlierRow, type Outliers, containsKeyword, median, noData, normalizeKeyword, value, videoStats } from '@viewproof/core';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
+import { limitMessage, limitOf, planOf } from '../plans';
 import { feedOf, historyOf } from '../competitors/routes';
 import { POOL_SEEN_DAYS } from '../competitors/poll';
 import { readSession } from '../session';
@@ -71,10 +72,29 @@ export async function findOutliers(deps: Deps, query: ReturnType<typeof parseOut
   return { rows: rows.slice(0, MAX_ROWS), coverage: { videos: cov!.videos, channels: cov!.channels, channelsWaiting: cov!.waiting, olderThanFeed: cov!.older, days: 30 } };
 }
 
+/** Counts a distinct search for today; null when allowed, else the limit copy. Repeating a query is free. */
+async function countSearch(deps: Deps, userId: string, key: string): Promise<string | null> {
+  const plan = await planOf(deps.db, userId);
+  const limit = limitOf(plan, deps.config.selfHosted, 'outlierSearches');
+  if (limit === null) return null;
+  const day = new Date(deps.now()).toISOString().slice(0, 10);
+  // One statement: insert only while under the limit, so parallel searches can't pass it together.
+  await deps.db.prepare(
+    `INSERT OR IGNORE INTO outlier_searches (user_id, day, query)
+     SELECT ?1, ?2, ?3 WHERE (SELECT COUNT(*) FROM outlier_searches WHERE user_id = ?1 AND day = ?2) < ?4`,
+  ).bind(userId, day, key, limit).run();
+  const seen = await deps.db.prepare('SELECT 1 FROM outlier_searches WHERE user_id = ? AND day = ? AND query = ?').bind(userId, day, key).first();
+  return seen ? null : limitMessage(`You used all ${limit} outlier searches for today. More tomorrow.`, plan, !!deps.config.billing);
+}
+
 export function outlierRoutes(app: Hono, deps: Deps): void {
   app.get('/api/outliers', async (c: Context) => {
     const s = await readSession(c, deps);
     if (!s) return c.json({ error: 'signed_out', message: 'Sign in first.' }, 401);
-    return c.json(await findOutliers(deps, parseOutlierQuery(new URL(c.req.url).searchParams)));
+    const query = parseOutlierQuery(new URL(c.req.url).searchParams);
+    // Only keyword searches count; browsing with filters alone is free.
+    const refused = query.q ? await countSearch(deps, s.userId, JSON.stringify(query)) : null;
+    if (refused) return c.json({ error: 'limit', message: refused }, 429);
+    return c.json(await findOutliers(deps, query));
   });
 }

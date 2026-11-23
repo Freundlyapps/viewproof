@@ -2,7 +2,7 @@
 import { LLM_PRESETS, type LlmClient, type LlmError, type LlmProviderId } from '@viewproof/providers';
 import type { Deps } from '../app';
 import { decryptForUser } from '../crypto';
-import { type AiTask, aiLimit } from '../plans';
+import { type AiTask, aiLimit, limitMessage, planOf as planOfUser } from '../plans';
 
 export type AiChoice = { client: LlmClient; via: 'own' | 'included'; release: () => Promise<void> };
 export type AiRefusal = { error: 'no_ai' | 'limit' | 'key_unreadable'; message: string; used?: number; limit?: number };
@@ -20,8 +20,7 @@ export const label = (p: LlmProviderId | string) => LLM_PRESETS[p as LlmProvider
 const finite = (n: number) => (Number.isFinite(n) ? n : null);
 
 export const ownKey = (deps: Deps, userId: string) => deps.db.prepare('SELECT * FROM ai_keys WHERE user_id = ?').bind(userId).first<AiKeyRow>();
-const planOf = async (deps: Deps, userId: string) =>
-  (await deps.db.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first<{ plan: string }>())?.plan ?? 'free';
+const planOf = (deps: Deps, userId: string) => planOfUser(deps.db, userId);
 
 export async function chooseAi(deps: Deps, userId: string, task: AiTask): Promise<AiChoice | AiRefusal> {
   const own = await ownKey(deps, userId);
@@ -37,7 +36,8 @@ export async function chooseAi(deps: Deps, userId: string, task: AiTask): Promis
   }
   const ai = deps.config.ai;
   if (!ai) return { error: 'no_ai', message: NO_AI };
-  const limit = aiLimit(await planOf(deps, userId), deps.config.selfHosted, task);
+  const plan = await planOf(deps, userId);
+  const limit = aiLimit(plan, deps.config.selfHosted, task);
   const month = monthOf(deps.now());
   const usedNow = async () =>
     (await deps.db.prepare(`SELECT ${task} AS n FROM ai_usage WHERE user_id = ? AND month = ?`).bind(userId, month).first<{ n: number }>())?.n ?? 0;
@@ -48,7 +48,7 @@ export async function chooseAi(deps: Deps, userId: string, task: AiTask): Promis
     .prepare(`INSERT INTO ai_usage (user_id, month, ${task}) VALUES (?, ?, 1) ON CONFLICT(user_id, month) DO UPDATE SET ${task} = ${task} + 1 WHERE ${task} < ?`)
     .bind(userId, month, cap)
     .run();
-  if (!r.meta.changes) return { error: 'limit', message: limitText(task, limit), used: await usedNow(), limit };
+  if (!r.meta.changes) return { error: 'limit', message: limitMessage(limitText(task, limit), plan, !!deps.config.billing), used: await usedNow(), limit };
   const client = deps.llm({ provider: ai.provider, apiKey: ai.apiKey, model: task === 'quick' ? ai.quickModel : ai.coachModel, baseUrl: ai.baseUrl });
   const release = async () => {
     await deps.db.prepare(`UPDATE ai_usage SET ${task} = MAX(${task} - 1, 0) WHERE user_id = ? AND month = ?`).bind(userId, month).run();

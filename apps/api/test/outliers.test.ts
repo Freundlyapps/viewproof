@@ -35,7 +35,11 @@ async function seed(channelId: string, title: string, entries: ReturnType<typeof
 
 let cookie = '';
 const get = async (q = '') => {
-  if (!cookie) cookie = (await signIn({ sub: 'ol-user', channel: channelFixture({ channelId: 'UColuserxxxxxxxxxxxxxxx' }) })).cookie;
+  if (!cookie) {
+    cookie = (await signIn({ sub: 'ol-user', channel: channelFixture({ channelId: 'UColuserxxxxxxxxxxxxxxx' }) })).cookie;
+    // Pro: these tests run more than the free plan's 10 searches a day (limits are tested in limits.test.ts).
+    await env.DB.prepare("UPDATE users SET plan = 'pro' WHERE google_sub = 'ol-user'").run();
+  }
   const r = await createApp(makeDeps({ now: () => T0, fetchFeed: async () => { throw new Error('outliers must not fetch feeds'); } })).request(`/api/outliers${q}`, { headers: { cookie } });
   expect(r.status).toBe(200);
   return r.json<Outliers>();

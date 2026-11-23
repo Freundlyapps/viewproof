@@ -1,7 +1,7 @@
 import type { Competitor, CompetitorUploads } from '@viewproof/core';
 import { type FormEvent, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { isApiError, sendJson } from '../api';
+import { type Me, isApiError, sendJson } from '../api';
 import { Badge } from '../ui/Badge';
 import { fmt } from '../ui/format';
 import { Value } from '../ui/Value';
@@ -10,10 +10,9 @@ import { CompetitorDetail } from './CompetitorDetail';
 import { ago, dateOnly } from './format';
 import { type SortKey, SortChips, VideoTable, sortVideos } from './VideoTable';
 
-export const MAX_COMPETITORS = 25;
 const EMPTY = 'Track a competitor by pasting its channel link or @handle.';
 
-/** Competitors (spec §8 item 4): up to 25 channels from their public feeds. */
+/** Competitors (spec §8 item 4): up to the plan's limit of channels (3 free, 25 Pro) from their public feeds. */
 export function Competitors() {
   const { channelId } = useParams();
   return (
@@ -32,6 +31,8 @@ function CompetitorList() {
   const [addError, setAddError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const n = list.state === 'ok' ? list.data.length : null;
+  const me = useApi<Me>('/api/me');
+  const max = me.state === 'ok' ? me.data.maxCompetitors ?? null : null;
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
@@ -53,11 +54,11 @@ function CompetitorList() {
     <>
       <div className="row between" style={{ alignItems: 'end' }}>
         <div><h1>Competitors</h1><p className="sub">New uploads and their pace, from each channel's public feed.</p></div>
-        {n !== null ? <span className="muted">{n} of {MAX_COMPETITORS}</span> : null}
+        {n !== null ? <span className="muted">{max === null ? `${n} tracked` : `${n} of ${max}`}</span> : null}
       </div>
       <form className="card row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'end' }} onSubmit={add}>
         <label style={{ flex: 1, minWidth: 260 }}>Competitor channel<br /><input value={text} placeholder="https://www.youtube.com/@handle or UC…" onChange={(e) => setText(e.target.value)} style={{ width: '100%' }} /></label>
-        <button type="submit" className="btn pri" disabled={busy || (n !== null && n >= MAX_COMPETITORS)}>Track</button>
+        <button type="submit" className="btn pri" disabled={busy || (n !== null && max !== null && n >= max)}>Track</button>
         {addError ? <p className="small" role="alert" style={{ width: '100%', margin: 0 }}>{addError}</p> : null}
       </form>
       {list.state === 'loading' ? <p className="empty">Loading…</p> : list.state === 'error' ? <p className="empty">{list.error.message}</p> : list.data.length === 0 ? (

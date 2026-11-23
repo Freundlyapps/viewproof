@@ -25,7 +25,13 @@ export interface Env {
   AI_BASE_URL?: string;
   AI_QUICK_MODEL?: string;
   AI_COACH_MODEL?: string;
+  /** Optional billing (plan 7): all three set and SELF_HOSTED not true turns it on. */
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_PRICE_ID?: string;
 }
+
+export interface BillingConfig { secretKey: string; webhookSecret: string; priceId: string }
 
 export interface AiConfig { provider: LlmProviderId; apiKey: string; baseUrl: string | null; quickModel: string; coachModel: string }
 
@@ -42,6 +48,8 @@ export interface Config {
   cronFeedBudget: number;
   /** Included AI, or null when the server has none. */
   ai: AiConfig | null;
+  /** Stripe billing, or null when this server has none (self-hosted or not configured). */
+  billing: BillingConfig | null;
 }
 
 export function parseConfig(env: Env): Config {
@@ -66,6 +74,9 @@ export function parseConfig(env: Env): Config {
     tokenKey: env.TOKEN_KEY,
     youtubeApiKey: env.YOUTUBE_API_KEY || null,
     ai: parseAi(env),
+    billing: env.SELF_HOSTED !== 'true' && env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET && env.STRIPE_PRICE_ID
+      ? { secretKey: env.STRIPE_SECRET_KEY, webhookSecret: env.STRIPE_WEBHOOK_SECRET, priceId: env.STRIPE_PRICE_ID }
+      : null,
     cronFeedBudget: Math.min(Math.max(Number(env.CRON_FEED_BUDGET) || 10, 1), 200),
   };
 }
