@@ -14,6 +14,8 @@ import { factsSummary, gridOutliers, parseChannelPage, topResultsFacts } from '@
 import { getBaseline } from '../src/baseline';
 import { searchCard, searchFeedOutliers } from '../src/search-panel';
 import { badgeFor } from '../src/channel';
+import { readTranscriptPanel, transcriptCapture, transcriptStore } from '../src/tools';
+import { videoIdFromUrl } from '../src/bridge';
 import { DEFAULT_TOGGLES, type PanelToggles, settingsChanged, settingsStore } from '../src/settings';
 
 /** Ask the background script to send once this many observations are queued. */
@@ -180,6 +182,17 @@ export default defineContentScript({
       if (v?.ok) share([fromWatch(v.value, new Date().toISOString())]);
     });
 
+    // Tools → Transcripts: when the user opens YouTube's transcript panel, keep its text in this browser only.
+    const transcripts = transcriptStore(browser.storage.local);
+    const capture = transcriptCapture();
+    capture.reset(readTranscriptPanel(document));
+    setInterval(() => {
+      const videoId = location.pathname === '/watch' ? videoIdFromUrl(location.href) : null;
+      if (!videoId) return;
+      const segments = capture.tick(readTranscriptPanel(document));
+      if (segments) void transcripts.put({ videoId, title: document.title.replace(/^\(\d+\)\s*/, '').replace(/ - YouTube$/, ''), segments }, Date.now()).catch(() => undefined);
+    }, 3000);
+
     // The moment navigation starts, the old video's numbers must go.
     document.addEventListener('yt-navigate-start', () => {
       painter.invalidate();
@@ -192,6 +205,7 @@ export default defineContentScript({
 
     // Hide the panel on pages that are not videos.
     document.addEventListener('yt-navigate-finish', () => {
+      capture.reset(readTranscriptPanel(document));
       const host = document.getElementById(HOST_ID);
       if (host) host.style.display = location.pathname === '/watch' && toggles.watch ? '' : 'none';
     });

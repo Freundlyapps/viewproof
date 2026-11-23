@@ -3,10 +3,11 @@ import { SEARCH_KEY, changedQueries, searchStore } from '../src/search';
 import type { SuggestResult } from '../src/suggest';
 import { appMatches } from '../src/app-origins';
 import { poolStore } from '../src/pool';
+import { transcriptStore, type VideoLookupResult } from '../src/tools';
 
 /**
- * Runs only on ViewProof's own pages. Hands the web app the keyword snapshots this browser read on YouTube
- * and YouTube's suggestions. Nothing is sent anywhere else.
+ * Runs only on ViewProof's own pages. Hands the web app the keyword snapshots and transcripts this browser read on YouTube,
+ * YouTube's suggestions and video lookups for Tools. Nothing is sent anywhere else.
  */
 export default defineContentScript({
   matches: appMatches(import.meta.env.DEV),
@@ -16,6 +17,7 @@ export default defineContentScript({
     const version = browser.runtime.getManifest().version;
     const post = (m: ExtensionMessage) => window.postMessage(m, location.origin);
     const pool = poolStore(browser.storage.local);
+    const transcripts = transcriptStore(browser.storage.local);
     const deps = {
       version,
       origin: location.origin,
@@ -25,6 +27,14 @@ export default defineContentScript({
         void browser.runtime.sendMessage({ kind: 'open-options' }).catch(() => undefined);
       },
       getSnapshot: (q: string) => store.get(q, Date.now()),
+      transcripts: () => transcripts.list(Date.now()),
+      lookupVideo: async (videoId: string): Promise<VideoLookupResult> => {
+        try {
+          return ((await browser.runtime.sendMessage({ kind: 'video-lookup', videoId })) as VideoLookupResult | undefined) ?? { ok: false, reason: 'The extension did not answer' };
+        } catch (e) {
+          return { ok: false, reason: e instanceof Error ? e.message : 'The extension did not answer' };
+        }
+      },
       suggest: async (q: string): Promise<SuggestResult> => {
         try {
           return ((await browser.runtime.sendMessage({ kind: 'suggest', q })) as SuggestResult | undefined) ?? { ok: false, reason: 'The extension did not answer' };
