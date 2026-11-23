@@ -139,6 +139,27 @@ Where the data comes from: each channel's public RSS feed, which lists its lates
 - **Server setup** (optional, `.dev.vars` or Wrangler secrets): `AI_API_KEY`, and optionally `AI_PROVIDER` (`anthropic` by default; `openai`, `gemini`, `deepseek`, `openrouter`, `custom`), `AI_BASE_URL` (for `custom`), `AI_QUICK_MODEL`, `AI_COACH_MODEL` (required for providers other than Anthropic). With `AI_PROVIDER=custom` and `AI_BASE_URL`, no key is needed (local models).
 - **Live check:** `VP_SESSION=<vp_session cookie> node apps/api/scripts/ai-live-check.mjs http://localhost:8787` runs one titles action and one question (at most 3 AI calls) and prints what came back.
 
+## MCP server
+
+Use ViewProof's data from your own AI app: Claude Code, Cursor, VS Code and other apps that support MCP. Your AI app does the writing; ViewProof gives it your real numbers. The tools are **read-only**: nothing is changed at YouTube or in ViewProof.
+- **Tools:** `list_channels`, `channel_overview`, `channel_videos`, `search_terms`, `upload_times`, `video_details` (one of your videos with its own search terms), `find_outliers`, `competitor_uploads`, `keyword_trends`, `check_video_text` (the Optimize rules). They return the same data as the web app, from the same cache, so they cost no extra YouTube quota. A value YouTube doesn't give comes back as `no_data` with the reason, and the server tells the AI not to fill it in.
+- **Connect:** in **Settings → AI & apps → MCP server**, create a token (shown once; up to 5; revoke at any time). Then:
+  - Claude Code: `claude mcp add --transport http viewproof https://<your server>/mcp --header "Authorization: Bearer <token>"`
+  - Other apps: `{"mcpServers":{"viewproof":{"type":"http","url":"https://<your server>/mcp","headers":{"Authorization":"Bearer <token>"}}}}`
+- **Limits:** 500 tool calls per day on the hosted service (no limit when self-hosted). Apps that only connect through an OAuth sign-in (such as claude.ai connectors) aren't supported yet.
+
+## Model eval
+
+Before choosing which model the hosted service includes, `pnpm --filter api eval` sends 8 cases (titles, tags, a description, next-video ideas, and coach questions) to each candidate in `apps/api/eval/candidates.json`. It uses the production prompts on a synthetic pottery channel and grades each answer with fixed checks:
+- `parses`: valid JSON items;
+- `count` and `length`: within limits;
+- `cites` and `knownCitations`: cites only sources that were sent;
+- `numbers`: every number is in the data, allowing rounding;
+- `saysMissing`: says so when data is missing;
+- `noInjection`: ignores instructions hidden in video titles.
+
+Keys come from `EVAL_ANTHROPIC_KEY` and `EVAL_OPENROUTER_KEY` (environment or `apps/api/.dev.vars`). A candidate without a key is listed as skipped. The report goes to `docs/model-eval/<date>.md`; raw answers stay in the git-ignored `apps/api/eval/out/`.
+
 ## Repository layout
 
 - `packages/core`: scores, parsers and API types shared by every part (views per hour, outlier ×N, feed and player parsers, My channel rules).
