@@ -1,5 +1,6 @@
 import { aiKeyRoutes } from './ai/keys';
 import { aiRoutes } from './ai/routes';
+import { mcpTokenRoutes } from './mcp/tokens';
 import type { LlmClient, LlmProviderId } from '@viewproof/providers';
 import { Hono } from 'hono';
 import type { Config } from './env';
@@ -89,5 +90,6 @@ export function createApp(deps: Deps): Hono {
   outlierRoutes(app, deps);
   aiKeyRoutes(app, deps);
   aiRoutes(app, deps);
+  mcpTokenRoutes(app, deps);
   return app;
 }

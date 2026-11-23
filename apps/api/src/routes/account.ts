@@ -1,3 +1,4 @@
+import { tokensOf } from '../mcp/tokens';
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
@@ -133,6 +134,8 @@ export function accountRoutes(app: Hono, deps: Deps): void {
         return k ? { provider: k.provider, quickModel: k.quick_model, coachModel: k.coach_model, keyHint: k.key_hint } : null;
       })(),
       aiUsage: (await deps.db.prepare('SELECT month, quick, coach FROM ai_usage WHERE user_id = ? ORDER BY month').bind(u.id).all<{ month: string; quick: number; coach: number }>()).results,
+      mcpTokens: (await tokensOf(deps, u.id)).map((t) => ({ label: t.label, createdAt: t.createdAt, lastUsedAt: t.lastUsedAt })),
+      mcpCalls: (await deps.db.prepare('SELECT day, count FROM mcp_calls WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
       sessions: (await deps.db.prepare('SELECT created_at, expires_at FROM sessions WHERE user_id = ? ORDER BY created_at').bind(u.id).all<{ created_at: string; expires_at: string }>()).results.map((x) => ({
         createdAt: x.created_at, expiresAt: x.expires_at,
       })),
@@ -165,6 +168,8 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM pool_tokens WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM ai_keys WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM ai_usage WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM mcp_tokens WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM mcp_calls WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);

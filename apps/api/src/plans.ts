@@ -14,3 +14,9 @@ export function aiLimit(plan: string, selfHosted: boolean, task: AiTask): number
   if (selfHosted) return Infinity;
   return (AI_LIMITS[plan] ?? AI_LIMITS.free!)[task];
 }
+
+/** MCP tool calls per user per day on hosted servers (plan 6c). Self-hosted: no limit (null). */
+export const MCP_DAILY_CALLS = 500;
+export function mcpLimit(selfHosted: boolean): number | null {
+  return selfHosted ? null : MCP_DAILY_CALLS;
+}
