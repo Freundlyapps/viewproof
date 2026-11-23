@@ -63,6 +63,7 @@ function PlanCard(props: { b: Billing; onChange: (b: Billing) => void }) {
         ? <p><b>Pro until {dayMonth(b.cancelAt)} · cancelled</b></p>
         : b.periodEnd ? <p><b>Pro · renews {dayMonth(b.periodEnd)}</b></p> : <p><b>Pro</b></p>)}
       {b.status === 'past_due' && <p className="callout">Payment failed — update your card in Invoices &amp; payment.</p>}
+      {b.status === 'unpaid' && <p className="callout">Your payments failed, so Pro is off. Pay the open invoice in Invoices &amp; payment to turn it back on.</p>}
       {!b.enabled
         ? <p className="small muted">Billing isn't set up on this server.</p>
         : pro
@@ -77,7 +78,9 @@ function PlanCard(props: { b: Billing; onChange: (b: Billing) => void }) {
                   </>}
             </div>
             )
-          : <div><button type="button" className="btn pri" disabled={busy} onClick={() => void go('checkout')}>Upgrade to Pro — $10/month</button></div>}
+          : b.status === 'unpaid'
+            ? <div><button type="button" className="btn pri" disabled={busy} onClick={() => void go('portal')}>Invoices &amp; payment</button></div>
+            : <div><button type="button" className="btn pri" disabled={busy} onClick={() => void go('checkout')}>Upgrade to Pro — $10/month</button></div>}
       {b.enabled && <p className="small muted">Payments, tax and receipts are handled by Stripe. Stripe emails you before each renewal.</p>}
       {error && <p className="err-text small">{error}</p>}
     </div>
@@ -116,7 +119,9 @@ export function PlanSettings() {
       {!b && r.state === 'loading' && <p className="muted">Loading…</p>}
       {b && (
         <>
-          {back && b.plan !== 'pro' && <p className="callout">Payment received. Pro turns on as soon as Stripe confirms it.</p>}
+          {back && b.plan !== 'pro' && !confirmError && (
+            <p className="callout">{sessionId || version === 0 || r.state !== 'ok' ? 'Waiting for Stripe to confirm your payment…' : "Stripe hasn't confirmed a payment yet. If you paid, it can take a minute; reload this page."}</p>
+          )}
           {confirmError && <p className="err-text small">{confirmError}</p>}
           <div className="grid g-2">
             <div className="card stack">

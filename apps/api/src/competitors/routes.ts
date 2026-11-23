@@ -157,6 +157,12 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     const input = typeof body?.input === 'string' ? body.input : '';
     const parsed = parseChannelInput(input);
     if (parsed.kind === 'invalid') return err(c, 400, 'bad_request', parsed.reason);
+    // Check the plan limit before spending a lookup; the insert below enforces it again atomically.
+    const plan = await planOf(deps.db, uid);
+    const max = limitOf(plan, deps.config.selfHosted, 'competitors');
+    const atLimit = () => err(c, 422, 'limit', limitMessage(`You can track up to ${max} channels.`, plan, !!deps.config.billing));
+    const n = (await deps.db.prepare('SELECT COUNT(*) AS n FROM user_competitors WHERE user_id = ?').bind(uid).first<{ n: number }>())!.n;
+    if (max !== null && n >= max) return atLimit();
     let channelId: string;
     let handle: string | null = null;
     const known0 = parsed.kind === 'id' && (await deps.db.prepare('SELECT 1 FROM tracked_channels WHERE channel_id = ?').bind(parsed.channelId).first());
@@ -182,10 +188,6 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     if (await deps.db.prepare('SELECT 1 FROM user_competitors WHERE user_id = ? AND channel_id = ?').bind(uid, channelId).first()) {
       return err(c, 409, 'bad_request', 'You already track this channel.');
     }
-    const n = (await deps.db.prepare('SELECT COUNT(*) AS n FROM user_competitors WHERE user_id = ?').bind(uid).first<{ n: number }>())!.n;
-    const plan = await planOf(deps.db, uid);
-    const max = limitOf(plan, deps.config.selfHosted, 'competitors');
-    if (max !== null && n >= max) return err(c, 422, 'limit', limitMessage(`You can track up to ${max} channels.`, plan, !!deps.config.billing));
 
     const now = new Date(deps.now()).toISOString();
     const known = await deps.db.prepare('SELECT channel_id FROM tracked_channels WHERE channel_id = ?').bind(channelId).first();
@@ -202,7 +204,11 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
     } else if (handle) {
       await deps.db.prepare('UPDATE tracked_channels SET handle = COALESCE(handle, ?) WHERE channel_id = ?').bind(handle, channelId).run();
     }
-    await deps.db.prepare('INSERT OR IGNORE INTO user_competitors (user_id, channel_id, added_at) VALUES (?, ?, ?)').bind(uid, channelId, now).run();
+    const ins = await deps.db.prepare(
+      `INSERT OR IGNORE INTO user_competitors (user_id, channel_id, added_at)
+       SELECT ?1, ?2, ?3 WHERE (SELECT COUNT(*) FROM user_competitors WHERE user_id = ?1) < ?4`,
+    ).bind(uid, channelId, now, max ?? Number.MAX_SAFE_INTEGER).run();
+    if (!ins.meta.changes && !(await deps.db.prepare('SELECT 1 FROM user_competitors WHERE user_id = ? AND channel_id = ?').bind(uid, channelId).first())) return atLimit();
     const r = (await rowsOf(deps, uid, channelId)).results[0]!;
     return c.json(toCompetitor(deps, r, (await feedOf(deps, [channelId])).get(channelId) ?? []), 201);
   });

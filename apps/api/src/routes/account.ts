@@ -89,7 +89,9 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     if (!u) return c.redirect('/auth/google/start', 302);
     const connected = c.req.query('connected');
     const byHand = c.req.query('note') === 'revoke-by-hand';
-    return c.html(Account({ user: u, channels: await channelsOf(deps, u.id), max: maxChannels(u.plan, deps.config.selfHosted), selfHosted: deps.config.selfHosted, byHand, ...(connected ? { connected } : {}) }));
+    const bill = await billingOf(deps, u.id);
+    const paidUntil = bill?.subscription_id && LIVE_STATUSES.has(bill.status ?? '') ? bill.cancel_at ?? bill.period_end : null;
+    return c.html(Account({ user: u, channels: await channelsOf(deps, u.id), max: maxChannels(u.plan, deps.config.selfHosted), selfHosted: deps.config.selfHosted, byHand, paidUntil, ...(connected ? { connected } : {}) }));
   });
 
   app.post('/channels/:id/check', async (c) => {

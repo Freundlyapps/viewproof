@@ -9,6 +9,8 @@ import { saveStats } from './routes';
  * with what is left, at most ⌈B/3⌉. 03 UTC: Data API counts for tracked channels (needs a key).
  */
 export async function runCron(deps: Deps, at: Date): Promise<void> {
+  // Processed Stripe event ids are only needed while Stripe may still retry (3 days); keep 30.
+  await deps.db.prepare('DELETE FROM stripe_events WHERE received_at < ?').bind(new Date(at.getTime() - 30 * 86_400_000).toISOString()).run();
   if (at.getUTCHours() === 4) await archiveDay(deps, new Date(at.getTime() - 86_400_000).toISOString().slice(0, 10));
   await pruneCompetitors(deps);
   const budget = deps.config.cronFeedBudget;

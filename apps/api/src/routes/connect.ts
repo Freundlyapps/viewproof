@@ -4,7 +4,10 @@ import type { Deps } from '../app';
 import { randomToken } from '../crypto';
 import { SCOPES } from '../google';
 import { discardPending } from '../grants';
-import { maxChannels } from '../plans';
+import { limitMessage, maxChannels } from '../plans';
+
+export const channelLimitText = (limit: number, plan: string, billingOn: boolean) =>
+  limitMessage(`Your plan allows ${limit} channel${limit === 1 ? '' : 's'}. Remove one first.`, plan, billingOn);
 import { readSession } from '../session';
 import { ConfirmChannel } from '../views/ConfirmChannel';
 import { Message } from '../views/Message';
@@ -78,7 +81,7 @@ export function connectRoutes(app: Hono, deps: Deps): void {
       return c.html(Message({ title: 'Already connected', text: 'This channel is already connected to another ViewProof account.', action: TO_ACCOUNT }));
     }
     c.status(403);
-    return c.html(Message({ title: 'Channel limit reached', text: `Your plan allows ${limit} channel${limit === 1 ? '' : 's'}. Remove one first or upgrade.`, action: TO_ACCOUNT }));
+    return c.html(Message({ title: 'Channel limit reached', text: channelLimitText(limit, user?.plan ?? 'free', !!deps.config.billing), action: TO_ACCOUNT }));
   });
 
   app.post('/connect/cancel', async (c) => {

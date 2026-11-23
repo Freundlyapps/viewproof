@@ -14,7 +14,10 @@ function who(user: UserRow): string {
   return user.name ? `Signed in as ${user.name}` : 'Signed in with Google';
 }
 
-export function Account(props: { user: UserRow; channels: ChannelRow[]; max: number; selfHosted: boolean; byHand?: boolean; connected?: string }) {
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayMonthYear = (iso: string) => { const d = new Date(iso); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+
+export function Account(props: { user: UserRow; channels: ChannelRow[]; max: number; selfHosted: boolean; byHand?: boolean; connected?: string; paidUntil?: string | null }) {
   const { user, channels, max } = props;
   const usage = props.selfHosted ? 'Self-hosted · no limits' : `${user.plan === 'pro' ? 'Pro' : 'Free'} plan · ${channels.length} of ${max} channel${max === 1 ? '' : 's'}`;
   return (
@@ -68,6 +71,7 @@ export function Account(props: { user: UserRow; channels: ChannelRow[]; max: num
           <button class="btn danger" type="submit">Delete account</button>
         </form>
         <p class="muted small">Deleting removes your account, your channels and Google's access for ViewProof. It can't be undone.</p>
+        {props.paidUntil ? <p class="small"><b>Deleting also cancels your Pro subscription at once. The rest of the paid period (until {dayMonthYear(props.paidUntil)}) is not refunded.</b></p> : null}
       </div>
     </Layout>
   );

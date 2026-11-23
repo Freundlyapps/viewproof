@@ -178,11 +178,11 @@ Limits are hard and shown as counters under **Settings → Plan & usage**; nothi
 Billing is optional and uses **Stripe Managed Payments** (Stripe is the merchant of record and handles VAT and sales tax). To turn it on:
 
 1. In Stripe, enable Managed Payments (Settings → Managed Payments) and create a Product with tax code `txcd_10103000` (SaaS, personal use) and a $10/month recurring Price.
-2. Configure the customer portal (Settings → Billing → Customer portal) and turn on **Upcoming renewals** emails (Settings → Billing → Subscriptions and emails). Stripe sends the renewal reminder, receipts and invoices.
+2. Configure the customer portal (Settings → Billing → Customer portal) and turn on **Upcoming renewals** emails (Settings → Billing → Subscriptions and emails). Stripe sends the renewal reminder, receipts and invoices. Under Settings → Billing → Revenue recovery, set "If all retries for a payment fail" to **cancel the subscription**, so someone who never pays is moved back to Free instead of keeping Pro or an open subscription.
 3. Add a webhook endpoint `https://<your server>/api/billing/webhook` for `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid` and `invoice.payment_failed`.
 4. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `STRIPE_PRICE_ID` (Wrangler secrets, or `apps/api/.dev.vars` locally). Billing stays off unless all three are set, and always off when `SELF_HOSTED=true`.
 
-Locally, use test-mode keys and forward events with `stripe listen --forward-to localhost:8787/api/billing/webhook` (its `whsec_…` goes in `STRIPE_WEBHOOK_SECRET`). The plan follows Stripe's webhooks, so cancelling in Stripe's portal or on link.com works too. Deleting your ViewProof account cancels the subscription at Stripe first.
+Locally, use test-mode keys and forward events with `stripe listen --forward-to localhost:8787/api/billing/webhook` (its `whsec_…` goes in `STRIPE_WEBHOOK_SECRET`). The plan follows Stripe's webhooks (only subscriptions for `STRIPE_PRICE_ID` count, so other products on the same Stripe account don't turn on Pro), so cancelling in Stripe's portal or on link.com works too. Deleting your ViewProof account cancels the subscription at Stripe first.
 
 ## Repository layout
 

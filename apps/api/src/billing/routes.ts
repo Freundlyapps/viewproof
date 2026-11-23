@@ -48,7 +48,10 @@ export function billingRoutes(app: Hono, deps: Deps): void {
     if (b?.status && LIVE_STATUSES.has(b.status) && b.status !== 'incomplete') {
       return err(c, 409, 'live_subscription', 'Your subscription is still open at Stripe. Settle or cancel it in Invoices & payment first.');
     }
-    const r = await deps.stripe!.checkout({ priceId: deps.config.billing!.priceId, userId: uid, email: u?.email ?? null, customerId: b?.customer_id ?? null, successUrl: `${page}?checkout=done&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: page });
+    const input = { priceId: deps.config.billing!.priceId, userId: uid, email: u?.email ?? null, customerId: b?.customer_id ?? null, successUrl: `${page}?checkout=done&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: page };
+    let r = await deps.stripe!.checkout(input);
+    // A customer Stripe no longer has (deleted, or test keys swapped for live): start fresh with the email.
+    if (isFail(r) && input.customerId && /no such customer/i.test(r.error)) r = await deps.stripe!.checkout({ ...input, customerId: null });
     return isFail(r) ? err(c, 502, 'stripe_failed', r.error) : c.json({ url: r.url });
   });
 

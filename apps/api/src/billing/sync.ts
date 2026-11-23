@@ -27,6 +27,9 @@ export async function userForCustomer(deps: Deps, customerId: string, hint?: str
 }
 
 export async function syncSubscription(deps: Deps, sub: StripeSub, userIdHint?: string | null): Promise<boolean> {
+  // Another product sold on the same Stripe account is not ViewProof Pro.
+  const priceId = deps.config.billing?.priceId;
+  if (priceId && !(sub.items?.data ?? []).some((i) => i.price?.id === priceId)) return false;
   const userId = await userForCustomer(deps, sub.customer, userIdHint ?? sub.metadata?.user_id);
   if (!userId) return false;
   // A late event about an older, ended subscription must not replace the one still running.

@@ -4,7 +4,7 @@ const API = 'https://api.stripe.com/v1';
 
 export interface StripeSub {
   id: string; customer: string; status: string; cancel_at_period_end: boolean; cancel_at: number | null;
-  items: { data: { current_period_end: number }[] }; metadata: Record<string, string>;
+  items: { data: { current_period_end: number; price?: { id: string } }[] }; metadata: Record<string, string>;
 }
 export type StripeFail = { error: string };
 export interface CheckoutInput { priceId: string; userId: string; email: string | null; customerId: string | null; successUrl: string; cancelUrl: string }

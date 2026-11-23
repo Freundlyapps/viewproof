@@ -70,7 +70,7 @@ describe('confirm', () => {
     await post(first.app, '/connect/confirm', first.cookie, { id: first.pendingId });
     const second = await signIn({ sub: 'c-limit', channel: channelFixture({ channelId: 'UClimit2' }), cookie: first.cookie });
     const res = await post(second.app, '/connect/confirm', first.cookie, { id: second.pendingId });
-    expect(await readText(res)).toContain('Your plan allows 1 channel. Remove one first or upgrade.');
+    expect(await readText(res)).toContain('Your plan allows 1 channel. Remove one first.');
     expect((await channelRows('UClimit2')).results).toHaveLength(0);
     expect(second.google.calls).toContain('revoke');
   });
