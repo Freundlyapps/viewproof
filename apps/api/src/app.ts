@@ -2,6 +2,8 @@ import { aiKeyRoutes } from './ai/keys';
 import { aiRoutes } from './ai/routes';
 import { mcpTokenRoutes } from './mcp/tokens';
 import { mcpRoutes } from './mcp/routes';
+import type { StripeClient } from './billing/stripe';
+import { billingWebhook } from './billing/webhook';
 import type { LlmClient, LlmProviderId } from '@viewproof/providers';
 import { Hono } from 'hono';
 import type { Config } from './env';
@@ -37,6 +39,8 @@ export interface Deps {
   now: () => number;
   /** Builds an LLM client (spec S6); tests pass a fake. */
   llm: (o: { provider: LlmProviderId; apiKey: string; model: string; baseUrl?: string | null }) => LlmClient;
+  /** Stripe (plan 7); null when billing is off. Tests pass a fake. */
+  stripe: StripeClient | null;
   /** Built web app (Workers Static Assets binding); absent when not configured. */
   assets?: { fetch(req: Request): Promise<Response> };
 }
@@ -57,7 +61,8 @@ export function createApp(deps: Deps): Hono {
   // Forms post with the browser's Origin header; anything else changing state is refused.
   app.use('*', async (c, next) => {
     // The pool contribution route takes no cookie: its bearer token is the credential (sent by the extension).
-    const bearerOnly = c.req.path === '/api/pool/contribute';
+    // The Stripe webhook is signed; its signature is the credential.
+    const bearerOnly = c.req.path === '/api/pool/contribute' || c.req.path === '/api/billing/webhook';
     // MCP clients (CLI apps) send no Origin; a browser's Origin must be ours (DNS rebinding rule). Its bearer token is the credential.
     if (c.req.path === '/mcp') {
       const o = c.req.header('origin');
@@ -98,6 +103,7 @@ export function createApp(deps: Deps): Hono {
   aiKeyRoutes(app, deps);
   aiRoutes(app, deps);
   mcpTokenRoutes(app, deps);
+  billingWebhook(app, deps);
   mcpRoutes(app, deps);
   return app;
 }

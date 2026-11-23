@@ -8,7 +8,7 @@ import { noProvider } from '@viewproof/providers';
 
 describe('health', () => {
   test('GET /health', async () => {
-    const app = createApp({ db: env.DB, config: parseConfig(env), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('test'), fetchFeed: async () => ({ ok: false, reason: 'test' }), channelStats: { byIds: async () => ({ error: 'not configured in this test' }), byHandle: async () => ({ error: 'not configured in this test' }) }, now: () => Date.now(), llm: () => { throw new Error('no llm'); } });
+    const app = createApp({ db: env.DB, config: parseConfig(env), google: fakeGoogle(), youtube: fakeYouTube(), keywords: noProvider('test'), fetchFeed: async () => ({ ok: false, reason: 'test' }), channelStats: { byIds: async () => ({ error: 'not configured in this test' }), byHandle: async () => ({ error: 'not configured in this test' }) }, now: () => Date.now(), llm: () => { throw new Error('no llm'); }, stripe: null });
     const res = await app.request('/health');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });

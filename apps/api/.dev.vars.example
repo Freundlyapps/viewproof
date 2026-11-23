@@ -15,3 +15,7 @@ AI_API_KEY=
 # AI_PROVIDER=anthropic
 # AI_QUICK_MODEL=
 # AI_COACH_MODEL=
+# Optional billing (README "Billing"). All three set = Upgrade/Cancel in Settings → Plan & usage. Use test-mode keys locally.
+# STRIPE_SECRET_KEY=
+# STRIPE_WEBHOOK_SECRET=
+# STRIPE_PRICE_ID=
