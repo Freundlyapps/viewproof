@@ -8,7 +8,8 @@
     "dev": "pnpm --filter web build && wrangler dev --port 8787",
     "db:migrate:local": "wrangler d1 migrations apply viewproof --local",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.eval.json",
+    "eval": "vitest run --config vitest.eval.config.ts"
   },
   "dependencies": {
     "@viewproof/core": "workspace:*",

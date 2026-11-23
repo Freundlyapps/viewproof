@@ -5,11 +5,10 @@ import type { Deps } from '../app';
 import type { AiTask } from '../plans';
 import { readSession } from '../session';
 import { type AiItem, citations, parseItems } from './answer';
-import { type QuickAction, SYSTEM_QUICK, askSystem, quickPrompt } from './prompts';
+import { type QuickAction, SYSTEM_QUICK, askSystem, missingLine, quickPrompt } from './prompts';
 import { type AiChoice, aiUsage, chooseAi, label, llmFailure, refundable } from './router';
 import { type Missing, type SourceKind, gatherSources, sourceBlock } from './sources';
 
-const missingLine = (m: Missing[]) => (m.length ? `Not available: ${m.map((x) => `${x.label} (${x.reason})`).join('; ')}.` : '');
 
 const err = (c: Context, status: number, body: Record<string, unknown>) => c.json(body, status as 400);
 const bad = (c: Context, message: string) => err(c, 400, { error: 'bad_request', message });

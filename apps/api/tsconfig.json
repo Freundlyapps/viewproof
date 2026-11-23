@@ -1,10 +1,24 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2024"],
-    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types"],
+    "lib": [
+      "ES2024"
+    ],
+    "types": [
+      "@cloudflare/workers-types",
+      "@cloudflare/vitest-pool-workers/types"
+    ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
-  "include": ["src", "test", "*.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "eval",
+    "*.config.ts"
+  ],
+  "exclude": [
+    "eval/live.eval.ts",
+    "vitest.eval.config.ts"
+  ]
 }
