@@ -19,7 +19,7 @@ export function mockApi(routes: Record<string, Handler>): string[] {
   return seen;
 }
 
-export const ME = { id: 'u1', email: 'me@example.com', name: 'Me', plan: 'free', maxChannels: 1 };
+export const ME = { id: 'u1', email: 'me@example.com', name: 'Me', plan: 'free', maxChannels: 1, maxCompetitors: 25 };
 export const channel = (over: Record<string, unknown> = {}) => ({
   id: 'row1', platform: 'youtube', channelId: 'UCaaa', title: 'Quiet Hands Pottery', handle: '@quiethands', avatarUrl: null,
   status: 'active', statusReason: null, connectedAt: '2026-11-01T00:00:00Z', lastVerifiedAt: '2026-11-21T00:00:00Z', revenueAccess: false, ...over,
