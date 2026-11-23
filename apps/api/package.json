@@ -11,14 +11,15 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "hono": "^4.13.19",
-    "@viewproof/db": "workspace:*",
     "@viewproof/core": "workspace:*",
-    "@viewproof/providers": "workspace:*"
+    "@viewproof/db": "workspace:*",
+    "@viewproof/providers": "workspace:*",
+    "hono": "^4.13.19"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.23.0",
     "@cloudflare/workers-types": "^5.20261120.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@vitest/runner": "^4.1.0",
     "@vitest/snapshot": "^4.1.0",
     "vitest": "^4.1.0",

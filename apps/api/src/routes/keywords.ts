@@ -17,6 +17,33 @@ export function keywordParam(c: Context): string | null {
   return q && q.length <= MAX_KEYWORD ? q : null;
 }
 
+export const KEYWORD_LIMIT_MESSAGE = LIMIT.message;
+
+/** YouTube search interest for a keyword (vendor), cached 30 days and shared; new lookups count against the user's daily cap. */
+export async function keywordTrends(deps: Deps, userId: string, q: string, countryCode: string): Promise<KeywordTrends | { limit: true }> {
+  const country = COUNTRIES.find((x) => x.code === countryCode.toUpperCase()) ?? COUNTRIES.find((x) => x.code === DEFAULT_COUNTRY)!;
+  const provider = deps.keywords;
+  const row = await deps.db.prepare('SELECT * FROM keyword_cache WHERE keyword = ? AND country = ? AND provider = ?').bind(q, country.code, provider.name).first<KeywordCacheRow>();
+  if (row && deps.now() - Date.parse(row.fetched_at) < TRENDS_TTL_MS) return JSON.parse(row.body) as KeywordTrends;
+  if (provider.name !== 'none') {
+    // Count the lookup first (atomically), so parallel requests can't pass the cap together.
+    const day = new Date(deps.now()).toISOString().slice(0, 10);
+    const counted = await deps.db
+      .prepare('INSERT INTO keyword_lookups (user_id, day, count) VALUES (?, ?, 1) ON CONFLICT(user_id, day) DO UPDATE SET count = count + 1 WHERE count < ? RETURNING count')
+      .bind(userId, day, DAILY_LOOKUPS)
+      .first<{ count: number }>();
+    if (!counted) return { limit: true };
+  }
+  const est = await provider.trends(q, country);
+  if (est.status === 'ok') {
+    await deps.db
+      .prepare('INSERT INTO keyword_cache (keyword, country, provider, body, fetched_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(keyword, country, provider) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at')
+      .bind(q, country.code, provider.name, JSON.stringify(est), new Date(deps.now()).toISOString())
+      .run();
+  }
+  return est;
+}
+
 export function keywordRoutes(app: Hono, deps: Deps): void {
   /** Optional YouTube search interest (Google Trends via a vendor), cached 30 days and shared across users; "off"/"failed" are never stored. */
   app.get('/api/keywords/trends', async (c) => {
@@ -24,26 +51,8 @@ export function keywordRoutes(app: Hono, deps: Deps): void {
     if (!s) return c.json({ error: 'signed_out', message: 'Sign in first.' }, 401);
     const q = keywordParam(c);
     if (!q) return c.json(BAD_KEYWORD, 400);
-    const country = COUNTRIES.find((x) => x.code === (c.req.query('country') ?? '').toUpperCase()) ?? COUNTRIES.find((x) => x.code === DEFAULT_COUNTRY)!;
-    const provider = deps.keywords;
-    const row = await deps.db.prepare('SELECT * FROM keyword_cache WHERE keyword = ? AND country = ? AND provider = ?').bind(q, country.code, provider.name).first<KeywordCacheRow>();
-    if (row && deps.now() - Date.parse(row.fetched_at) < TRENDS_TTL_MS) return c.json(JSON.parse(row.body) as KeywordTrends);
-    if (provider.name !== 'none') {
-      // Count the lookup first (atomically), so parallel requests can't pass the cap together.
-      const day = new Date(deps.now()).toISOString().slice(0, 10);
-      const counted = await deps.db
-        .prepare('INSERT INTO keyword_lookups (user_id, day, count) VALUES (?, ?, 1) ON CONFLICT(user_id, day) DO UPDATE SET count = count + 1 WHERE count < ? RETURNING count')
-        .bind(s.userId, day, DAILY_LOOKUPS)
-        .first<{ count: number }>();
-      if (!counted) return c.json(LIMIT, 429);
-    }
-    const est = await provider.trends(q, country);
-    if (est.status === 'ok') {
-      await deps.db
-        .prepare('INSERT INTO keyword_cache (keyword, country, provider, body, fetched_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(keyword, country, provider) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at')
-        .bind(q, country.code, provider.name, JSON.stringify(est), new Date(deps.now()).toISOString())
-        .run();
-    }
-    return c.json(est);
+    const country = (c.req.query('country') ?? '');
+    const r = await keywordTrends(deps, s.userId, q, country);
+    return 'limit' in r ? c.json(LIMIT, 429) : c.json(r);
   });
 }

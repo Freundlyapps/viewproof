@@ -1,6 +1,7 @@
 import { aiKeyRoutes } from './ai/keys';
 import { aiRoutes } from './ai/routes';
 import { mcpTokenRoutes } from './mcp/tokens';
+import { mcpRoutes } from './mcp/routes';
 import type { LlmClient, LlmProviderId } from '@viewproof/providers';
 import { Hono } from 'hono';
 import type { Config } from './env';
@@ -57,6 +58,12 @@ export function createApp(deps: Deps): Hono {
   app.use('*', async (c, next) => {
     // The pool contribution route takes no cookie: its bearer token is the credential (sent by the extension).
     const bearerOnly = c.req.path === '/api/pool/contribute';
+    // MCP clients (CLI apps) send no Origin; a browser's Origin must be ours (DNS rebinding rule). Its bearer token is the credential.
+    if (c.req.path === '/mcp') {
+      const o = c.req.header('origin');
+      if (o !== undefined && originOf(o) !== deps.config.appOrigin) return c.text('Request blocked (wrong origin)', 403);
+      return next();
+    }
     if (!bearerOnly && !['GET', 'HEAD', 'OPTIONS'].includes(c.req.method) && originOf(c.req.header('origin')) !== deps.config.appOrigin) {
       return c.text('Request blocked (wrong origin)', 403);
     }
@@ -91,5 +98,6 @@ export function createApp(deps: Deps): Hono {
   aiKeyRoutes(app, deps);
   aiRoutes(app, deps);
   mcpTokenRoutes(app, deps);
+  mcpRoutes(app, deps);
   return app;
 }
