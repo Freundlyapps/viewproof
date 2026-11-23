@@ -65,6 +65,28 @@ export type Calc<K extends string> = ({ ok: true } & Record<K, number>) | { ok: 
 const whole = (n: number) => Number.isInteger(n) && n >= 0;
 const nonNeg = (n: number) => Number.isFinite(n) && n >= 0;
 const round = (n: number, d: number) => Math.round(n * 10 ** d) / 10 ** d;
+const TOO_LARGE = { ok: false as const, reason: 'These numbers are too large.' };
+
+/**
+ * A whole number as people type it: plain digits, or groups of three split consistently by "." "," or spaces
+ * ("12.400" and "12,400" are both 12400: a count has no fraction). Anything else is NaN, never a guess.
+ */
+export function parseCount(input: string): number {
+  const s = input.trim();
+  if (/^\d+$/.test(s)) return Number(s);
+  const m = /^\d{1,3}([., ])\d{3}(?:\1\d{3})*$/.exec(s);
+  return m ? Number(s.split(m[1]!).join('')) : Number.NaN;
+}
+
+/**
+ * A decimal number with one decimal mark, "." or "," ("2,5" = 2.5). A mark followed by exactly three digits ("1,000")
+ * could be a thousands separator, so it is NaN rather than a guess.
+ */
+export function parseDecimal(input: string): number {
+  const m = /^(\d+)(?:[.,](\d+))?$/.exec(input.trim());
+  if (!m || m[2]?.length === 3) return Number.NaN;
+  return Number(m[2] === undefined ? m[1] : `${m[1]}.${m[2]}`);
+}
 
 /** (likes + comments) ÷ views × 100, from numbers the user typed. */
 export function engagementRate(v: { views: number; likes: number; comments: number }): Calc<'percent'> {
@@ -72,14 +94,16 @@ export function engagementRate(v: { views: number; likes: number; comments: numb
   if (!whole(v.likes)) return { ok: false, reason: 'Likes must be a whole number, 0 or more.' };
   if (!whole(v.comments)) return { ok: false, reason: 'Comments must be a whole number, 0 or more.' };
   if (v.views === 0) return { ok: false, reason: 'Views must be more than 0.' };
-  return { ok: true, percent: round(((v.likes + v.comments) / v.views) * 100, 2) };
+  const percent = round(((v.likes + v.comments) / v.views) * 100, 2);
+  return Number.isFinite(percent) ? { ok: true, percent } : TOO_LARGE;
 }
 
 /** Watch time in hours: views × average view duration. */
 export function watchTime(v: { views: number; avgSec: number }): Calc<'hours'> {
   if (!whole(v.views)) return { ok: false, reason: 'Views must be a whole number, 0 or more.' };
   if (!nonNeg(v.avgSec)) return { ok: false, reason: 'Average view duration must be 0 seconds or more.' };
-  return { ok: true, hours: round((v.views * v.avgSec) / 3600, 1) };
+  const hours = round((v.views * v.avgSec) / 3600, 1);
+  return Number.isFinite(hours) ? { ok: true, hours } : TOO_LARGE;
 }
 
 /** Average view duration in seconds: watch hours ÷ views. */
@@ -87,7 +111,8 @@ export function avgViewDuration(v: { views: number; hours: number }): Calc<'seco
   if (!whole(v.views)) return { ok: false, reason: 'Views must be a whole number, 0 or more.' };
   if (!nonNeg(v.hours)) return { ok: false, reason: 'Watch time must be 0 hours or more.' };
   if (v.views === 0) return { ok: false, reason: 'Views must be more than 0.' };
-  return { ok: true, seconds: Math.round((v.hours * 3600) / v.views) };
+  const seconds = Math.round((v.hours * 3600) / v.views);
+  return Number.isFinite(seconds) ? { ok: true, seconds } : TOO_LARGE;
 }
 
 /** "4:05" → 245, "1:02:03" → 3723; null when it isn't a clock time. */

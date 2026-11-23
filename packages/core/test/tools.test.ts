@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { avgViewDuration, engagementRate, extractPlayerResponse, parseTimestamp, transcriptText, videoIdFromInput, watchTime } from '../src/tools';
+import { avgViewDuration, engagementRate, extractPlayerResponse, parseCount, parseDecimal, parseTimestamp, transcriptText, videoIdFromInput, watchTime } from '../src/tools';
 
 describe('videoIdFromInput', () => {
   test.each([
@@ -75,5 +75,29 @@ describe('transcripts', () => {
     const s = [{ startSec: 0, text: 'Hello' }, { startSec: 3725, text: 'Bye  now' }];
     expect(transcriptText(s, false)).toBe('Hello\nBye now');
     expect(transcriptText(s, true)).toBe('0:00 Hello\n1:02:05 Bye now');
+  });
+});
+
+describe('typed numbers (review: German input gave plausible wrong results)', () => {
+  test('counts: plain digits or consistent groups of three; anything else is NaN', () => {
+    expect(parseCount('12400')).toBe(12400);
+    expect(parseCount('1.000')).toBe(1000);
+    expect(parseCount('1,000')).toBe(1000);
+    expect(parseCount('1 234 567')).toBe(1234567);
+    expect(parseCount(' 12.400.000 ')).toBe(12400000);
+    for (const bad of ['2,5', '1,000.5', '1.000,5', '1.00', '1,0000', '1.000,000', '-5', '', 'abc', '1e3']) expect(parseCount(bad)).toBeNaN();
+  });
+
+  test('decimals: one decimal mark, comma or dot; a mark followed by exactly 3 digits is ambiguous', () => {
+    expect(parseDecimal('2,5')).toBe(2.5);
+    expect(parseDecimal('2.5')).toBe(2.5);
+    expect(parseDecimal('1200')).toBe(1200);
+    for (const bad of ['1,000', '1.000', '1,000.5', '1.2.3', '', 'x', '-1', 'Infinity']) expect(parseDecimal(bad)).toBeNaN();
+  });
+
+  test('results that are not finite are refused, never shown as Infinity or NaN', () => {
+    expect(watchTime({ views: 1e308, avgSec: 3599 })).toEqual({ ok: false, reason: 'These numbers are too large.' });
+    expect(avgViewDuration({ views: 1, hours: 1e308 })).toEqual({ ok: false, reason: 'These numbers are too large.' });
+    expect(engagementRate({ views: 1, likes: 1e308, comments: 1e308 })).toEqual({ ok: false, reason: 'These numbers are too large.' });
   });
 });

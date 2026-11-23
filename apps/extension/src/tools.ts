@@ -12,6 +12,7 @@ export interface VideoFacts { videoId: string; title: string; channelId: string;
 export type VideoLookupResult = { ok: true; video: VideoFacts } | { ok: false; reason: string };
 type Cache = Record<string, { at: number; video: VideoFacts }>;
 type Throttle = { times: number[]; pausedUntil: number | null };
+const CHECK_PAGE = "YouTube answered with a consent or robot-check page instead of the video. The extension asks signed out, so this video's tags can't be read this way.";
 
 /**
  * Tags and description of any public video for the Tools page: the same watch page a browser opens, fetched without cookies.
@@ -34,23 +35,35 @@ export function videoLookup(deps: { area: chrome.storage.StorageArea; fetch: typ
         return { ok: false, reason: `Lookup limit reached (${LOOKUPS_PER_HOUR} per hour); try again in ${mins} minute${mins === 1 ? '' : 's'}.` };
       }
       recent.push(now);
+      const saveThrottle = (pausedUntil: number | null) => deps.area.set({ [THROTTLE_KEY]: { times: recent, pausedUntil } satisfies Throttle });
       let res: Response;
       try {
-        res = await deps.fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, { credentials: 'omit' });
+        // No cookies (never the user's YouTube sign-in), and no redirects: a redirect means a consent or check page.
+        res = await deps.fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, { credentials: 'omit', redirect: 'manual' });
       } catch {
-        await deps.area.set({ [THROTTLE_KEY]: { times: recent, pausedUntil: null } satisfies Throttle });
+        await saveThrottle(null);
         return { ok: false, reason: "Couldn't reach YouTube (network error); try again." };
       }
-      if (!res.ok) {
+      if (res.type === 'opaqueredirect' || res.redirected || (res.status >= 300 && res.status < 400)) {
+        await saveThrottle(null);
+        return { ok: false, reason: CHECK_PAGE };
+      }
+      if (res.status === 429 || res.status === 403) {
         const until = now + PAUSE_MS;
-        await deps.area.set({ [THROTTLE_KEY]: { times: recent, pausedUntil: until } satisfies Throttle });
+        await saveThrottle(until);
         return { ok: false, reason: `YouTube refused the request (HTTP ${res.status}); paused until ${new Date(until).toISOString()}` };
       }
-      await deps.area.set({ [THROTTLE_KEY]: { times: recent, pausedUntil: null } satisfies Throttle });
-      const parsed = parsePlayerResponse(extractPlayerResponse(await res.text()));
+      await saveThrottle(null);
+      if (!res.ok) return { ok: false, reason: `YouTube answered HTTP ${res.status}; try again later.` };
+      const raw = extractPlayerResponse(await res.text());
+      if (!raw) return { ok: false, reason: CHECK_PAGE };
+      const parsed = parsePlayerResponse(raw);
       if (!parsed.ok) {
-        return { ok: false, reason: "YouTube's page had no video data (it may have shown a consent or robot check). Open the video on YouTube once, then try again." };
+        const ps = (raw as { playabilityStatus?: { status?: unknown; reason?: unknown } }).playabilityStatus;
+        if (ps && ps.status !== 'OK' && typeof ps.reason === 'string' && ps.reason) return { ok: false, reason: `YouTube says: ${ps.reason}` };
+        return { ok: false, reason: `YouTube's page had no readable video data (${parsed.reason}).` };
       }
+      if (parsed.value.videoId !== videoId) return { ok: false, reason: "YouTube's page was for a different video; try again." };
       const v = parsed.value;
       const video: VideoFacts = { videoId: v.videoId, title: v.title, channelId: v.channelId, tags: v.tags, description: v.description, lengthSeconds: v.lengthSeconds };
       const next: Cache = {};
@@ -80,7 +93,8 @@ export function readTranscriptPanel(root: ParentNode): TranscriptSegment[] | nul
       const text = (n.querySelector(l.text)?.textContent ?? '').replace(/\s+/g, ' ').trim();
       out.push({ startSec, text });
     }
-    return out;
+    // Times but no text at all: YouTube renamed the text element. Saving blank lines would claim a transcript.
+    return out.some((x) => x.text) ? out : null;
   }
   return null;
 }
@@ -110,22 +124,29 @@ const signature = (s: TranscriptSegment[] | null) => (s ? `${s.length}|${s[0]?.t
 /**
  * Decides when the transcript panel holds the current video's transcript, fully loaded: its content changed since the
  * page was entered (so a panel left over from the previous video is never saved under the new one) and stayed the same
- * for two checks in a row. `tick` returns the segments to save, once per video and content.
+ * for two checks in a row, all for the video the page was entered for. Paused from navigation start until the next reset.
  */
 export function transcriptCapture() {
+  let video: string | null = null;
   let baseline = '';
   let pending = '';
   let saved = '';
   return {
-    /** Call when YouTube finishes a navigation, with what the panel holds right then. */
-    reset(current: TranscriptSegment[] | null): void {
+    /** Call when YouTube finishes a navigation, with the video now shown and what the panel holds right then. */
+    reset(videoId: string | null, current: TranscriptSegment[] | null): void {
+      video = videoId;
       baseline = signature(current);
       pending = '';
       saved = '';
     },
-    tick(current: TranscriptSegment[] | null): TranscriptSegment[] | null {
+    /** Call when a navigation starts: nothing is saved until the next reset. */
+    pause(): void {
+      video = null;
+      pending = '';
+    },
+    tick(videoId: string | null, current: TranscriptSegment[] | null): TranscriptSegment[] | null {
       const sig = signature(current);
-      if (!current || sig === baseline || sig === saved) { pending = ''; return null; }
+      if (!videoId || videoId !== video || !current || sig === baseline || sig === saved) { pending = ''; return null; }
       if (sig !== pending) { pending = sig; return null; }
       saved = sig;
       return current;

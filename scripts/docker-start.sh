@@ -3,8 +3,8 @@
 set -eu
 cd /app/apps/api
 APP_URL="${APP_URL:-http://localhost:8787}"
-if [ ! -s .dev.vars ]; then
-  echo "apps/api/.dev.vars is missing or empty. Copy .dev.vars.example, fill it in and mount it (see README → Self-hosting)." >&2
+if [ ! -f .dev.vars ] || [ ! -s .dev.vars ]; then
+  echo "apps/api/.dev.vars is missing, empty or not a file. Copy .dev.vars.example, fill it in and mount it (see README → Self-hosting)." >&2
   exit 1
 fi
 # Idempotent: only migrations not yet applied run.

@@ -1,6 +1,9 @@
 # Secrets never go into the image: .dev.vars is mounted at run time (docker-compose.yml).
-**/.dev.vars
-**/.env
+**/.dev.vars*
+!**/.dev.vars.example
+**/.env*
+*.log
+**/*.log
 .git
 **/node_modules
 **/.output

@@ -18,7 +18,9 @@ function fakeArea() {
   } as unknown as chrome.storage.StorageArea;
 }
 
-function setup(answerFn: (url: string) => Response | Promise<Response> = () => new Response(page())) {
+/** The fixture page re-labelled as the video asked for, like YouTube would answer. */
+const pageFor = (url: string) => page({ ...player, videoDetails: { ...player.videoDetails, videoId: new URL(url).searchParams.get('v') } });
+function setup(answerFn: (url: string) => Response | Promise<Response> = (u) => new Response(pageFor(u))) {
   const calls: { url: string; init?: RequestInit }[] = [];
   let t = Date.parse('2026-11-23T12:00:00Z');
   const l = videoLookup({ area: fakeArea(), fetch: (async (u: string, init?: RequestInit) => (calls.push({ url: u, init }), answerFn(u))) as unknown as typeof fetch, now: () => t });
@@ -41,9 +43,35 @@ describe('videoLookup', () => {
     expect(calls).toHaveLength(2);
   });
 
-  test('a page without player data says why and does not pause', async () => {
+  test('a page without player data says what YouTube served, and does not pause', async () => {
     const { l, calls } = setup(() => new Response('<html>Before you continue to YouTube</html>'));
-    expect(await l.lookup(ID)).toEqual({ ok: false, reason: "YouTube's page had no video data (it may have shown a consent or robot check). Open the video on YouTube once, then try again." });
+    expect(await l.lookup(ID)).toEqual({ ok: false, reason: "YouTube answered with a consent or robot-check page instead of the video. The extension asks signed out, so this video's tags can't be read this way." });
+    await l.lookup(ID);
+    expect(calls).toHaveLength(2);
+  });
+
+  test('a redirect (e.g. to consent.youtube.com) is reported as such, without a pause; redirects are not followed', async () => {
+    const { l, calls } = setup(() => ({ type: 'opaqueredirect', ok: false, status: 0, redirected: false, url: '' }) as unknown as Response);
+    expect(await l.lookup(ID)).toEqual({ ok: false, reason: "YouTube answered with a consent or robot-check page instead of the video. The extension asks signed out, so this video's tags can't be read this way." });
+    expect(calls[0]!.init?.redirect).toBe('manual');
+    await l.lookup(ID);
+    expect(calls).toHaveLength(2);
+  });
+
+  test("a private or removed video gives YouTube's own reason", async () => {
+    const { l } = setup(() => new Response(page({ playabilityStatus: { status: 'ERROR', reason: 'Video unavailable' } })));
+    expect(await l.lookup(ID)).toEqual({ ok: false, reason: 'YouTube says: Video unavailable' });
+  });
+
+  test('a page for another video is not taken for the one asked', async () => {
+    const { l } = setup(() => new Response(page()));
+    const other = 'zzzzzzzzzzz';
+    expect(await l.lookup(other)).toEqual({ ok: false, reason: "YouTube's page was for a different video; try again." });
+  });
+
+  test('a server error (5xx) does not pause lookups', async () => {
+    const { l, calls } = setup(() => new Response('', { status: 503 }));
+    expect(await l.lookup(ID)).toEqual({ ok: false, reason: 'YouTube answered HTTP 503; try again later.' });
     await l.lookup(ID);
     expect(calls).toHaveLength(2);
   });
@@ -95,6 +123,11 @@ describe('readTranscriptPanel', () => {
     const vm = (t: string, a11y: string, s: string) => `<transcript-segment-view-model class="ytwTranscriptSegmentViewModelHost"><div aria-hidden="true" class="ytwTranscriptSegmentViewModelTimestamp">${t}</div><div class="ytwTranscriptSegmentViewModelTimestampA11yLabel">${a11y}</div><span class="ytAttributedStringHost" role="text">${s}</span></transcript-segment-view-model>`;
     document.body.innerHTML = `<div>${vm('0:01', '1 second', '[Music]')}${vm('1:00:18', '1 hour 18 seconds', ' We are  here ')}</div>`;
     expect(readTranscriptPanel(document)).toEqual([{ startSec: 1, text: '[Music]' }, { startSec: 3618, text: 'We are here' }]);
+  });
+
+  test('null when every line is blank (YouTube renamed the text element)', () => {
+    document.body.innerHTML = `<div>${seg('0:00', '')}${seg('0:05', ' ')}</div>`;
+    expect(readTranscriptPanel(document)).toBeNull();
   });
 
   test('null when there are no segments or a time cannot be read', () => {
@@ -150,30 +183,51 @@ describe('bridge', () => {
 describe('transcriptCapture', () => {
   const a = [{ startSec: 0, text: 'old' }, { startSec: 5, text: 'video' }];
   const b = [{ startSec: 0, text: 'new' }, { startSec: 4, text: 'one' }];
+  const A = 'aaaaaaaaaaa';
+  const B = 'bbbbbbbbbbb';
 
   test('saves once the content is new and stable for two checks; never twice', () => {
     const c = transcriptCapture();
-    c.reset(null);
-    expect(c.tick(null)).toBeNull();
-    expect(c.tick(b)).toBeNull();
-    expect(c.tick(b)).toEqual(b);
-    expect(c.tick(b)).toBeNull();
+    c.reset(B, null);
+    expect(c.tick(B, null)).toBeNull();
+    expect(c.tick(B, b)).toBeNull();
+    expect(c.tick(B, b)).toEqual(b);
+    expect(c.tick(B, b)).toBeNull();
   });
 
   test('a panel left over from the previous video is never saved', () => {
     const c = transcriptCapture();
-    c.reset(a);
-    expect(c.tick(a)).toBeNull();
-    expect(c.tick(a)).toBeNull();
-    expect(c.tick(b)).toBeNull();
-    expect(c.tick(b)).toEqual(b);
+    c.reset(B, a);
+    expect(c.tick(B, a)).toBeNull();
+    expect(c.tick(B, a)).toBeNull();
+    expect(c.tick(B, b)).toBeNull();
+    expect(c.tick(B, b)).toEqual(b);
   });
 
   test('still loading (content changes between checks) waits', () => {
     const c = transcriptCapture();
-    c.reset(null);
-    expect(c.tick(a.slice(0, 1))).toBeNull();
-    expect(c.tick(a)).toBeNull();
-    expect(c.tick(a)).toEqual(a);
+    c.reset(A, null);
+    expect(c.tick(A, a.slice(0, 1))).toBeNull();
+    expect(c.tick(A, a)).toBeNull();
+    expect(c.tick(A, a)).toEqual(a);
+  });
+
+  test('the address changing before YouTube finishes navigating never saves A under B', () => {
+    const c = transcriptCapture();
+    c.reset(A, null);
+    expect(c.tick(A, a)).toBeNull();
+    // URL is already B, yt-navigate-finish (reset) hasn't run yet, panel still shows A.
+    expect(c.tick(B, a)).toBeNull();
+    expect(c.tick(B, a)).toBeNull();
+    c.reset(B, a);
+    expect(c.tick(B, a)).toBeNull();
+  });
+
+  test('paused from navigation start until the next reset', () => {
+    const c = transcriptCapture();
+    c.reset(A, null);
+    c.pause();
+    expect(c.tick(A, a)).toBeNull();
+    expect(c.tick(A, a)).toBeNull();
   });
 });

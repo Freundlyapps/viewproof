@@ -117,4 +117,22 @@ describe('Tools', () => {
     expect(screen.getByText('Average view duration: 3:00')).toBeTruthy();
     expect(screen.queryByText(/NaN|Infinity/)).toBeNull();
   });
+
+  test('calculators read German and English separators, and refuse ambiguous input with a reason', async () => {
+    api();
+    renderAt('/tools/calculators');
+    await userEvent.type(await screen.findByLabelText('Views', { selector: '#er-views' }), '100.000');
+    await userEvent.type(screen.getByLabelText('Likes'), '4.900');
+    await userEvent.type(screen.getByLabelText('Comments'), '100');
+    expect(screen.getByText('Engagement rate: 5%')).toBeTruthy();
+    await userEvent.type(screen.getByLabelText('Views', { selector: '#avd-views' }), '1.200');
+    await userEvent.type(screen.getByLabelText('Watch time (hours)'), '2,5');
+    expect(screen.getByText('Average view duration: 0:08')).toBeTruthy();
+    await userEvent.clear(screen.getByLabelText('Watch time (hours)'));
+    await userEvent.type(screen.getByLabelText('Watch time (hours)'), '1,000');
+    expect(screen.getByText('Write the watch time as a plain number, like 1000 or 2.5.')).toBeTruthy();
+    await userEvent.clear(screen.getByLabelText('Likes'));
+    await userEvent.type(screen.getByLabelText('Likes'), '2,5');
+    expect(screen.getByText('Likes must be a whole number, 0 or more.')).toBeTruthy();
+  });
 });

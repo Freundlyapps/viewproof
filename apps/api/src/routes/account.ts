@@ -149,6 +149,8 @@ export function accountRoutes(app: Hono, deps: Deps): void {
         channelId: x.channel_id, title: x.title, addedAt: x.added_at,
       })),
       linkedBrowsers: (await poolBrowsersOf(deps, u.id)).map((b) => ({ label: b.label, createdAt: b.createdAt, lastUsedAt: b.lastUsedAt, acceptedTotal: b.acceptedTotal, status: b.status })),
+      competitorLookups: (await deps.db.prepare('SELECT day, count FROM competitor_lookups WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
+      poolSuspension: await deps.db.prepare('SELECT until FROM pool_suspensions WHERE user_id = ?').bind(u.id).first<{ until: string }>(),
       keywordLookups: (await deps.db.prepare('SELECT day, count FROM keyword_lookups WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
       billing: await (async () => {
         const b = await billingOf(deps, u.id);

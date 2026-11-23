@@ -1,7 +1,6 @@
-import { avgViewDuration, clock, engagementRate, parseTimestamp, watchTime } from '@viewproof/core';
+import { avgViewDuration, clock, engagementRate, parseCount, parseDecimal, parseTimestamp, watchTime } from '@viewproof/core';
 import { useState } from 'react';
 
-const num = (s: string) => (s.trim() === '' ? Number.NaN : Number(s.replace(/[,\s]/g, '')));
 const show = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 function Field(props: { id: string; label: string; value: string; set: (v: string) => void }) {
@@ -28,14 +27,15 @@ export function Calculators() {
   const [wt, setWt] = useState({ views: '', avg: '' });
   const [avd, setAvd] = useState({ views: '', hours: '' });
 
-  const erR = engagementRate({ views: num(er.views), likes: num(er.likes), comments: num(er.comments) });
+  const erR = engagementRate({ views: parseCount(er.views), likes: parseCount(er.likes), comments: parseCount(er.comments) });
   const avgSec = parseTimestamp(wt.avg);
-  const wtR = avgSec === null ? { ok: false as const, reason: 'Write the average view duration as m:ss.' } : watchTime({ views: num(wt.views), avgSec });
-  const avdR = avgViewDuration({ views: num(avd.views), hours: num(avd.hours) });
+  const wtR = avgSec === null ? { ok: false as const, reason: 'Write the average view duration as m:ss.' } : watchTime({ views: parseCount(wt.views), avgSec });
+  const hours = parseDecimal(avd.hours);
+  const avdR = Number.isNaN(hours) ? { ok: false as const, reason: 'Write the watch time as a plain number, like 1000 or 2.5.' } : avgViewDuration({ views: parseCount(avd.views), hours });
 
   return (
     <div className="stack">
-      <p className="muted small">Your numbers: type them in from YouTube Studio. Nothing is sent anywhere.</p>
+      <p className="muted small">Your numbers: type them in from YouTube Studio. Nothing is sent anywhere. Counts may use 1.000 or 1,000; hours may use 2,5 or 2.5.</p>
       <div className="card stack-s">
         <h2>Engagement rate</h2>
         <Field id="er-views" label="Views" value={er.views} set={(v) => setEr({ ...er, views: v })} />
