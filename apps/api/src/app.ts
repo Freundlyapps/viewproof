@@ -23,6 +23,7 @@ import { channelRoutes } from './routes/channel';
 import { connectRoutes } from './routes/connect';
 import { readSession } from './session';
 import { Home } from './views/Home';
+import { Privacy, Terms } from './views/Legal';
 
 export interface Deps {
   db: D1Database;
@@ -77,6 +78,9 @@ export function createApp(deps: Deps): Hono {
   });
 
   app.get('/health', (c) => c.json({ ok: true }));
+  // Public pages Google's OAuth verification and the closed beta need (plan 8).
+  app.get('/privacy', async (c) => c.html(Privacy({ op: deps.config.operator, signedIn: !!(await readSession(c, deps)) })));
+  app.get('/terms', async (c) => c.html(Terms({ op: deps.config.operator, signedIn: !!(await readSession(c, deps)) })));
   app.get('/', async (c) => ((await readSession(c, deps)) ? c.redirect('/app', 302) : c.html(Home({ signedIn: false }))));
 
   // The React app (apps/web, built to apps/web/dist/app). Unknown /app paths are app routes → index.html;

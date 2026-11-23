@@ -11,6 +11,8 @@ import { saveStats } from './routes';
 export async function runCron(deps: Deps, at: Date): Promise<void> {
   // Processed Stripe event ids are only needed while Stripe may still retry (3 days); keep 30.
   await deps.db.prepare('DELETE FROM stripe_events WHERE received_at < ?').bind(new Date(at.getTime() - 30 * 86_400_000).toISOString()).run();
+  // Outlier search words only count toward today's limit (UTC days); keep yesterday for a margin, delete the rest.
+  await deps.db.prepare('DELETE FROM outlier_searches WHERE day < ?').bind(new Date(at.getTime() - 86_400_000).toISOString().slice(0, 10)).run();
   if (at.getUTCHours() === 4) await archiveDay(deps, new Date(at.getTime() - 86_400_000).toISOString().slice(0, 10));
   await pruneCompetitors(deps);
   const budget = deps.config.cronFeedBudget;

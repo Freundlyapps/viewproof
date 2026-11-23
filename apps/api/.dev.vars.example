@@ -19,3 +19,6 @@ AI_API_KEY=
 # STRIPE_SECRET_KEY=
 # STRIPE_WEBHOOK_SECRET=
 # STRIPE_PRICE_ID=
+# Shown on /privacy and /terms. Google's OAuth verification needs a reachable contact.
+# OPERATOR_NAME=
+# CONTACT_EMAIL=
