@@ -4,15 +4,14 @@ import type { Deps } from '../app';
 import { readSession } from '../session';
 import { usageSummary } from '../usage';
 import { isFail } from './stripe';
-import { syncSubscription } from './sync';
+import { LIVE_STATUSES, syncSubscription } from './sync';
 import { BILLING_OFF } from './webhook';
 
 interface BillingRow { customer_id: string; subscription_id: string | null; status: string | null; period_end: string | null; cancel_at: string | null }
 export const billingOf = (deps: Deps, userId: string) =>
   deps.db.prepare('SELECT customer_id, subscription_id, status, period_end, cancel_at FROM billing WHERE user_id = ?').bind(userId).first<BillingRow>();
 
-/** Subscriptions Stripe would still charge (account delete cancels these first). */
-export const LIVE_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid', 'incomplete', 'paused']);
+export { LIVE_STATUSES };
 
 const err = (c: Context, status: 401 | 404 | 409 | 502, error: string, message: string) => c.json({ error, message }, status);
 
@@ -45,8 +44,28 @@ export function billingRoutes(app: Hono, deps: Deps): void {
     const u = await deps.db.prepare('SELECT plan, email FROM users WHERE id = ?').bind(uid).first<{ plan: string; email: string | null }>();
     if (u?.plan === 'pro') return err(c, 409, 'already_pro', 'You already have Pro.');
     const b = await billingOf(deps, uid);
-    const r = await deps.stripe!.checkout({ priceId: deps.config.billing!.priceId, userId: uid, email: u?.email ?? null, customerId: b?.customer_id ?? null, successUrl: `${page}?checkout=done`, cancelUrl: page });
+    // An unpaid (or otherwise open) subscription would be orphaned by a second one.
+    if (b?.status && LIVE_STATUSES.has(b.status) && b.status !== 'incomplete') {
+      return err(c, 409, 'live_subscription', 'Your subscription is still open at Stripe. Settle or cancel it in Invoices & payment first.');
+    }
+    const r = await deps.stripe!.checkout({ priceId: deps.config.billing!.priceId, userId: uid, email: u?.email ?? null, customerId: b?.customer_id ?? null, successUrl: `${page}?checkout=done&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: page });
     return isFail(r) ? err(c, 502, 'stripe_failed', r.error) : c.json({ url: r.url });
+  });
+
+  /** Back from Checkout: sync now from the session instead of waiting for the webhook. */
+  app.post('/api/billing/confirm', async (c) => {
+    const uid = await guard(c);
+    if (uid instanceof Response) return uid;
+    const body = (await c.req.json().catch(() => null)) as { sessionId?: unknown } | null;
+    const id = typeof body?.sessionId === 'string' && /^cs_[A-Za-z0-9_]{1,200}$/.test(body.sessionId) ? body.sessionId : null;
+    if (!id) return c.json({ error: 'bad_request', message: 'No checkout session.' }, 400);
+    const cs = await deps.stripe!.checkoutSession(id);
+    if (isFail(cs)) return err(c, 502, 'stripe_failed', cs.error);
+    if (cs.client_reference_id !== uid || !cs.subscription) return err(c, 409, 'not_yours', 'This checkout does not belong to your account.');
+    const sub = await deps.stripe!.subscription(cs.subscription);
+    if (isFail(sub)) return err(c, 502, 'stripe_failed', sub.error);
+    await syncSubscription(deps, sub, uid);
+    return c.json(await status(uid));
   });
 
   app.post('/api/billing/portal', async (c) => {

@@ -8,17 +8,14 @@ import { useApi } from '../useApi';
 import { Checks } from './Checks';
 import { Preview } from './Preview';
 
-function useDebounced<T>(v: T, ms: number): T {
-  const [d, set] = useState(v);
-  useEffect(() => { const t = setTimeout(() => set(v), ms); return () => clearTimeout(t); }, [v, ms]);
-  return d;
-}
-
-/** Titles of niche outliers for the keyword (pool, last 90 days, ×2 or more) and plain counts about them. */
+/** Titles of niche outliers for the keyword (pool, last 90 days, ×2 or more) and plain counts about them.
+ *  Fetched only when asked: each keyword search counts toward the free plan's daily outlier searches. */
 export function OutlierTitles(props: { keyword: string }) {
-  const q = useDebounced(normalizeKeyword(props.keyword), 500);
-  const r = useApi<Outliers>(q ? `/api/outliers?${new URLSearchParams({ q, days: '90', min: '2' })}` : null);
+  const q = normalizeKeyword(props.keyword);
+  const [asked, setAsked] = useState<string | null>(null);
+  const r = useApi<Outliers>(q && asked === q ? `/api/outliers?${new URLSearchParams({ q, days: '90', min: '2' })}` : null);
   if (!q) return null;
+  if (asked !== q) return <div><button type="button" className="btn" onClick={() => setAsked(q)}>Compare with outlier titles</button></div>;
   if (r.state === 'loading') return <p className="muted small">Looking for outlier titles…</p>;
   if (r.state === 'error') return <p className="err-text small">{r.error.message}</p>;
   const rows = r.data.rows;

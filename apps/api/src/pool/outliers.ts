@@ -92,7 +92,8 @@ export function outlierRoutes(app: Hono, deps: Deps): void {
     const s = await readSession(c, deps);
     if (!s) return c.json({ error: 'signed_out', message: 'Sign in first.' }, 401);
     const query = parseOutlierQuery(new URL(c.req.url).searchParams);
-    const refused = await countSearch(deps, s.userId, JSON.stringify(query));
+    // Only keyword searches count; browsing with filters alone is free.
+    const refused = query.q ? await countSearch(deps, s.userId, JSON.stringify(query)) : null;
     if (refused) return c.json({ error: 'limit', message: refused }, 429);
     return c.json(await findOutliers(deps, query));
   });

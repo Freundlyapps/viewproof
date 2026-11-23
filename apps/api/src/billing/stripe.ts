@@ -14,7 +14,11 @@ export interface StripeClient {
   subscription(id: string): Promise<StripeSub | StripeFail>;
   setCancelAtPeriodEnd(id: string, on: boolean): Promise<StripeSub | StripeFail>;
   cancelNow(id: string): Promise<{ ok: true } | StripeFail>;
+  checkoutSession(id: string): Promise<CheckoutSession | StripeFail>;
+  /** Every subscription Stripe has with our user id in its metadata (search API; may lag about a minute). */
+  subscriptionsOf(userId: string): Promise<StripeSub[] | StripeFail>;
 }
+export interface CheckoutSession { client_reference_id: string | null; customer: string | null; subscription: string | null }
 
 export const isFail = (x: object): x is StripeFail => 'error' in x && typeof (x as StripeFail).error === 'string';
 
@@ -52,6 +56,15 @@ export function httpStripe(fetchFn: typeof fetch, secretKey: string): StripeClie
     },
     subscription: (id) => call<StripeSub>('GET', `/subscriptions/${encodeURIComponent(id)}`),
     setCancelAtPeriodEnd: (id, on) => call<StripeSub>('POST', `/subscriptions/${encodeURIComponent(id)}`, { cancel_at_period_end: String(on) }),
+    async checkoutSession(id) {
+      const r = await call<CheckoutSession>('GET', `/checkout/sessions/${encodeURIComponent(id)}`);
+      return isFail(r) ? r : { client_reference_id: r.client_reference_id ?? null, customer: r.customer ?? null, subscription: r.subscription ?? null };
+    },
+    async subscriptionsOf(userId) {
+      const q = new URLSearchParams({ query: `metadata['user_id']:'${userId.replace(/['\\]/g, '')}'`, limit: '100' });
+      const r = await call<{ data: StripeSub[] }>('GET', `/subscriptions/search?${q}`);
+      return isFail(r) ? r : r.data;
+    },
     async cancelNow(id) {
       const r = await call<StripeSub>('DELETE', `/subscriptions/${encodeURIComponent(id)}`);
       return isFail(r) ? r : { ok: true };

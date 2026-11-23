@@ -64,6 +64,24 @@ export async function revokeAndDelete(deps: Deps, ch: ChannelRow): Promise<boole
   return token !== null;
 }
 
+/** Cancels the stored subscription and any other live one Stripe has for this user. Null when done, else the reason. */
+async function cancelAllSubscriptions(deps: Deps, userId: string): Promise<string | null> {
+  const bill = await billingOf(deps, userId);
+  const ids = new Set<string>();
+  if (bill?.subscription_id && LIVE_STATUSES.has(bill.status ?? '')) ids.add(bill.subscription_id);
+  if (deps.stripe && (bill || deps.config.billing)) {
+    const found = await deps.stripe.subscriptionsOf(userId);
+    if ('error' in found) return found.error;
+    for (const x of found) if (LIVE_STATUSES.has(x.status)) ids.add(x.id);
+  }
+  if (ids.size && !deps.stripe) return 'Billing is not set up on this server, so your subscription could not be cancelled.';
+  for (const id of ids) {
+    const r = await deps.stripe!.cancelNow(id);
+    if ('error' in r) return r.error;
+  }
+  return null;
+}
+
 export function accountRoutes(app: Hono, deps: Deps): void {
   app.get('/account', async (c) => {
     const s = await readSession(c, deps);
@@ -158,14 +176,11 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       c.status(400);
       return c.html(Message({ title: 'Not deleted', text: 'Type "delete" to confirm.', action: { href: '/account', label: 'Back to your account' } }));
     }
-    // Nobody keeps paying for a deleted account: cancel a live subscription at Stripe first, or refuse.
-    const bill = await billingOf(deps, s.userId);
-    if (bill?.subscription_id && LIVE_STATUSES.has(bill.status ?? '')) {
-      const r = deps.stripe ? await deps.stripe.cancelNow(bill.subscription_id) : { error: 'Billing is not set up on this server, so your subscription could not be cancelled.' };
-      if ('error' in r) {
-        c.status(502);
-        return c.html(Message({ title: 'Not deleted', text: `We couldn't cancel your Pro subscription at Stripe (${r.error}). Your account was not deleted. Try again in a few minutes.`, action: { href: '/account', label: 'Back to your account' } }));
-      }
+    // Nobody keeps paying for a deleted account: cancel every live subscription at Stripe first, or refuse.
+    const refused = await cancelAllSubscriptions(deps, s.userId);
+    if (refused) {
+      c.status(502);
+      return c.html(Message({ title: 'Not deleted', text: `We couldn't cancel your Pro subscription at Stripe (${refused}). Your account was not deleted. Try again in a few minutes.`, action: { href: '/account', label: 'Back to your account' } }));
     }
     // Read every stored token first, remove all rows in one transaction, then give back Google access.
     const channels = await channelsOf(deps, s.userId);

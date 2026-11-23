@@ -81,6 +81,23 @@ describe('Settings → Plan & usage', () => {
     expect(await screen.findByText("Billing isn't set up on this server.")).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Upgrade/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Cancel plan' })).toBeNull();
+    // No plan prices or limits that don't apply on this server.
+    expect(screen.queryByText(/\$10\/month/)).toBeNull();
+  });
+
+  test('back from Checkout with a session id: confirms it and shows Pro without waiting for the webhook', async () => {
+    const bodies: unknown[] = [];
+    mockApi({ ...base, '/api/billing': (u: URL, init?: RequestInit) => {
+      if (init?.method === 'POST' && u.pathname === '/api/billing/confirm') {
+        bodies.push(JSON.parse(String(init.body)));
+        return billing({ plan: 'pro', status: 'active', periodEnd: '2026-12-21T12:00:00.000Z' });
+      }
+      return billing();
+    } });
+    renderAt('/settings/plan?checkout=done&session_id=cs_test_abc');
+    expect(await screen.findByText('Pro · renews 21 Dec 2026')).toBeTruthy();
+    expect(bodies).toEqual([{ sessionId: 'cs_test_abc' }]);
+    expect(screen.queryByRole('button', { name: /Upgrade/ })).toBeNull();
   });
 
   test('back from checkout while still free: says Pro turns on soon', async () => {

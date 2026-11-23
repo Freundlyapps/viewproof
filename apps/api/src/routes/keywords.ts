@@ -34,6 +34,11 @@ export async function keywordTrends(deps: Deps, userId: string, q: string, count
     if (!counted) return { limit: limitMessage(limitBase(limit ?? 0), plan, !!deps.config.billing) };
   }
   const est = await provider.trends(q, country);
+  if (est.status !== 'ok' && provider.name !== 'none') {
+    // Nothing to show, so it doesn't count.
+    await deps.db.prepare("UPDATE usage_counts SET count = count - 1 WHERE user_id = ? AND kind = 'keyword' AND period = ? AND count > 0")
+      .bind(userId, new Date(deps.now()).toISOString().slice(0, 7)).run();
+  }
   if (est.status === 'ok') {
     await deps.db
       .prepare('INSERT INTO keyword_cache (keyword, country, provider, body, fetched_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(keyword, country, provider) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at')

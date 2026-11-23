@@ -55,10 +55,10 @@ function PlanCard(props: { b: Billing; onChange: (b: Billing) => void }) {
   return (
     <div className="card stack">
       <h2>Your plan</h2>
-      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      {b.enabled && <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div className="plan-box"><div><b>Free</b>{!pro && <> <span className="badge b-real">your plan</span></>}<div className="small muted">1 channel, 3 competitors, 5 keyword lookups and 20 AI quick actions a month.</div></div></div>
         <div className="plan-box"><div><b>Pro · $10/month</b>{pro && <> <span className="badge b-real">your plan</span></>}<div className="small muted">3 channels, 25 competitors, 60 keyword lookups, 500 AI quick actions and 150 Ask AI messages a month.</div></div></div>
-      </div>
+      </div>}
       {pro && (b.cancelAt
         ? <p><b>Pro until {dayMonth(b.cancelAt)} · cancelled</b></p>
         : b.periodEnd ? <p><b>Pro · renews {dayMonth(b.periodEnd)}</b></p> : <p><b>Pro</b></p>)}
@@ -88,15 +88,26 @@ function PlanCard(props: { b: Billing; onChange: (b: Billing) => void }) {
 export function PlanSettings() {
   const [params] = useSearchParams();
   const back = params.get('checkout') === 'done';
+  const sessionId = params.get('session_id');
   const [version, setVersion] = useState(0);
   const r = useApi<Billing>(`/api/billing${version ? `?v=${version}` : ''}`);
   const [override, setOverride] = useState<Billing | null>(null);
-  // Back from Stripe before the webhook landed: look once more a few seconds later.
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  // Back from Stripe: confirm the checkout session now rather than wait for the webhook; without an id, look again later.
   useEffect(() => {
     if (!back) return undefined;
+    if (sessionId) {
+      let live = true;
+      void sendJson<Billing>('POST', '/api/billing/confirm', { sessionId }).then((x) => {
+        if (!live) return;
+        if (isApiError(x)) setConfirmError(x.message ?? x.error);
+        else if (x) setOverride(x);
+      });
+      return () => { live = false; };
+    }
     const t = setTimeout(() => setVersion(1), 3000);
     return () => clearTimeout(t);
-  }, [back]);
+  }, [back, sessionId]);
   const b = override ?? (r.state === 'ok' ? r.data : null);
   return (
     <section className="screen">
@@ -106,6 +117,7 @@ export function PlanSettings() {
       {b && (
         <>
           {back && b.plan !== 'pro' && <p className="callout">Payment received. Pro turns on as soon as Stripe confirms it.</p>}
+          {confirmError && <p className="err-text small">{confirmError}</p>}
           <div className="grid g-2">
             <div className="card stack">
               <h2>This month <span className="small muted" style={{ fontWeight: 400 }}>resets {dayMonth(b.usage.resetsOn, false)}</span></h2>

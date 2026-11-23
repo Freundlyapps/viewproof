@@ -4,6 +4,8 @@ import type { StripeSub } from './stripe';
 
 /** Statuses that keep Pro. past_due keeps it while Stripe retries the card; the page asks for a new one. */
 const PRO_STATUSES = new Set(['active', 'trialing', 'past_due']);
+/** Subscriptions Stripe would still charge. */
+export const LIVE_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid', 'incomplete', 'paused']);
 const iso = (sec: number) => new Date(sec * 1000).toISOString();
 
 export function periodEndOf(sub: StripeSub): string | null {
@@ -27,6 +29,9 @@ export async function userForCustomer(deps: Deps, customerId: string, hint?: str
 export async function syncSubscription(deps: Deps, sub: StripeSub, userIdHint?: string | null): Promise<boolean> {
   const userId = await userForCustomer(deps, sub.customer, userIdHint ?? sub.metadata?.user_id);
   if (!userId) return false;
+  // A late event about an older, ended subscription must not replace the one still running.
+  const cur = await deps.db.prepare('SELECT subscription_id, status FROM billing WHERE user_id = ?').bind(userId).first<{ subscription_id: string | null; status: string | null }>();
+  if (cur?.subscription_id && cur.subscription_id !== sub.id && LIVE_STATUSES.has(cur.status ?? '') && !LIVE_STATUSES.has(sub.status)) return false;
   const now = new Date(deps.now()).toISOString();
   const plan = PRO_STATUSES.has(sub.status) ? 'pro' : 'free';
   await deps.db.batch([

@@ -6,7 +6,7 @@ export const sub = (over: Partial<StripeSub> = {}): StripeSub => ({
 });
 
 /** A Stripe stand-in: subscriptions live in a map; every call is recorded. */
-export function fakeStripe(subs: Record<string, StripeSub> = {}, over: Partial<StripeClient> = {}) {
+export function fakeStripe(subs: Record<string, StripeSub> = {}, over: Partial<StripeClient> = {}, sessions: Record<string, { client_reference_id: string | null; customer: string | null; subscription: string | null }> = {}) {
   const calls: { method: string; args: unknown[] }[] = [];
   const rec = (method: string, args: unknown[]) => calls.push({ method, args });
   const client: StripeClient = {
@@ -21,6 +21,8 @@ export function fakeStripe(subs: Record<string, StripeSub> = {}, over: Partial<S
       return subs[id]!;
     },
     cancelNow: async (id) => (rec('cancelNow', [id]), subs[id] ? ((subs[id] = { ...subs[id]!, status: 'canceled' }), { ok: true as const }) : { error: `No such subscription: '${id}'` }),
+    checkoutSession: async (id) => (rec('checkoutSession', [id]), sessions[id] ?? { error: `No such checkout.session: '${id}'` }),
+    subscriptionsOf: async (userId) => (rec('subscriptionsOf', [userId]), Object.values(subs).filter((x) => x.metadata?.user_id === userId)),
     ...over,
   };
   return { client, calls, subs };

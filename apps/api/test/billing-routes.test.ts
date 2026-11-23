@@ -46,7 +46,7 @@ describe('billing routes', () => {
     const { app, calls } = setup(subs);
     const r = await sendJsonReq(app, 'POST', '/api/billing/checkout', await sessionCookie('br-1'));
     expect(await r.json()).toEqual({ url: 'https://checkout.stripe.com/c/pay/cs_test_1' });
-    expect(calls[0]).toEqual({ method: 'checkout', args: [{ priceId: 'price_x', userId: 'br-1', email: 'br-1@example.com', customerId: null, successUrl: `${APP}/app/settings/plan?checkout=done`, cancelUrl: `${APP}/app/settings/plan` }] });
+    expect(calls[0]).toEqual({ method: 'checkout', args: [{ priceId: 'price_x', userId: 'br-1', email: 'br-1@example.com', customerId: null, successUrl: `${APP}/app/settings/plan?checkout=done&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: `${APP}/app/settings/plan` }] });
     const pro = await proUser('br-2', subs);
     const r2 = await sendJsonReq(app, 'POST', '/api/billing/checkout', pro);
     expect(r2.status).toBe(409);
@@ -128,11 +128,11 @@ describe('account delete and export with billing', () => {
     expect(await env.DB.prepare("SELECT 1 FROM users WHERE id = 'bd-2'").first()).not.toBeNull();
   });
 
-  test('a canceled subscription needs no Stripe call', async () => {
+  test('a canceled subscription is not cancelled again', async () => {
     const { app, calls } = setup();
     await addUser('bd-3');
     await env.DB.prepare("INSERT INTO billing (user_id, customer_id, subscription_id, status, updated_at) VALUES ('bd-3', 'cus_bd3', 'sub_bd3', 'canceled', '2026-11-01T00:00:00Z')").run();
     expect((await del(app, await sessionCookie('bd-3'))).status).toBe(200);
-    expect(calls).toHaveLength(0);
+    expect(calls.filter((c) => c.method === 'cancelNow')).toHaveLength(0);
   });
 });

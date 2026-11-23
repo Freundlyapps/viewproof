@@ -169,7 +169,7 @@ Hosted limits (self-hosted servers have none):
 | Connected channels | 1 | 3 |
 | Competitor channels | 3 | 25 |
 | New keyword lookups (cached ones are free) | 5 / month | 60 / month |
-| Outlier searches (repeating one is free) | 10 / day | no limit |
+| Outlier keyword searches (repeating one, or browsing by filters, is free) | 10 / day | no limit |
 | Included AI quick actions | 20 / month | 500 / month |
 | Ask AI messages | — | 150 / month |
 
