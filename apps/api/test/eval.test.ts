@@ -45,6 +45,15 @@ describe('eval grading', () => {
     expect(groundedNumbers('1.2M views', '1,180,000 views', '').ungrounded).toEqual([]);
   });
 
+  test('invented multipliers, small percentages and year-like counts are caught; bare small counts are not', () => {
+    const src = '"Why Your Pots Crack in the Kiln" (Mud Hands) — ×6.1, 41,200 views; 46% average viewed';
+    expect(groundedNumbers("Mud Hands' video hit ×8.3", src, '').ungrounded).toEqual(['×8.3']);
+    expect(groundedNumbers('it did 8.3x better', src, '').ungrounded).toEqual(['8.3x']);
+    expect(groundedNumbers('your CTR is 7%', src, '').ungrounded).toEqual(['7%']);
+    expect(groundedNumbers('that video got 2050 views', src, '').ungrounded).toEqual(['2050']);
+    expect(groundedNumbers('Mud Hands hit ×6.1 with 46% viewed; here are 5 titles, published since 2026', src, '').ungrounded).toEqual([]);
+  });
+
   test('quick: unknown citation, too-long title and uncited item fail', () => {
     const { known, sourceText } = buildRequest(quickCase);
     const long = 'A'.repeat(71);
