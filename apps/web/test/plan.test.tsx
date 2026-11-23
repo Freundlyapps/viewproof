@@ -100,10 +100,20 @@ describe('Settings → Plan & usage', () => {
     expect(screen.queryByRole('button', { name: /Upgrade/ })).toBeNull();
   });
 
-  test('back from checkout while still free: says Pro turns on soon', async () => {
+  test('back from checkout without a session id: claims no payment, checks again, then says so plainly', async () => {
     mockApi({ ...base, '/api/billing': billing() });
     renderAt('/settings/plan?checkout=done');
-    expect(await screen.findByText('Payment received. Pro turns on as soon as Stripe confirms it.')).toBeTruthy();
+    expect(await screen.findByText('Waiting for Stripe to confirm your payment…')).toBeTruthy();
+    expect(screen.queryByText(/Payment received/)).toBeNull();
+    expect(await screen.findByText("Stripe hasn't confirmed a payment yet. If you paid, it can take a minute; reload this page.", {}, { timeout: 5000 })).toBeTruthy();
+  }, 10_000);
+
+  test('unpaid: explains why Pro is off and offers the invoice page, not a second subscription', async () => {
+    mockApi({ ...base, '/api/billing': billing({ plan: 'free', status: 'unpaid', periodEnd: '2026-12-21T12:00:00.000Z' }) });
+    renderAt('/settings/plan');
+    expect(await screen.findByText('Your payments failed, so Pro is off. Pay the open invoice in Invoices & payment to turn it back on.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Invoices & payment' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Upgrade/ })).toBeNull();
   });
 
   test('a server error on upgrade shows its message', async () => {

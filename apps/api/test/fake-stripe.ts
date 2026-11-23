@@ -2,7 +2,7 @@ import type { StripeClient, StripeSub } from '../src/billing/stripe';
 
 export const sub = (over: Partial<StripeSub> = {}): StripeSub => ({
   id: 'sub_1', customer: 'cus_1', status: 'active', cancel_at_period_end: false, cancel_at: null,
-  items: { data: [{ current_period_end: Date.parse('2026-12-21T12:00:00Z') / 1000 }] }, metadata: {}, ...over,
+  items: { data: [{ current_period_end: Date.parse('2026-12-21T12:00:00Z') / 1000, price: { id: 'price_x' } }] }, metadata: {}, ...over,
 });
 
 /** A Stripe stand-in: subscriptions live in a map; every call is recorded. */
