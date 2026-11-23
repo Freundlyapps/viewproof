@@ -2,13 +2,13 @@ import { type Competitor, type CompetitorDetail, type CompetitorUploads, type Fe
 import type { TrackedChannelRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
+import { limitMessage, limitOf, planOf } from '../plans';
 import { accessFor } from '../channel-data';
 import { readSession } from '../session';
 import { chunked } from '../sql';
 import { ingestFeed, pollChannel, pollStale } from './poll';
 import type { StatsAuth } from './stats';
 
-export const MAX_COMPETITORS = 25;
 /** New-channel lookups (feed fetch or @handle resolution) per user per UTC day. */
 export const DAILY_ADDS = 50;
 const STATS_KEEP_MS = 30 * 86_400_000;
@@ -183,7 +183,9 @@ export function competitorRoutes(app: Hono, deps: Deps): void {
       return err(c, 409, 'bad_request', 'You already track this channel.');
     }
     const n = (await deps.db.prepare('SELECT COUNT(*) AS n FROM user_competitors WHERE user_id = ?').bind(uid).first<{ n: number }>())!.n;
-    if (n >= MAX_COMPETITORS) return err(c, 422, 'limit', `You can track up to ${MAX_COMPETITORS} channels.`);
+    const plan = await planOf(deps.db, uid);
+    const max = limitOf(plan, deps.config.selfHosted, 'competitors');
+    if (max !== null && n >= max) return err(c, 422, 'limit', limitMessage(`You can track up to ${max} channels.`, plan, !!deps.config.billing));
 
     const now = new Date(deps.now()).toISOString();
     const known = await deps.db.prepare('SELECT channel_id FROM tracked_channels WHERE channel_id = ?').bind(channelId).first();

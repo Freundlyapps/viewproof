@@ -6,7 +6,7 @@ import { ownedChannel } from '../channel-data';
 import { latestUploads } from '../competitors/routes';
 import { findOutliers, parseOutlierQuery } from '../pool/outliers';
 import { VIDEO_ID, channelReport, loadOptimize, loadOverview, loadSearchTerms, loadUploadTimes, loadVideos, today } from '../routes/channel';
-import { KEYWORD_LIMIT_MESSAGE, MAX_KEYWORD, keywordTrends } from '../routes/keywords';
+import { MAX_KEYWORD, keywordTrends } from '../routes/keywords';
 
 type Kind = 'string' | 'number' | 'string[]';
 interface Param { name: string; kind: Kind; description: string; required?: boolean; enum?: readonly (string | number)[]; min?: number; max?: number }
@@ -108,7 +108,7 @@ export const TOOLS: Tool[] = [
       const q = normalizeKeyword(a.keyword as string);
       if (!q || q.length > MAX_KEYWORD) return { error: `Invalid arguments: keyword must have 1 to ${MAX_KEYWORD} characters` };
       const r = await keywordTrends(ctx.deps, ctx.userId, q, (a.country as string | undefined) ?? '');
-      return 'limit' in r ? { error: KEYWORD_LIMIT_MESSAGE } : { data: r as unknown as Record<string, unknown> };
+      return 'limit' in r ? { error: r.limit } : { data: r as unknown as Record<string, unknown> };
     },
   },
   {

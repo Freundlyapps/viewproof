@@ -108,8 +108,9 @@ describe('competitors', () => {
     expect(await r.json()).toEqual({ error: 'limit', message: 'You looked up 50 new channels today. More tomorrow.' });
   }, 120_000);
 
-  test('limit 25', async () => {
+  test('limit 25 on Pro', async () => {
     const cookie = await user('cp-limit');
+    await env.DB.prepare("UPDATE users SET plan = 'pro' WHERE google_sub = 'cp-limit'").run();
     const { app } = setup();
     for (let i = 1; i <= 25; i++) expect((await json(app, 'POST', '/api/competitors', cookie, { input: idN(100 + i) })).status).toBe(201);
     const over = await json(app, 'POST', '/api/competitors', cookie, { input: idN(200) });

@@ -6,7 +6,7 @@ import { poolBrowsersOf } from '../pool/routes';
 import { REVOKED_REASON, UNREADABLE_REASON } from '../channel-data';
 import { releaseGrant, tryDecrypt } from '../grants';
 import { SCOPES } from '../google';
-import { maxChannels } from '../plans';
+import { limitOf, maxChannels } from '../plans';
 import { clearSession, readSession } from '../session';
 import { Account } from '../views/Account';
 import { Message } from '../views/Message';
@@ -95,7 +95,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     const u = s && (await user(deps, s.userId));
     if (!u) return c.json({ error: 'signed_out' }, 401);
     const max = maxChannels(u.plan, deps.config.selfHosted);
-    return c.json({ id: u.id, email: u.email, name: u.name, plan: u.plan, maxChannels: Number.isFinite(max) ? max : null });
+    return c.json({ id: u.id, email: u.email, name: u.name, plan: u.plan, maxChannels: Number.isFinite(max) ? max : null, maxCompetitors: limitOf(u.plan, deps.config.selfHosted, 'competitors') });
   });
 
   app.get('/api/channels', async (c) => {
@@ -129,6 +129,8 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       })),
       linkedBrowsers: (await poolBrowsersOf(deps, u.id)).map((b) => ({ label: b.label, createdAt: b.createdAt, lastUsedAt: b.lastUsedAt, acceptedTotal: b.acceptedTotal, status: b.status })),
       keywordLookups: (await deps.db.prepare('SELECT day, count FROM keyword_lookups WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
+      usageCounts: (await deps.db.prepare('SELECT kind, period, count FROM usage_counts WHERE user_id = ? ORDER BY period, kind').bind(u.id).all<{ kind: string; period: string; count: number }>()).results,
+      outlierSearches: (await deps.db.prepare('SELECT day, query FROM outlier_searches WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; query: string }>()).results,
       ai: await (async () => {
         const k = await deps.db.prepare('SELECT provider, quick_model, coach_model, key_hint FROM ai_keys WHERE user_id = ?').bind(u.id).first<{ provider: string; quick_model: string; coach_model: string; key_hint: string }>();
         return k ? { provider: k.provider, quickModel: k.quick_model, coachModel: k.coach_model, keyHint: k.key_hint } : null;
@@ -170,6 +172,8 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM ai_usage WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM mcp_tokens WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM mcp_calls WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM usage_counts WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM outlier_searches WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);

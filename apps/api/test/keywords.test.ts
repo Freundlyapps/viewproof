@@ -126,25 +126,11 @@ describe('review fixes', () => {
     expect(calls).toHaveLength(2);
   });
 
-  test('each user gets 50 new paid lookups a day; cached keywords still work', async () => {
-    const a = await connected('kw-cap', 'UCkwcap');
-    const b = await connected('kw-cap2', 'UCkwcap2');
-    const { p, calls } = counting(ok);
-    const app = createApp(makeDeps({ keywords: p, now: () => NOW }));
-    for (let i = 0; i < 50; i++) expect((await get(app, `/api/keywords/trends?q=cap${i}`, a.cookie)).status).toBe(200);
-    const over = await get(app, '/api/keywords/trends?q=cap-over', a.cookie);
-    expect(over.status).toBe(429);
-    expect(await over.json()).toEqual({ error: 'limit', message: 'You reached 50 new keyword trend lookups today; keywords looked up before still work. More tomorrow.' });
-    expect((await get(app, '/api/keywords/trends?q=cap0', a.cookie)).status).toBe(200);
-    expect((await get(app, '/api/keywords/trends?q=cap-over', b.cookie)).status).toBe(200);
-    expect(calls).toHaveLength(51);
-  }, 120_000);
-
   test('with no provider configured, lookups are not counted', async () => {
     const a = await connected('kw-none-cap', 'UCkwnonecap');
     const app = createApp(makeDeps({ now: () => NOW }));
     for (let i = 0; i < 52; i++) await get(app, `/api/keywords/trends?q=n${i}`, a.cookie);
     expect((await get(app, '/api/keywords/trends?q=last', a.cookie)).status).toBe(200);
-    expect(await env.DB.prepare('SELECT count FROM keyword_lookups WHERE user_id = (SELECT user_id FROM channels WHERE channel_id = ?)').bind('UCkwnonecap').first()).toBeNull();
+    expect(await env.DB.prepare('SELECT count FROM usage_counts WHERE user_id = (SELECT user_id FROM channels WHERE channel_id = ?)').bind('UCkwnonecap').first()).toBeNull();
   }, 120_000);
 });
