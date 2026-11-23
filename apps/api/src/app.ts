@@ -4,6 +4,7 @@ import { mcpTokenRoutes } from './mcp/tokens';
 import { mcpRoutes } from './mcp/routes';
 import type { StripeClient } from './billing/stripe';
 import { billingWebhook } from './billing/webhook';
+import { billingRoutes } from './billing/routes';
 import type { LlmClient, LlmProviderId } from '@viewproof/providers';
 import { Hono } from 'hono';
 import type { Config } from './env';
@@ -104,6 +105,7 @@ export function createApp(deps: Deps): Hono {
   aiRoutes(app, deps);
   mcpTokenRoutes(app, deps);
   billingWebhook(app, deps);
+  billingRoutes(app, deps);
   mcpRoutes(app, deps);
   return app;
 }

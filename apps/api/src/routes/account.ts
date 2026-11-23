@@ -7,6 +7,7 @@ import { REVOKED_REASON, UNREADABLE_REASON } from '../channel-data';
 import { releaseGrant, tryDecrypt } from '../grants';
 import { SCOPES } from '../google';
 import { limitOf, maxChannels } from '../plans';
+import { LIVE_STATUSES, billingOf } from '../billing/routes';
 import { clearSession, readSession } from '../session';
 import { Account } from '../views/Account';
 import { Message } from '../views/Message';
@@ -129,6 +130,10 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       })),
       linkedBrowsers: (await poolBrowsersOf(deps, u.id)).map((b) => ({ label: b.label, createdAt: b.createdAt, lastUsedAt: b.lastUsedAt, acceptedTotal: b.acceptedTotal, status: b.status })),
       keywordLookups: (await deps.db.prepare('SELECT day, count FROM keyword_lookups WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
+      billing: await (async () => {
+        const b = await billingOf(deps, u.id);
+        return b ? { status: b.status, periodEnd: b.period_end, cancelAt: b.cancel_at } : null;
+      })(),
       usageCounts: (await deps.db.prepare('SELECT kind, period, count FROM usage_counts WHERE user_id = ? ORDER BY period, kind').bind(u.id).all<{ kind: string; period: string; count: number }>()).results,
       outlierSearches: (await deps.db.prepare('SELECT day, query FROM outlier_searches WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; query: string }>()).results,
       ai: await (async () => {
@@ -153,6 +158,15 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       c.status(400);
       return c.html(Message({ title: 'Not deleted', text: 'Type "delete" to confirm.', action: { href: '/account', label: 'Back to your account' } }));
     }
+    // Nobody keeps paying for a deleted account: cancel a live subscription at Stripe first, or refuse.
+    const bill = await billingOf(deps, s.userId);
+    if (bill?.subscription_id && LIVE_STATUSES.has(bill.status ?? '')) {
+      const r = deps.stripe ? await deps.stripe.cancelNow(bill.subscription_id) : { error: 'Billing is not set up on this server, so your subscription could not be cancelled.' };
+      if ('error' in r) {
+        c.status(502);
+        return c.html(Message({ title: 'Not deleted', text: `We couldn't cancel your Pro subscription at Stripe (${r.error}). Your account was not deleted. Try again in a few minutes.`, action: { href: '/account', label: 'Back to your account' } }));
+      }
+    }
     // Read every stored token first, remove all rows in one transaction, then give back Google access.
     const channels = await channelsOf(deps, s.userId);
     const pending = (await deps.db.prepare('SELECT * FROM pending_connections WHERE user_id = ?').bind(s.userId).all<PendingConnectionRow>()).results;
@@ -174,6 +188,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM mcp_calls WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM usage_counts WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM outlier_searches WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM billing WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM users WHERE id = ?').bind(s.userId),
     ]);
