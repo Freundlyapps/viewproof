@@ -15,14 +15,14 @@ describe('shell', () => {
     expect(link.getAttribute('href')).toBe('/auth/google/start');
   });
 
-  test('navigation in the approved order; unbuilt items say soon', async () => {
+  test('navigation in the approved order; every item is built (none says soon)', async () => {
     mockApi({ '/api/me': ME, '/api/channels': [channel()] });
     renderAt('/settings');
     const nav = await screen.findByRole('navigation', { name: 'Main' });
     const items = within(nav).getAllByRole('link');
     expect(items.map((a) => a.getAttribute('data-label'))).toEqual(['Home', 'Research', 'My channel', 'Optimize video', 'Competitors', 'Ask AI', 'Tools', 'Settings']);
     const soon = items.filter((a) => within(a).queryByText('soon')).map((a) => a.getAttribute('data-label'));
-    expect(soon).toEqual(['Tools']);
+    expect(soon).toEqual([]);
   });
 
   test('theme toggle flips and remembers', async () => {
@@ -63,11 +63,11 @@ describe('shell', () => {
     expect((await screen.findByRole('link', { name: 'Manage channels' })).getAttribute('href')).toBe('/account');
   });
 
-  test('a soon page says what it will do, with no made-up data', async () => {
+  test('Tools is a real page, not "not built yet"', async () => {
     mockApi({ '/api/me': ME, '/api/channels': [channel()] });
     renderAt('/tools');
-    expect(await screen.findByText(/Tag extractor, chapter checker/)).toBeTruthy();
-    expect(screen.getByText('Not built yet')).toBeTruthy();
+    expect(await screen.findByRole('tab', { name: 'Calculators' })).toBeTruthy();
+    expect(screen.queryByText('Not built yet')).toBeNull();
   });
 
   test('an unknown address says not found, not "not built yet"', async () => {

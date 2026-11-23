@@ -174,3 +174,6 @@ a.nav{text-decoration:none}
 .wrap{white-space:pre-wrap;word-break:break-all;margin:0;flex:1;min-width:0}
 pre.wrap{font-size:.8rem;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:8px}
 .plan-box{border:1px solid var(--border);border-radius:10px;padding:12px}
+
+/* Tools: tag chips in a wrapping row. */
+.tags-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0; }

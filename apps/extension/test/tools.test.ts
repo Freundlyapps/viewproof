@@ -91,6 +91,12 @@ describe('readTranscriptPanel', () => {
     expect(readTranscriptPanel(document)).toEqual([{ startSec: 0, text: 'Hello there' }, { startSec: 3725, text: 'and bye' }]);
   });
 
+  test('also the newer view-model layout (seen live 2026-11-23)', () => {
+    const vm = (t: string, a11y: string, s: string) => `<transcript-segment-view-model class="ytwTranscriptSegmentViewModelHost"><div aria-hidden="true" class="ytwTranscriptSegmentViewModelTimestamp">${t}</div><div class="ytwTranscriptSegmentViewModelTimestampA11yLabel">${a11y}</div><span class="ytAttributedStringHost" role="text">${s}</span></transcript-segment-view-model>`;
+    document.body.innerHTML = `<div>${vm('0:01', '1 second', '[Music]')}${vm('1:00:18', '1 hour 18 seconds', ' We are  here ')}</div>`;
+    expect(readTranscriptPanel(document)).toEqual([{ startSec: 1, text: '[Music]' }, { startSec: 3618, text: 'We are here' }]);
+  });
+
   test('null when there are no segments or a time cannot be read', () => {
     document.body.innerHTML = '<div>nothing</div>';
     expect(readTranscriptPanel(document)).toBeNull();

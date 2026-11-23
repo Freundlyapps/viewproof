@@ -62,18 +62,27 @@ export function videoLookup(deps: { area: chrome.storage.StorageArea; fetch: typ
   };
 }
 
+/** YouTube's transcript panel layouts: the newer view-model one (seen 2026-11) and the older renderer one. */
+const LAYOUTS = [
+  { segment: 'transcript-segment-view-model', time: '.ytwTranscriptSegmentViewModelTimestamp', text: '[role="text"]' },
+  { segment: 'ytd-transcript-segment-renderer', time: '.segment-timestamp', text: '.segment-text' },
+] as const;
+
 /** The segments of YouTube's transcript panel as the user opened it; null when none can be read completely. */
 export function readTranscriptPanel(root: ParentNode): TranscriptSegment[] | null {
-  const nodes = root.querySelectorAll('ytd-transcript-segment-renderer');
-  if (nodes.length === 0) return null;
-  const out: TranscriptSegment[] = [];
-  for (const n of nodes) {
-    const startSec = parseTimestamp(n.querySelector('.segment-timestamp')?.textContent ?? '');
-    if (startSec === null) return null;
-    const text = (n.querySelector('.segment-text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
-    out.push({ startSec, text });
+  for (const l of LAYOUTS) {
+    const nodes = root.querySelectorAll(l.segment);
+    if (nodes.length === 0) continue;
+    const out: TranscriptSegment[] = [];
+    for (const n of nodes) {
+      const startSec = parseTimestamp(n.querySelector(l.time)?.textContent ?? '');
+      if (startSec === null) return null;
+      const text = (n.querySelector(l.text)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+      out.push({ startSec, text });
+    }
+    return out;
   }
-  return out;
+  return null;
 }
 
 export interface StoredTranscript { videoId: string; title: string; savedAt: number; segments: TranscriptSegment[] }
