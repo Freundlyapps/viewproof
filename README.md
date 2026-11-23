@@ -1,7 +1,7 @@
 # ViewProof
 
 Open-source YouTube research tools: an alternative to vidIQ that shows where every number comes from.
-License: AGPL-3.0. Status: Phase 1 — plans 1–5 done: browser extension with panels on watch, channel and search pages; server with Google sign-in and channel connect; web app with My channel; keyword research; competitor tracking; opt-in data pool and Outliers.
+License: AGPL-3.0. Status: Phase 1 built, closed beta in preparation: browser extension with panels on watch, channel and search pages; server with Google sign-in and channel connect; web app with My channel, keyword research, competitors, Outliers, Optimize video, Ask AI, Tools, an MCP server and optional billing. Self-host with Docker or Wrangler (see [Self-hosting](#self-hosting)).
 
 ## The browser extension (Chrome, Edge)
 
@@ -87,7 +87,7 @@ Sign in with Google, connect your channel (view-only) and open **My channel**: v
 
 Every number is YouTube's own value, labelled REAL (or ESTIMATE for revenue), with the previous period beside it. ViewProof doesn't compute scores, percentages or ratios from YouTube API data: YouTube's developer policy (III.E.4.h) forbids derived metrics. When YouTube returns nothing, the app says "No data" and why.
 
-Run it locally: set up `apps/api` (see [apps/api/README.md](apps/api/README.md)), then `pnpm dev` and open http://localhost:8787/app.
+Run it yourself: see [Self-hosting](#self-hosting).
 
 ## Keyword research
 
@@ -183,6 +183,43 @@ Billing is optional and uses **Stripe Managed Payments** (Stripe is the merchant
 4. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `STRIPE_PRICE_ID` (Wrangler secrets, or `apps/api/.dev.vars` locally). Billing stays off unless all three are set, and always off when `SELF_HOSTED=true`.
 
 Locally, use test-mode keys and forward events with `stripe listen --forward-to localhost:8787/api/billing/webhook` (its `whsec_…` goes in `STRIPE_WEBHOOK_SECRET`). The plan follows Stripe's webhooks (only subscriptions for `STRIPE_PRICE_ID` count, so other products on the same Stripe account don't turn on Pro), so cancelling in Stripe's portal or on link.com works too. Deleting your ViewProof account cancels the subscription at Stripe first.
+
+## Tools
+
+**Tools** has four small tools. None of them costs server data, and nothing you enter is stored on the server.
+- **Tags:** paste a video link to see its public tags, with the character total YouTube counts (500 at most) and **Copy tags**. The extension reads the video's public YouTube page in your browser, without your YouTube sign-in: at most 30 lookups an hour, paused for 24 hours if YouTube refuses. **Check its chapters** opens the video's description in the chapter checker.
+- **Chapters:** paste a description (and optionally the video's length) to check it against YouTube's chapter rules: timestamps at line starts, the first at 0:00, at least 3, in order, each at least 10 seconds. It lists the chapters or names the first broken rule.
+- **Transcripts:** on a YouTube video, open the description and click **Show transcript**. The extension keeps that transcript in your browser only (the 20 newest, for 30 days). Tools lists them; open one to search it, copy the text or download it as .txt, with each line linked to its moment in the video. ViewProof calls no YouTube caption or transcript service.
+- **Calculators:** engagement rate ((likes + comments) ÷ views), watch time (views × average view duration) and average view duration (watch time ÷ views), on numbers you type in. They never take numbers from YouTube's API: YouTube's developer policy forbids derived metrics from API data.
+
+Live check (manual, 3 YouTube requests): `VP_SESSION=<vp_session cookie> node apps/extension/e2e/tools-live-check.mjs <outDir> <videoId>`, with the development build of the extension and a local server. Set `CHROMIUM_PATH` to use an installed Chromium.
+
+## Self-hosting
+
+A self-hosted server has no plan limits and no billing, uses your own Google OAuth client and keys, and has no access to the hosted data pool. There are three ways to run it, all with the same Worker code:
+
+1. **Docker Compose** (one machine, data in a Docker volume):
+   1. Create a Google OAuth client (step 1 of [apps/api/README.md](apps/api/README.md)) with the redirect URI `<APP_URL>/auth/google/callback`.
+   2. `cp apps/api/.dev.vars.example apps/api/.dev.vars` and fill it in (`TOKEN_KEY`: `openssl rand -base64 32`).
+   3. `APP_URL=https://viewproof.example.com docker compose up -d` (default `http://localhost:8787`; `PORT` changes the host port).
+
+   The container applies database migrations at every start (only new ones run), runs the Worker under workerd (`wrangler dev`) with `SELF_HOSTED=true`, keeps D1 and R2 data in the `viewproof-data` volume, and calls the hourly job at minute 17. `.dev.vars` is mounted read-only and is never built into the image. Behind a reverse proxy, serve HTTPS, set `APP_URL` to the proxy's address, and block `/__scheduled` and `/cdn-cgi/` from outside: they trigger the hourly job.
+
+   Back up the volume: `docker run --rm -v viewproof_viewproof-data:/data -v "$PWD":/out busybox tar czf /out/viewproof-data.tgz /data` (the volume name starts with the Compose project name, by default the folder name).
+2. **Wrangler on your computer:** follow [apps/api/README.md](apps/api/README.md) (`pnpm install`, `.dev.vars`, `pnpm --filter api db:migrate:local`, `pnpm dev`). Set `SELF_HOSTED = "true"` in `wrangler.toml`. Run the hourly job by opening `http://localhost:8787/__scheduled` (start with `--test-scheduled`) or from cron.
+3. **Your own Cloudflare account** (Workers Free is enough for a few users):
+   ```sh
+   cd apps/api
+   npx wrangler d1 create viewproof        # put the printed database_id into wrangler.toml
+   npx wrangler d1 migrations apply viewproof --remote
+   npx wrangler r2 bucket create viewproof-pool
+   npx wrangler secret put GOOGLE_CLIENT_ID     # and GOOGLE_CLIENT_SECRET, TOKEN_KEY, optional keys
+   # wrangler.toml [vars]: APP_URL = "https://<your worker>.workers.dev", SELF_HOSTED = "true"
+   pnpm --filter web build && npx wrangler deploy
+   ```
+   Cloudflare runs the hourly Cron Trigger itself.
+
+**The extension and a self-hosted server:** the store build talks only to `viewproof.app`. To use keyword facts, Tools and the data pool with your own server, add your origin to `apps/extension/src/app-origins.ts` and build the extension yourself (see "Install from source").
 
 ## Repository layout
 

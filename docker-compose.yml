@@ -1,0 +1,16 @@
+# Self-hosted ViewProof: `docker compose up -d`, then open $APP_URL/app. See README → Self-hosting.
+services:
+  viewproof:
+    build: .
+    ports:
+      - "${PORT:-8787}:8787"
+    environment:
+      # The address people open; must match the Google OAuth redirect URI ($APP_URL/auth/google/callback).
+      APP_URL: ${APP_URL:-http://localhost:8787}
+    volumes:
+      - viewproof-data:/data
+      # Secrets (Google client, TOKEN_KEY, optional keys). Mounted read-only, never built into the image.
+      - ./apps/api/.dev.vars:/app/apps/api/.dev.vars:ro
+    restart: unless-stopped
+volumes:
+  viewproof-data:
