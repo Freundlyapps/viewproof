@@ -11,6 +11,15 @@ import { saveStats } from './routes';
 export async function runCron(deps: Deps, at: Date): Promise<void> {
   // Processed Stripe event ids are only needed while Stripe may still retry (3 days); keep 30.
   await deps.db.prepare('DELETE FROM stripe_events WHERE received_at < ?').bind(new Date(at.getTime() - 30 * 86_400_000).toISOString()).run();
+  // Outlier search words only count toward today's limit (UTC days); keep yesterday for a margin, delete the rest.
+  await deps.db.prepare('DELETE FROM outlier_searches WHERE day < ?').bind(new Date(at.getTime() - 86_400_000).toISOString().slice(0, 10)).run();
+  // YouTube API data is kept only as long as its cache time (YouTube API Services storage rules, privacy page):
+  // reports 6 hours, first-week views 30 days. Shared keyword data: 30 days.
+  const iso = (ms: number) => new Date(at.getTime() - ms).toISOString();
+  await deps.db.batch([
+    deps.db.prepare("DELETE FROM report_cache WHERE (key NOT LIKE 'fw:%' AND fetched_at < ?) OR (key LIKE 'fw:%' AND fetched_at < ?)").bind(iso(6 * 3_600_000), iso(30 * 86_400_000)),
+    deps.db.prepare('DELETE FROM keyword_cache WHERE fetched_at < ?').bind(iso(30 * 86_400_000)),
+  ]);
   if (at.getUTCHours() === 4) await archiveDay(deps, new Date(at.getTime() - 86_400_000).toISOString().slice(0, 10));
   await pruneCompetitors(deps);
   const budget = deps.config.cronFeedBudget;

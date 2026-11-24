@@ -11,10 +11,20 @@ export function fixtureSnapshot(query = 'pottery wheel for beginners', capturedA
 }
 
 /** Answers window messages exactly like the extension's content script on ViewProof pages. Returns a remover. */
-export function fakeExtension(opts: { snapshots?: Record<string, KeywordSnapshot>; suggestions?: KeywordSuggestions | null; suggestionsError?: string | null; delayMs?: number } = {}) {
+export function fakeExtension(opts: {
+  snapshots?: Record<string, KeywordSnapshot>; suggestions?: KeywordSuggestions | null; suggestionsError?: string | null; delayMs?: number;
+  /** Tools: answer for a video lookup, and the transcripts this browser keeps. */
+  video?: (videoId: string) => unknown; transcripts?: unknown[];
+} = {}) {
   const links: string[] = [];
+  const lookups: string[] = [];
   const onMsg = (e: MessageEvent) => {
-    const d = e.data as { type?: string; id?: string; q?: string; token?: string };
+    const d = e.data as { type?: string; id?: string; q?: string; token?: string; videoId?: string };
+    if (d?.type === 'viewproof:video-request') {
+      lookups.push(d.videoId!);
+      window.postMessage({ type: 'viewproof:video-response', id: d.id, result: opts.video?.(d.videoId!) ?? { ok: false, reason: 'no fake' } }, '*');
+    }
+    if (d?.type === 'viewproof:transcripts-request') window.postMessage({ type: 'viewproof:transcripts-response', id: d.id, items: opts.transcripts ?? [] }, '*');
     if (d?.type === 'viewproof:link') { links.push(d.token!); window.postMessage({ type: 'viewproof:linked', id: d.id }, '*'); }
     if (d?.type === 'viewproof:hello') window.postMessage({ type: 'viewproof:here', version: '0.2.0' }, '*');
     if (d?.type === 'viewproof:kw-request') {
@@ -25,5 +35,5 @@ export function fakeExtension(opts: { snapshots?: Record<string, KeywordSnapshot
     }
   };
   window.addEventListener('message', onMsg);
-  return { links, remove: () => window.removeEventListener('message', onMsg), updated: (q: string) => window.postMessage({ type: 'viewproof:kw-updated', q }, '*') };
+  return { links, lookups, remove: () => window.removeEventListener('message', onMsg), updated: (q: string) => window.postMessage({ type: 'viewproof:kw-updated', q }, '*') };
 }

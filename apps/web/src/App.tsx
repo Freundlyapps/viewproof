@@ -6,6 +6,7 @@ import { Optimize } from './optimize/Optimize';
 import { type ChannelInfo, type Me, getJson, isApiError } from './api';
 import { Settings } from './Settings';
 import { NAV } from './shell/nav';
+import { Tools } from './tools/Tools';
 import { NoChannel } from './shell/NoChannel';
 import { Shell } from './shell/Shell';
 import { SignIn } from './shell/SignIn';
@@ -68,6 +69,7 @@ export function App() {
         <Route path="/competitors/:channelId?" element={<Competitors />} />
         <Route path="/optimize/*" element={<Optimize channel={current} />} />
         <Route path="/ai" element={<AskAi channel={current?.id ?? null} />} />
+        <Route path="/tools/:tab?" element={<Tools />} />
         <Route path="/settings/*" element={<Settings />} />
         {NAV.flatMap((n) => (n !== '-' && n.soon ? [<Route key={n.to} path={`${n.to}/*`} element={<Soon title={n.label} text={n.soon} />} />] : []))}
         <Route path="*" element={<Soon title="Not found" sub="Check the address" text="This page doesn't exist." />} />

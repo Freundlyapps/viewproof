@@ -51,3 +51,25 @@ export async function linkExtension(token: string, answerMs = 5000): Promise<boo
   const id = `link${++seq}-${Date.now()}`;
   return (await waitFor((d) => d.type === 'viewproof:linked' && d.id === id, answerMs, () => window.postMessage({ type: 'viewproof:link', id, token }, location.origin))) !== null;
 }
+
+export interface VideoFacts { videoId: string; title: string; channelId: string; tags: string[]; description: string; lengthSeconds: number }
+export type VideoLookup = { ok: true; video: VideoFacts } | { ok: false; reason: string };
+export interface StoredTranscript { videoId: string; title: string; savedAt: number; segments: { startSec: number; text: string }[] }
+
+/** Tools: a video's tags and description, read by the extension from YouTube in this browser. null = no extension. */
+export async function lookupVideo(videoId: string, helloMs = 1500, answerMs = 20_000): Promise<VideoLookup | null> {
+  if (!(await extensionInstalled(helloMs))) return null;
+  const id = `video${++seq}-${Date.now()}`;
+  const d = await waitFor<{ result: VideoLookup }>((m) => m.type === 'viewproof:video-response' && m.id === id, answerMs,
+    () => window.postMessage({ type: 'viewproof:video-request', id, videoId }, location.origin));
+  return d?.result ?? { ok: false, reason: 'The extension did not answer in time; try again.' };
+}
+
+/** Tools: transcripts this browser read from YouTube's transcript panel. null = no extension. */
+export async function listTranscripts(helloMs = 1500, answerMs = 5000): Promise<StoredTranscript[] | null> {
+  if (!(await extensionInstalled(helloMs))) return null;
+  const id = `tr${++seq}-${Date.now()}`;
+  const d = await waitFor<{ items: StoredTranscript[] }>((m) => m.type === 'viewproof:transcripts-response' && m.id === id, answerMs,
+    () => window.postMessage({ type: 'viewproof:transcripts-request', id }, location.origin));
+  return Array.isArray(d?.items) ? d.items : [];
+}

@@ -1,0 +1,27 @@
+# Self-hosted ViewProof: `docker compose up -d`, then open $APP_URL/app. See README → Self-hosting.
+services:
+  viewproof:
+    build: .
+    # Only this machine can reach the port: put an HTTPS reverse proxy in front for other machines
+    # (Google sign-in needs HTTPS anyway). /__scheduled must not be reachable from outside.
+    ports:
+      - "127.0.0.1:${PORT:-8787}:8787"
+    environment:
+      # The address people open; must match the Google OAuth redirect URI ($APP_URL/auth/google/callback).
+      APP_URL: ${APP_URL:-http://localhost:8787}
+    volumes:
+      - viewproof-data:/data
+      # Secrets (Google client, TOKEN_KEY, optional keys). Mounted read-only, never built into the image.
+      # create_host_path: false asks Compose not to create a missing file as a folder (Docker Desktop may anyway;
+      # the start script then stops with a clear message).
+      - type: bind
+        source: ./apps/api/.dev.vars
+        target: /app/apps/api/.dev.vars
+        read_only: true
+        bind:
+          create_host_path: false
+    # A real init as PID 1 so `docker stop` shuts the Worker down cleanly.
+    init: true
+    restart: unless-stopped
+volumes:
+  viewproof-data:

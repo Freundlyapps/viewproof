@@ -29,6 +29,9 @@ export interface Env {
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   STRIPE_PRICE_ID?: string;
+  /** Shown on /privacy and /terms (Google's OAuth verification needs a reachable contact). */
+  OPERATOR_NAME?: string;
+  CONTACT_EMAIL?: string;
 }
 
 export interface BillingConfig { secretKey: string; webhookSecret: string; priceId: string }
@@ -50,6 +53,8 @@ export interface Config {
   ai: AiConfig | null;
   /** Stripe billing, or null when this server has none (self-hosted or not configured). */
   billing: BillingConfig | null;
+  /** Who runs this server, for the privacy and terms pages; null fields are said to be unset. */
+  operator: { name: string | null; contact: string | null };
 }
 
 export function parseConfig(env: Env): Config {
@@ -77,6 +82,7 @@ export function parseConfig(env: Env): Config {
     billing: env.SELF_HOSTED !== 'true' && env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET && env.STRIPE_PRICE_ID
       ? { secretKey: env.STRIPE_SECRET_KEY, webhookSecret: env.STRIPE_WEBHOOK_SECRET, priceId: env.STRIPE_PRICE_ID }
       : null,
+    operator: { name: env.OPERATOR_NAME?.trim() || null, contact: env.CONTACT_EMAIL?.trim() || null },
     cronFeedBudget: Math.min(Math.max(Number(env.CRON_FEED_BUDGET) || 10, 1), 200),
   };
 }

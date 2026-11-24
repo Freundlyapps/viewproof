@@ -20,6 +20,7 @@ h1{font-size:1.45rem;margin:0 0 12px}.muted{color:var(--muted)}.small{font-size:
 .av{width:56px;height:56px;border-radius:50%;background:var(--border);object-fit:cover;flex:none}
 .item{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}.item:last-child{border-bottom:0}
 form{display:inline}
+footer{max-width:720px;margin:0 auto 32px;padding:0 16px;font-size:.85rem;color:var(--muted)}footer a{color:inherit}
 `;
 
 export function Layout(props: { title: string; signedIn?: boolean; children: Child }) {
@@ -39,6 +40,7 @@ export function Layout(props: { title: string; signedIn?: boolean; children: Chi
           {props.signedIn ? <a class="btn" href="/account">Account</a> : null}
         </header>
         <main>{props.children}</main>
+        <footer><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="https://github.com/Freundlyapps/viewproof">Source code</a></footer>
       </body>
     </html>
   );
