@@ -19,6 +19,8 @@ AI_API_KEY=
 # STRIPE_SECRET_KEY=
 # STRIPE_WEBHOOK_SECRET=
 # STRIPE_PRICE_ID=
-# Shown on /privacy and /terms. Google's OAuth verification needs a reachable contact.
+# Shown on /privacy, /terms and /imprint (legal notice). Google's OAuth verification needs a reachable contact;
+# a commercial service run from Germany also needs a postal address (§ 5 DDG). Address lines are split by \n.
 # OPERATOR_NAME=
 # CONTACT_EMAIL=
+# OPERATOR_ADDRESS=Street 1\n12345 City\nCountry

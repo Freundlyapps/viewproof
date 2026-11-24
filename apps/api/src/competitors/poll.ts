@@ -7,7 +7,7 @@ const SNAPSHOT_KEEP_DAYS = 90;
 const STATS_KEEP_DAYS = 30;
 /** A pool channel is polled and kept while a contribution saw it within this many days. */
 export const POOL_SEEN_DAYS = 30;
-const POOL_OBSERVATIONS_KEEP_DAYS = 90;
+export const POOL_OBSERVATIONS_KEEP_DAYS = 90;
 const DAY_MS = 86_400_000;
 
 export type FeedResult = { ok: true; xml: string } | { ok: false; reason: string };

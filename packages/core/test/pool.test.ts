@@ -2,12 +2,20 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { parseSearchPage } from '../src/keywords';
 import { parsePlayerResponse } from '../src/player';
-import { MAX_BATCH, fromSearch, fromWatch, parseBatch, plausible } from '../src/pool';
+import { MAX_BATCH, POOL_FIELD_LABELS, fromSearch, fromWatch, parseBatch, plausible } from '../src/pool';
 
 const NOW = '2026-11-22T12:00:00.000Z';
 const good = (over: Record<string, unknown> = {}) => ({
   videoId: 'dQw4w9WgXcQ', channelId: 'UCuAXFkgsw1L7xaCfnd5JJOw', title: 'A title', views: 1234, publishedAt: '2026-11-01T00:00:00.000Z',
   ageDays: null, durationSec: 212, format: 'long', source: 'watch', observedAt: '2026-11-22T11:00:00.000Z', ...over,
+});
+
+describe('privacy labels', () => {
+  test('describe exactly the fields an accepted upload keeps', () => {
+    const r = parseBatch({ v: 1, observations: [good({ extra: 'dropped' })] }, NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect(Object.keys(r.items[0]!).sort()).toEqual(Object.keys(POOL_FIELD_LABELS).sort());
+  });
 });
 
 describe('validate', () => {

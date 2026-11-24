@@ -17,6 +17,22 @@ export interface PoolObservation {
   source: 'watch' | 'search';
   observedAt: string;
 }
+/**
+ * What each field of a pool upload is, in the words the privacy page uses. Keyed by every PoolObservation field, so a
+ * field added to uploads without a description here does not compile (and the page can't silently leave it out).
+ */
+export const POOL_FIELD_LABELS: Record<keyof PoolObservation, string> = {
+  videoId: 'video id',
+  channelId: 'channel id',
+  title: 'title',
+  views: 'view count',
+  publishedAt: 'upload time',
+  ageDays: 'upload age in days',
+  durationSec: 'length',
+  format: 'whether it is a Short',
+  source: 'whether it was seen on a watch page or in search results',
+  observedAt: 'when it was seen',
+};
 export interface PoolBatch { v: 1; observations: PoolObservation[] }
 
 export const MAX_BATCH = 300;

@@ -16,7 +16,7 @@ describe('privacy and terms pages', () => {
     expect(html).toContain("ViewProof's use and transfer of information received from Google APIs to any other app will adhere to");
     expect(html).toContain('href="https://developers.google.com/terms/api-services-user-data-policy"');
     expect(html).toContain('including the Limited Use requirements');
-    expect(html).toContain('href="https://myaccount.google.com/permissions"');
+    expect(html).toContain('href="https://security.google.com/settings/security/permissions"');
     expect(html).toContain('encrypted');
     expect(html).toContain('Example Operator');
     expect(html).toContain('href="mailto:privacy@viewproof.example"');

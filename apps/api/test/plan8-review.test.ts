@@ -1,3 +1,4 @@
+import { dataForSeoProvider } from '@viewproof/providers';
 // Plan 8 final review: each Important finding pinned by a test.
 import { env } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
@@ -48,8 +49,9 @@ describe('privacy and terms say only what is true on this server', () => {
   });
 
   test('names who else receives data, and how the browser stores it', async () => {
-    const html = await readText(await createApp(makeDeps()).request('/privacy'));
-    expect(html).toContain('hosting provider');
+    // Who receives data depends on how the server runs; legal-truth.test.ts checks each case (self-hosted, DataForSEO).
+    const html = await readText(await createApp(makeDeps({ keywords: dataForSeoProvider(fetch, { login: 'l', password: 'p' }) })).request('/privacy'));
+    expect(html).toContain('Cloudflare, which hosts this service');
     expect(html).toContain('DataForSEO');
     expect(html).toContain('chrome.storage.local');
   });

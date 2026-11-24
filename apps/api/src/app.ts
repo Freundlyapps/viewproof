@@ -6,7 +6,7 @@ import type { StripeClient } from './billing/stripe';
 import { billingWebhook } from './billing/webhook';
 import { billingRoutes } from './billing/routes';
 import type { LlmClient, LlmProviderId } from '@viewproof/providers';
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import type { Config } from './env';
 import type { GoogleClient } from './google';
 import type { YouTubeClient } from './youtube';
@@ -18,12 +18,12 @@ import { outlierRoutes } from './pool/outliers';
 import type { KeywordProvider } from '@viewproof/providers';
 import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
-import { authRoutes } from './routes/auth';
+import { authRoutes, stateCookie } from './routes/auth';
 import { channelRoutes } from './routes/channel';
 import { connectRoutes } from './routes/connect';
-import { readSession } from './session';
+import { readSession, sessionCookieName } from './session';
 import { Home } from './views/Home';
-import { Privacy, Terms } from './views/Legal';
+import { Imprint, type LegalFacts, Privacy, Terms } from './views/Legal';
 
 export interface Deps {
   db: D1Database;
@@ -79,8 +79,13 @@ export function createApp(deps: Deps): Hono {
 
   app.get('/health', (c) => c.json({ ok: true }));
   // Public pages Google's OAuth verification and the closed beta need (plan 8).
-  app.get('/privacy', async (c) => c.html(Privacy({ op: deps.config.operator, billing: !!deps.config.billing, signedIn: !!(await readSession(c, deps)) })));
-  app.get('/terms', async (c) => c.html(Terms({ op: deps.config.operator, billing: !!deps.config.billing, signedIn: !!(await readSession(c, deps)) })));
+  const legal = async (c: Context): Promise<LegalFacts> => ({
+    op: deps.config.operator, billing: !!deps.config.billing, selfHosted: deps.config.selfHosted, signedIn: !!(await readSession(c, deps)),
+    dataForSeo: deps.keywords.name !== 'none', poolArchive: !!deps.pool, cookies: { session: sessionCookieName(deps), signIn: stateCookie(deps) },
+  });
+  app.get('/privacy', async (c) => c.html(Privacy(await legal(c))));
+  app.get('/terms', async (c) => c.html(Terms(await legal(c))));
+  app.get('/imprint', async (c) => c.html(Imprint(await legal(c))));
   app.get('/', async (c) => ((await readSession(c, deps)) ? c.redirect('/app', 302) : c.html(Home({ signedIn: false }))));
 
   // The React app (apps/web, built to apps/web/dist/app). Unknown /app paths are app routes → index.html;

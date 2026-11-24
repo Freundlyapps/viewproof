@@ -41,6 +41,7 @@ a{color:var(--accent);text-decoration:none}
 .chan{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer}
 .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#a8a29e,#57534e);flex:none}
 .content{overflow:auto;padding:var(--pad);flex:1}
+.legal{padding:8px var(--pad);border-top:1px solid var(--border)}.legal a{color:inherit}
 .screen{display:none;flex-direction:column;gap:clamp(14px,1.6vw,24px)}
 .screen.on{display:flex}
 h1{font-size:clamp(1.4rem,1vw + .9rem,1.9rem);margin:0;letter-spacing:-.01em}
