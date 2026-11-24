@@ -1,7 +1,7 @@
 import { handleSuggestMessage } from '../src/background-handler';
 import { poolStore } from '../src/pool';
 import { suggester } from '../src/suggest';
-import { videoLookup } from '../src/tools';
+import { transcriptSaveRequest, transcriptStore, videoLookup } from '../src/tools';
 
 const FLUSH_ALARM = 'pool-flush';
 
@@ -13,6 +13,8 @@ export default defineBackground(() => {
   const s = suggester({ area: browser.storage.local, fetch: (i, init) => fetch(i, init), now: () => Date.now() });
   const pool = poolStore(browser.storage.local);
   const videos = videoLookup({ area: browser.storage.local, fetch: (i, init) => fetch(i, init), now: () => Date.now() });
+  // The one writer of saved transcripts: every YouTube tab sends its saves here, so two tabs can't overwrite each other.
+  const transcripts = transcriptStore(browser.storage.local);
   const flush = () => pool.flush((i, init) => fetch(i, init), Date.now()).catch((e: unknown) => console.warn('[ViewProof] pool', e));
 
   // Create once: re-creating on every service-worker wake-up would keep pushing the next send back.
@@ -24,6 +26,12 @@ export default defineBackground(() => {
     const kind = (msg as { kind?: string } | null)?.kind;
     if (kind === 'pool-flush') { void flush(); return false; }
     if (kind === 'open-options') { void browser.runtime.openOptionsPage(); return false; }
+    if (kind === 'transcript-save') {
+      const t = transcriptSaveRequest(msg);
+      if (!t) return false;
+      void transcripts.put(t, Date.now()).then(() => sendResponse({ ok: true }), (e: unknown) => sendResponse({ ok: false, reason: e instanceof Error ? e.message : 'Save failed' }));
+      return true;
+    }
     if (kind === 'video-lookup') {
       const videoId = (msg as { videoId?: unknown }).videoId;
       if (typeof videoId !== 'string') return false;

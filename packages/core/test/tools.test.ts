@@ -29,6 +29,24 @@ describe('extractPlayerResponse', () => {
     expect(extractPlayerResponse('window["ytInitialPlayerResponse"] = {"a":1};')).toEqual({ a: 1 });
   });
 
+  test('a spot that only looks like the player data does not hide the real data later in the page', () => {
+    const real = '{"videoDetails":{"videoId":"abc"}}';
+    for (const decoy of [
+      'var ytInitialPlayerResponse = null;',
+      'if (window.ytInitialPlayerResponse=== undefined) {}',
+      'var ytInitialPlayerResponse = {broken;',
+      'window["ytInitialPlayerResponse"] = {"responseContext":{}};',
+      'ytInitialPlayerResponse = "{\\"not\\":1}";',
+    ]) {
+      expect(extractPlayerResponse(`<script>${decoy}</script><script>var ytInitialPlayerResponse = ${real};</script>`), decoy).toEqual({ videoDetails: { videoId: 'abc' } });
+    }
+  });
+
+  test('spacing around the = does not matter', () => {
+    expect(extractPlayerResponse('var ytInitialPlayerResponse  =\n{"videoDetails":{}};')).toEqual({ videoDetails: {} });
+    expect(extractPlayerResponse("window['ytInitialPlayerResponse'] = {\"videoDetails\":{}};")).toEqual({ videoDetails: {} });
+  });
+
   test('null when absent, unterminated or not JSON', () => {
     expect(extractPlayerResponse('<html>consent</html>')).toBeNull();
     expect(extractPlayerResponse('var ytInitialPlayerResponse = {"a":1')).toBeNull();

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { answer, isPageMessage } from '../src/app-bridge';
-import { LOOKUPS_PER_HOUR, readTranscriptPanel, transcriptCapture, transcriptStore, videoLookup } from '../src/tools';
+import { LOOKUPS_PER_HOUR, readTranscriptPanel, transcriptCapture, transcriptSaveRequest, transcriptStore, videoLookup } from '../src/tools';
 
 const player = JSON.parse(readFileSync(resolve(process.cwd(), '../../packages/core/test/fixtures/player-watch.json'), 'utf8'));
 const ID = player.videoDetails.videoId as string;
@@ -104,6 +104,35 @@ describe('videoLookup', () => {
     expect((await l.lookup('zzzzzzzzzzz')).ok).toBe(true);
   });
 
+  test(`lookups made at the same moment each count, and together never pass ${LOOKUPS_PER_HOUR} an hour`, async () => {
+    const { l, calls } = setup();
+    const ids = Array.from({ length: LOOKUPS_PER_HOUR + 5 }, (_, i) => `c${String(i).padStart(10, '0')}`);
+    const results = await Promise.all(ids.map((id) => l.lookup(id)));
+    expect(results.filter((r) => r.ok)).toHaveLength(LOOKUPS_PER_HOUR);
+    expect(calls).toHaveLength(LOOKUPS_PER_HOUR);
+    const over = await l.lookup('zzzzzzzzzzz');
+    expect(!over.ok && over.reason).toMatch(/^Lookup limit reached/);
+  });
+
+  test('a refusal during concurrent lookups keeps the pause and every counted lookup', async () => {
+    let n = 0;
+    const { l, calls, tick } = setup((u) => (n++ === 0 ? new Response('', { status: 429 }) : new Response(pageFor(u))));
+    await Promise.all([l.lookup('a0000000000'), l.lookup('b0000000000'), l.lookup('c0000000000')]);
+    expect(calls).toHaveLength(3);
+    const after = await l.lookup('d0000000000');
+    expect(!after.ok && after.reason).toMatch(/^YouTube refused an earlier request; paused until/);
+    expect(calls).toHaveLength(3);
+    tick(25 * H);
+    expect((await l.lookup('d0000000000')).ok).toBe(true);
+  });
+
+  test('results of concurrent lookups are all cached', async () => {
+    const { l, calls } = setup();
+    await Promise.all([l.lookup('a0000000000'), l.lookup('b0000000000'), l.lookup('c0000000000')]);
+    await Promise.all([l.lookup('a0000000000'), l.lookup('b0000000000'), l.lookup('c0000000000')]);
+    expect(calls).toHaveLength(3);
+  });
+
   test('an invalid id is refused without a request', async () => {
     const { l, calls } = setup();
     expect(await l.lookup('../x')).toEqual({ ok: false, reason: 'Not a YouTube video id.' });
@@ -156,6 +185,24 @@ describe('transcriptStore', () => {
     const s = transcriptStore(fakeArea());
     await s.put(item(1), t0);
     expect(await s.list(t0 + 31 * 24 * H)).toEqual([]);
+  });
+
+  test('saves made at the same moment are all kept', async () => {
+    const s = transcriptStore(fakeArea());
+    await Promise.all([1, 2, 3, 4, 5].map((i) => s.put(item(i), t0 + i)));
+    expect((await s.list(t0 + 10)).map((x) => x.title)).toEqual(['T5', 'T4', 'T3', 'T2', 'T1']);
+  });
+
+  test('a save request from a YouTube tab is accepted only in the stored shape', () => {
+    const ok = { kind: 'transcript-save', videoId: ID, title: 'T', segments: [{ startSec: 0, text: 'a' }] };
+    expect(transcriptSaveRequest(ok)).toEqual({ videoId: ID, title: 'T', segments: [{ startSec: 0, text: 'a' }] });
+    expect(transcriptSaveRequest({ ...ok, videoId: 'nope' })).toBeNull();
+    expect(transcriptSaveRequest({ ...ok, title: 5 })).toBeNull();
+    expect(transcriptSaveRequest({ ...ok, segments: [] })).toBeNull();
+    expect(transcriptSaveRequest({ ...ok, segments: [{ startSec: '0', text: 'a' }] })).toBeNull();
+    expect(transcriptSaveRequest({ ...ok, segments: [{ startSec: 0, text: 'a', extra: 1 }] })).toEqual({ videoId: ID, title: 'T', segments: [{ startSec: 0, text: 'a' }] });
+    expect(transcriptSaveRequest({ ...ok, kind: 'other' })).toBeNull();
+    expect(transcriptSaveRequest(null)).toBeNull();
   });
 });
 
