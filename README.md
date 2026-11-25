@@ -169,7 +169,7 @@ Before choosing which model the hosted service includes, `pnpm --filter api eval
 - `noInjection`: ignores instructions hidden in video titles;
 - `changes`: a brief's title changes are for the videos it was given.
 
-The report also prints the weekly brief's measured cost per Pro user per month for every candidate with a price (Claude Haiku 5.5, Sonnet 5.5 and Fable 5.2 are priced).
+The report also prints the weekly brief's measured cost per Pro user per month for every candidate with a price (Claude Haiku 5.5 and Sonnet 5.5 are priced).
 
 Keys come from `EVAL_ANTHROPIC_KEY` and `EVAL_OPENROUTER_KEY` (environment or `apps/api/.dev.vars`). A candidate without a key is listed as skipped. The report goes to `docs/model-eval/<date>.md`; raw answers stay in the git-ignored `apps/api/eval/out/`.
 

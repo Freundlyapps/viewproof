@@ -23,10 +23,10 @@
 - [x] Router task `brief`, `AI_BRIEF_MODEL`, plan limit `aiBrief`, usage row, token recording for all AI tasks.
 - [x] Home → "What to make next" card (ideas with citations, data used, title changes with approve/dismiss, Studio link, 7/28-day checks).
 - [x] Privacy page, README, export, channel/account deletion.
-- [x] Eval: two brief cases, `changes` check, measured cost per Pro user per month (Haiku 5.5, Sonnet 5.5, Fable 5.2 priced).
+- [x] Eval: two brief cases, `changes` check, measured cost per Pro user per month (Haiku 5.5 and Sonnet 5.5 priced).
 
 ## Open
 
-- Run `pnpm --filter api eval` with `EVAL_ANTHROPIC_KEY` to measure real tokens and quality for Haiku vs Sonnet vs Fable on the brief, then set `AI_BRIEF_MODEL` for the hosted service.
+- Run `pnpm --filter api eval` with `EVAL_ANTHROPIC_KEY` to measure real tokens and quality for Haiku vs Sonnet on the brief, then set `AI_BRIEF_MODEL` for the hosted service.
 - The first day a title is "live" is the day the job first sees it (checked daily), so the after-period can start up to a day late.
 - Later: thumbnails and descriptions as changes; a track record across changes ("titles you changed: N above their usual swing").

@@ -16,7 +16,6 @@ export const PRICES: Record<string, [number, number]> = {
   'claude-haiku-5-5': [0.1, 0.5],
   'claude-sonnet-5-5': [2, 10],
   'claude-opus-5-5': [4, 20],
-  'claude-fable-5-2': [8, 40],
 };
 
 export function priced(model: string, input: number, output: number): number | null {

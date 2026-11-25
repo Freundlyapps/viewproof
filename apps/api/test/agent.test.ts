@@ -133,9 +133,9 @@ describe('POST /api/agent/brief', () => {
   test('AI_BRIEF_MODEL chooses the decision model', async () => {
     const s = await setup();
     const f = fakeLlm(() => BRIEF_REPLY);
-    const app = createApp(makeDeps({ youtube: fakeYouTube(youtubeFor({ channelId: s.row.channel_id })), llm: f.llm, google: fakeGoogle({ refresh: async () => ({ accessToken: 'at' }) }), now: () => NOW }, { AI_API_KEY: 'sk', AI_BRIEF_MODEL: 'claude-fable-5-2' } as never));
+    const app = createApp(makeDeps({ youtube: fakeYouTube(youtubeFor({ channelId: s.row.channel_id })), llm: f.llm, google: fakeGoogle({ refresh: async () => ({ accessToken: 'at' }) }), now: () => NOW }, { AI_API_KEY: 'sk', AI_BRIEF_MODEL: 'my-brief-model' } as never));
     expect((await sendJsonReq(app, 'POST', '/api/agent/brief', s.cookie)).status).toBe(200);
-    expect(f.requests[0]!.model).toBe('claude-fable-5-2');
+    expect(f.requests[0]!.model).toBe('my-brief-model');
   });
 
   test('Free plan without an own key: refused with the way forward, nothing sent to the AI', async () => {
