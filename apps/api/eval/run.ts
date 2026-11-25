@@ -5,11 +5,11 @@ import { type Check, buildRequest, score } from './score';
 
 export interface Candidate {
   name: string; provider: LlmProviderId; model: string; baseUrl?: string; keyEnv: string;
-  tasks: ('quick' | 'coach')[];
+  tasks: ('quick' | 'coach' | 'brief')[];
   price: { inPerM: number; outPerM: number; source: string } | null;
 }
 export interface RunRow {
-  candidate: string; task: 'quick' | 'coach'; caseId: string; status: 'ok' | 'error' | 'skipped'; reason?: string;
+  candidate: string; task: 'quick' | 'coach' | 'brief'; caseId: string; status: 'ok' | 'error' | 'skipped'; reason?: string;
   checks: Check[]; inputTokens: number; outputTokens: number; ms: number; costUsd: number | null; answer?: string;
 }
 
@@ -55,6 +55,17 @@ export function report(rows: RunRow[], date: string): string {
     const costs = ok.map((r) => r.costUsd);
     const cost = costs.length && costs.every((x) => x !== null) ? `$${(costs.reduce((a, b) => a! + b!, 0)! / costs.length).toFixed(5)}` : 'price not set';
     lines.push(`| ${cand} | ${task} | ${checks.filter((c) => c.pass).length}/${checks.length} | ${ok.filter((r) => r.checks.every((c) => c.pass)).length}/${rs.length} | ${rs.length - ok.length} | ${avg(ok.map((r) => r.inputTokens))} | ${avg(ok.map((r) => r.outputTokens))} | ${avg(ok.map((r) => r.ms))} | ${cost} |`);
+  }
+  // Measured cost per Pro user and month for the weekly brief (about 4.33 runs; 6 is the Pro limit), from real token counts.
+  const briefCands = [...new Set(ran.filter((r) => r.task === 'brief').map((r) => r.candidate))];
+  if (briefCands.length) {
+    lines.push('', '## Weekly brief: cost per Pro user per month', '', '| Candidate | Avg cost per brief | Weekly (4.33 runs) | At the Pro limit (6 runs) |', '|---|---|---|---|');
+    for (const cand of briefCands) {
+      const costs = ran.filter((r) => r.candidate === cand && r.task === 'brief' && r.status === 'ok').map((r) => r.costUsd);
+      if (!costs.length || costs.some((x) => x === null)) { lines.push(`| ${cand} | price not set or no answer | | |`); continue; }
+      const per = costs.reduce((a, b) => a! + b!, 0)! / costs.length;
+      lines.push(`| ${cand} | $${per.toFixed(4)} | $${(per * 4.33).toFixed(3)} | $${(per * 6).toFixed(3)} |`);
+    }
   }
   const failed = ran.filter((r) => r.status === 'error' || r.checks.some((c) => !c.pass));
   if (failed.length) {

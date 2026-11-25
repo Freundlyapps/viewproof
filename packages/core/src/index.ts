@@ -17,3 +17,4 @@ export * from './checklist';
 export * from './channel-page';
 export * from './optimize';
 export * from './tools';
+export * from './agent';

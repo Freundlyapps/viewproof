@@ -136,8 +136,18 @@ Where the data comes from: each channel's public RSS feed, which lists its lates
 - **What it may use:** your channel's last 28 days, your top videos and real search terms from the last 90 days (YouTube Analytics), your tracked competitors' latest uploads (public feeds), and outliers the network found in the last 30 days. Whatever isn't available is listed with the reason. Nothing else is sent.
 - **Where it goes:** the answer names the provider and model. Nothing about your questions or the answers is stored.
 - **Included AI or your own key:** a server can include an AI (the hosted service uses Claude Haiku 5.5 for quick actions and Claude Sonnet 5.5 for Ask AI). Hosted limits each month: Free 20 quick actions; Pro 500 quick actions and 150 Ask AI messages. Self-hosted installs have no limits. In **Settings → AI & apps** you can add your own key instead (Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter; and on self-hosted installs any OpenAI-compatible server such as Ollama). The key is tested before it's saved, stored encrypted per user, and your own key is never counted.
-- **Server setup** (optional, `.dev.vars` or Wrangler secrets): `AI_API_KEY`, and optionally `AI_PROVIDER` (`anthropic` by default; `openai`, `gemini`, `deepseek`, `openrouter`, `custom`), `AI_BASE_URL` (for `custom`), `AI_QUICK_MODEL`, `AI_COACH_MODEL` (required for providers other than Anthropic). With `AI_PROVIDER=custom` and `AI_BASE_URL`, no key is needed (local models).
+- **Server setup** (optional, `.dev.vars` or Wrangler secrets): `AI_API_KEY`, and optionally `AI_PROVIDER` (`anthropic` by default; `openai`, `gemini`, `deepseek`, `openrouter`, `custom`), `AI_BASE_URL` (for `custom`), `AI_QUICK_MODEL`, `AI_COACH_MODEL` (required for providers other than Anthropic), `AI_BRIEF_MODEL` (the weekly brief; defaults to `AI_COACH_MODEL`). With `AI_PROVIDER=custom` and `AI_BASE_URL`, no key is needed (local models).
 - **Live check:** `VP_SESSION=<vp_session cookie> node apps/api/scripts/ai-live-check.mjs http://localhost:8787` runs one titles action and one question (at most 3 AI calls) and prints what came back.
+
+## Weekly brief
+
+On **Home → What to make next**, ViewProof's agent suggests 5 next videos and better titles for videos that do worse than usual. You decide; it never changes your channel.
+- **What it reads:** the same data as Ask AI, plus up to 3 videos picked by code, not by the AI. A picked video was published 28 to 365 days ago, gets fewer views than your median over the last 28 days, and still gets at least one view a day. Each one comes with its own search terms.
+- **Checked before you see it:** if a reason gives a number that isn't in that data, the suggestion is removed, and the brief says how many were removed. A title change must be for one of the picked videos, at most 100 characters, and different from the current title.
+- **Then measured:** click **I'll use it** and change the title in YouTube Studio. ViewProof checks once a day. From the first day the new title is live, it compares views and search views over the 7 and 28 days after with the same number of days before. It also shows how much that video's views normally rose or fell between earlier periods. If the change is within that normal rise and fall, it says it can't tell whether the title helped. It never claims the title caused a change. All of this is plain arithmetic in `packages/core/src/agent.ts`; the AI never computes these numbers.
+- **When:** when you click **Make one now**, or every week if you switch that on. Included with Pro (6 a month); with your own key on any plan. A weekly run that fails waits a day before trying again.
+- **Cost:** every AI answer's token counts are summed per month and model in `ai_tokens`, with no link to any account, so the hosted service knows what the AI really costs.
+- **Kept:** briefs for 30 days. Title changes and their checks are kept until 60 days after the last check. Everything is deleted when you remove the channel.
 
 ## MCP server
 
@@ -150,13 +160,16 @@ Use ViewProof's data from your own AI app: Claude Code, Cursor, VS Code and othe
 
 ## Model eval
 
-Before choosing which model the hosted service includes, `pnpm --filter api eval` sends 8 cases (titles, tags, a description, next-video ideas, and coach questions) to each candidate in `apps/api/eval/candidates.json`. It uses the production prompts on a synthetic pottery channel and grades each answer with fixed checks:
+Before choosing which model the hosted service includes, `pnpm --filter api eval` sends 10 cases (titles, tags, a description, next-video ideas, coach questions and two weekly briefs) to each candidate in `apps/api/eval/candidates.json`. It uses the production prompts on a synthetic pottery channel and grades each answer with fixed checks:
 - `parses`: valid JSON items;
 - `count` and `length`: within limits;
 - `cites` and `knownCitations`: cites only sources that were sent;
 - `numbers`: every number is in the data, allowing rounding;
 - `saysMissing`: says so when data is missing;
-- `noInjection`: ignores instructions hidden in video titles.
+- `noInjection`: ignores instructions hidden in video titles;
+- `changes`: a brief's title changes are for the videos it was given.
+
+The report also prints the weekly brief's measured cost per Pro user per month for every candidate with a price (Claude Haiku 5.5, Sonnet 5.5 and Fable 5.2 are priced).
 
 Keys come from `EVAL_ANTHROPIC_KEY` and `EVAL_OPENROUTER_KEY` (environment or `apps/api/.dev.vars`). A candidate without a key is listed as skipped. The report goes to `docs/model-eval/<date>.md`; raw answers stay in the git-ignored `apps/api/eval/out/`.
 
@@ -172,6 +185,7 @@ Hosted limits (self-hosted servers have none):
 | Outlier keyword searches (repeating one, or browsing by filters, is free) | 10 / day | no limit |
 | Included AI quick actions | 20 / month | 500 / month |
 | Ask AI messages | — | 150 / month |
+| Weekly briefs | — (own key: no limit) | 6 / month |
 
 Limits are hard and shown as counters under **Settings → Plan & usage**; nothing is billed as overage. Going back to Free never deletes data: channels and competitors above the limit stay, you just can't add more.
 

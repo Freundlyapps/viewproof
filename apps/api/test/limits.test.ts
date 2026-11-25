@@ -104,7 +104,7 @@ describe('outlier searches per day', () => {
 });
 
 describe('usageSummary', () => {
-  test('six rows with used, limit and period; resets on the 1st of next month', async () => {
+  test('seven rows with used, limit and period; resets on the 1st of next month', async () => {
     await user('lim-u1');
     await env.DB.batch([
       env.DB.prepare("INSERT INTO usage_counts (user_id, kind, period, count) VALUES ('lim-u1', 'keyword', '2026-11', 2)"),
@@ -120,6 +120,7 @@ describe('usageSummary', () => {
       ['outlierSearches', 2, 10, 'day'],
       ['aiQuick', 7, 20, 'month'],
       ['aiCoach', 0, 0, 'month'],
+      ['aiBrief', 0, 0, 'month'],
     ]);
     expect(s.rows.every((r) => r.label.length > 0)).toBe(true);
   });

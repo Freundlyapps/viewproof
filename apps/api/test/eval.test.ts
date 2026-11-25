@@ -83,8 +83,8 @@ describe('eval grading', () => {
     expect(check(bad, 'numbers')).toMatchObject({ pass: false, detail: expect.stringContaining('9,999') });
   });
 
-  test('the shipped cases build and have the eight ids', () => {
-    expect(CASES.map((c) => c.id)).toEqual(['titles-with-terms', 'tags-from-terms', 'description-snippet', 'ideas-next-video', 'coach-best-video', 'coach-missing-terms', 'coach-injection', 'titles-injection']);
+  test('the shipped cases build and have the ten ids', () => {
+    expect(CASES.map((c) => c.id)).toEqual(['titles-with-terms', 'tags-from-terms', 'description-snippet', 'ideas-next-video', 'coach-best-video', 'coach-missing-terms', 'coach-injection', 'titles-injection', 'brief-weekly', 'brief-injection']);
     for (const c of CASES) expect(buildRequest(c).known.size).toBe(c.sources.length);
   });
 });

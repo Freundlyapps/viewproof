@@ -3,6 +3,7 @@ import { STATE_TTL_MS } from '../routes/auth';
 import { FIRST_WEEK_TTL_MS, REPORT_TTL_MS } from '../routes/channel';
 import { KEYWORD_CACHE_MS } from '../routes/keywords';
 import { POOL_OBSERVATIONS_KEEP_DAYS } from '../competitors/poll';
+import { BRIEF_KEEP_DAYS, CHANGE_KEEP_DAYS } from '../agent/checks';
 import { SCOPES } from '../google';
 import { SESSION_DAYS } from '../session';
 import type { Config } from '../env';
@@ -70,9 +71,11 @@ export function Privacy(f: LegalFacts) {
           <li>Answers from YouTube Analytics and the Data API, cached for up to {hours(REPORT_TTL_MS)} hours (first-week views per video for up to {days(FIRST_WEEK_TTL_MS)} days), deleted when you remove the channel.</li>
           <li>A hash of each login session id; the id itself is a cookie in your browser.</li>
           <li>Competitor channels you track, your own AI key if you add one (encrypted), hashes of your MCP and linked-browser tokens, and counters for your plan's limits. Outlier search words are kept for up to two days to count your daily limit.</li>
+          <li>If you use the weekly brief: each brief (the data it was given, its ideas, the model and its token counts) for {BRIEF_KEEP_DAYS} days; title changes it suggested, with your videos' old and new titles and the before/after view counts from YouTube Analytics, until {CHANGE_KEEP_DAYS} days after the last check. All of it is deleted when you remove the channel.</li>
+          <li>Token counts of AI answers, summed per month and model, with no link to your account (to know what the AI costs).</li>
           {f.billing ? <li>Your Stripe customer id and subscription status. Payments are handled by Stripe, the merchant of record; ViewProof never sees card details.</li> : null}
         </ul>
-        <p>Your questions to Ask AI and its answers are not stored. When you use AI, the data listed in each answer is sent to the AI provider named there (the server's included model, or your own key's provider).</p>
+        <p>Your questions to Ask AI and its answers are not stored. The weekly brief runs only when you start it or switch it on, and it never changes anything on your channel. When you use AI, the data listed in each answer is sent to the AI provider named there (the server's included model, or your own key's provider).</p>
 
         <h2>Who else receives data</h2>
         <ul>

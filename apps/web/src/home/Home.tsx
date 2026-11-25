@@ -6,6 +6,7 @@ import { useApi } from '../useApi';
 import { Badge } from '../ui/Badge';
 import { ErrorNote } from '../ui/ErrorNote';
 import { fmt } from '../ui/format';
+import { WeeklyBrief } from './WeeklyBrief';
 
 export function HomePage(props: { channel: ChannelInfo }) {
   const id = props.channel.id;
@@ -28,10 +29,7 @@ export function HomePage(props: { channel: ChannelInfo }) {
         </div>
         <AttentionCard channel={props.channel} dataThrough={ov.state === 'ok' ? ov.data.dataThrough : null} />
       </div>
-      <div className="grid g-2">
-        <div className="card"><h2>What to make next <span className="later">soon</span></h2><p className="empty">Arrives in a later update</p></div>
-        <div className="card"><h2>Outliers in your niche <span className="later">soon</span></h2><p className="empty">Arrives in a later update</p></div>
-      </div>
+      <WeeklyBrief />
     </section>
   );
 }
