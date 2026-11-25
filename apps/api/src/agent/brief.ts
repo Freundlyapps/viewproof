@@ -81,7 +81,7 @@ export function parseBrief(text: string, known: Set<string>, candidates: Candida
 export type BriefResult = { ok: true; briefId: string } | { ok: false; error: string; message: string; status: number };
 
 const fail = (error: string, message: string, status: number): BriefResult => ({ ok: false, error, message, status });
-const BAD_OUTPUT = "The AI's answer couldn't be used (no ideas or changes that pass our checks). Nothing was counted; try again later.";
+const BAD_OUTPUT = "The AI's answer couldn't be used (no ideas or changes that pass our checks). It counts as one brief; try again later.";
 
 /** Videos that already have a change waiting or being measured don't get another one. */
 async function busyVideos(deps: Deps, channelRowId: string): Promise<Set<string>> {
@@ -140,8 +140,8 @@ export async function runBrief(deps: Deps, userId: string, trigger: 'weekly' | '
   await recordTokens(deps, 'brief', choice.client.provider, r.model || choice.client.model, choice.via, r.inputTokens, r.outputTokens);
   const parsed = parseBrief(r.text, new Set(sources.map((s) => s.id)), cand.candidates, sources.flatMap((s) => s.lines).join('\n'));
   if (!parsed) {
-    // The prompt is ours, not the user's, so an unusable answer isn't counted against them.
-    await choice.release();
+    // Counted like every other AI use: the provider is paid for this call, and the user controls part of the prompt
+    // (their titles, the competitors they track), so refunding it would allow unlimited paid calls past the limit.
     return fail('bad_output', BAD_OUTPUT, 502);
   }
 

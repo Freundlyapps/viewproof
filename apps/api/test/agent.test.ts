@@ -146,10 +146,18 @@ describe('POST /api/agent/brief', () => {
     expect(s.f.requests).toHaveLength(0);
   });
 
-  test('an unusable answer is not counted', async () => {
+  test('unusable answers count, so the limit holds: the 7th request is refused without calling the AI', async () => {
     const s = await setup({ reply: () => 'Sorry, I cannot help.' });
-    const res = await sendJsonReq(s.app(), 'POST', '/api/agent/brief', s.cookie);
-    expect(res.status).toBe(502);
+    for (let i = 0; i < 6; i++) expect((await sendJsonReq(s.app(), 'POST', '/api/agent/brief', s.cookie)).status).toBe(502);
+    expect((await q1<{ brief: number }>('SELECT brief FROM ai_usage WHERE user_id = ?', s.row.user_id))!.brief).toBe(6);
+    const seventh = await sendJsonReq(s.app(), 'POST', '/api/agent/brief', s.cookie);
+    expect(seventh.status).toBe(402);
+    expect(s.f.requests).toHaveLength(6);
+  });
+
+  test('a provider outage is still given back', async () => {
+    const s = await setup({ reply: () => ({ error: 'unavailable', message: 'down' }) as never });
+    expect((await sendJsonReq(s.app(), 'POST', '/api/agent/brief', s.cookie)).status).toBe(502);
     expect((await q1<{ brief: number }>('SELECT brief FROM ai_usage WHERE user_id = ?', s.row.user_id))?.brief ?? 0).toBe(0);
   });
 
