@@ -237,6 +237,16 @@ describe('weekly briefs (hourly job)', () => {
     expect(st.settings.lastError).toMatch(/couldn't be used/);
     await s.cron(NOW + DAY + 3_600_000);
     expect(s.f.requests).toHaveLength(2);
+    // Third failure in a row pauses weekly runs: no fourth paid call.
+    await s.cron(NOW + 2 * DAY + 7_200_000);
+    await s.cron(NOW + 3 * DAY + 10_800_000);
+    await s.cron(NOW + 4 * DAY + 14_400_000);
+    expect(s.f.requests).toHaveLength(3);
+    expect(((await (await s.app().request('/api/agent', { headers: { cookie: s.cookie } })).json()) as any).settings.paused).toBe(true);
+    // Switching it on again resumes.
+    await sendJsonReq(s.app(), 'POST', '/api/agent/settings', s.cookie, { weekly: true });
+    await s.cron(NOW + 5 * DAY + 18_000_000);
+    expect(s.f.requests).toHaveLength(4);
   });
 });
 

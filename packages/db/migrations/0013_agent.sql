@@ -6,6 +6,7 @@ CREATE TABLE agent_settings (
   weekly INTEGER NOT NULL DEFAULT 0,
   last_attempt_at TEXT,             -- last weekly run, success or not (a failed run waits a day, never retries hourly)
   last_error TEXT,
+  failures INTEGER NOT NULL DEFAULT 0, -- weekly runs in a row that failed; at 3 the weekly brief pauses (we pay for failed calls)
   updated_at TEXT NOT NULL
 );
 CREATE TABLE agent_briefs (

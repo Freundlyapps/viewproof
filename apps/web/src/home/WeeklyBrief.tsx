@@ -14,7 +14,7 @@ export interface AgentChange {
   appliedOn: string | null; appliedTitle: string | null; check7: Measurement | null; check28: Measurement | null;
 }
 export interface AgentState {
-  settings: { weekly: boolean; lastAttemptAt: string | null; lastError: string | null };
+  settings: { weekly: boolean; lastAttemptAt: string | null; lastError: string | null; paused?: boolean };
   brief: null | { id: string; createdAt: string; trigger: 'weekly' | 'manual'; ai: AiInfo; tokens: { input: number; output: number }; ideas: AiItem[]; sources: AiSource[]; missing: AiMissing[]; dropped: number };
   changes: AgentChange[];
   usage: UsageCount;
@@ -124,7 +124,7 @@ export function WeeklyBrief() {
         {s.usage.limit === 0 ? <span className="muted">Included with Pro, or with your own AI key on any plan</span>
           : left !== null && <span className="muted">{left} of {s.usage.limit} left this month</span>}
       </div>
-      {s.settings.weekly && s.settings.lastError && <p className="small err-note">The last weekly brief failed: {s.settings.lastError}</p>}
+      {s.settings.weekly && s.settings.lastError && <p className="small err-note">The last weekly brief failed: {s.settings.lastError}{s.settings.paused ? ' Weekly briefs are paused after 3 failures in a row; make one now or switch them off and on to try again.' : ''}</p>}
       {fail && <Failure f={fail} />}
       {!b ? (
         <p className="empty">No brief yet. A brief reads your last 28 and 90 days, your search terms, your competitors' uploads and recent outliers, then suggests 5 videos and better titles for videos below your usual. Every number it gives is checked against that data.</p>

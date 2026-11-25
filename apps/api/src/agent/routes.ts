@@ -5,6 +5,7 @@ import type { Deps } from '../app';
 import { aiUsage, label } from '../ai/router';
 import { readSession } from '../session';
 import { runBrief } from './brief';
+import { MAX_WEEKLY_FAILURES } from './checks';
 
 const err = (c: Context, status: number, body: object) => c.json(body, status as 400);
 const parse = <T>(s: string | null, fallback: T): T => {
@@ -24,7 +25,7 @@ export async function agentState(deps: Deps, userId: string) {
     aiUsage(deps, userId),
   ]);
   return {
-    settings: { weekly: !!settings?.weekly, lastAttemptAt: settings?.last_attempt_at ?? null, lastError: settings?.last_error ?? null },
+    settings: { weekly: !!settings?.weekly, lastAttemptAt: settings?.last_attempt_at ?? null, lastError: settings?.last_error ?? null, paused: (settings?.failures ?? 0) >= MAX_WEEKLY_FAILURES },
     brief: brief ? {
       id: brief.id, createdAt: brief.created_at, trigger: brief.trigger,
       ai: { provider: brief.provider, label: label(brief.provider), model: brief.model, via: brief.via },
@@ -52,7 +53,7 @@ export function agentRoutes(app: Hono, deps: Deps): void {
     if (!s) return err(c, 401, { error: 'signed_out', message: 'Sign in first.' });
     const b = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     if (typeof b.weekly !== 'boolean') return err(c, 400, { error: 'bad_request', message: 'Send weekly: true or false.' });
-    await deps.db.prepare('INSERT INTO agent_settings (user_id, weekly, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET weekly = excluded.weekly, updated_at = excluded.updated_at, last_error = NULL')
+    await deps.db.prepare('INSERT INTO agent_settings (user_id, weekly, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET weekly = excluded.weekly, updated_at = excluded.updated_at, last_error = NULL, failures = 0')
       .bind(s.userId, b.weekly ? 1 : 0, new Date(deps.now()).toISOString()).run();
     return c.json(await agentState(deps, s.userId));
   });
@@ -62,6 +63,8 @@ export function agentRoutes(app: Hono, deps: Deps): void {
     if (!s) return err(c, 401, { error: 'signed_out', message: 'Sign in first.' });
     const r = await runBrief(deps, s.userId, 'manual');
     if (!r.ok) return err(c, r.status, { error: r.error, message: r.message });
+    // A brief that worked resumes paused weekly runs.
+    await deps.db.prepare('UPDATE agent_settings SET failures = 0, last_error = NULL WHERE user_id = ?').bind(s.userId).run();
     return c.json(await agentState(deps, s.userId));
   });
 

@@ -17,6 +17,8 @@ const ANALYTICS_LAG_DAYS = 2;
 const ASSUME_COMPLETE_DAYS = 7;
 export const BRIEF_KEEP_DAYS = 30;
 export const CHANGE_KEEP_DAYS = 60;
+/** Weekly runs that fail this many times in a row pause until the creator switches the brief on again or makes one. */
+export const MAX_WEEKLY_FAILURES = 3;
 /** Weekly briefs started per hourly run (each makes several Analytics calls and one AI call). */
 export const BRIEFS_PER_RUN = 2;
 const CHECKS_PER_RUN = 10;
@@ -127,8 +129,9 @@ export async function runAgentCron(deps: Deps, at: Date): Promise<void> {
         AND EXISTS (SELECT 1 FROM channels c WHERE c.user_id = s.user_id AND c.status != 'gone')
         AND NOT EXISTS (SELECT 1 FROM agent_briefs b WHERE b.user_id = s.user_id AND b.created_at > ?)
         AND (s.last_attempt_at IS NULL OR s.last_attempt_at < ?)
+        AND s.failures < ?
       ORDER BY s.last_attempt_at IS NOT NULL, s.last_attempt_at LIMIT ?`)
-    .bind(iso(now - 7 * DAY), iso(now - DAY), BRIEFS_PER_RUN)
+    .bind(iso(now - 7 * DAY), iso(now - DAY), MAX_WEEKLY_FAILURES, BRIEFS_PER_RUN)
     .all<{ user_id: string }>();
   for (const { user_id } of due.results) {
     let error: string | null;
@@ -138,6 +141,6 @@ export async function runAgentCron(deps: Deps, at: Date): Promise<void> {
     } catch (e) {
       error = e instanceof Error ? e.message.slice(0, 200) : 'failed';
     }
-    await deps.db.prepare('UPDATE agent_settings SET last_attempt_at = ?, last_error = ? WHERE user_id = ?').bind(iso(now), error, user_id).run();
+    await deps.db.prepare('UPDATE agent_settings SET last_attempt_at = ?, last_error = ?, failures = CASE WHEN ? IS NULL THEN 0 ELSE failures + 1 END WHERE user_id = ?').bind(iso(now), error, error, user_id).run();
   }
 }

@@ -19,7 +19,7 @@ export interface TrackedChannelRow {
 }
 export interface FeedVideoRow { video_id: string; channel_id: string; title: string; published_at: string; format: string; first_seen_at: string }
 export interface VideoSnapshotRow { video_id: string; at: string; views: number }
-export interface AgentSettingsRow { user_id: string; weekly: number; last_attempt_at: string | null; last_error: string | null; updated_at: string }
+export interface AgentSettingsRow { user_id: string; weekly: number; last_attempt_at: string | null; last_error: string | null; failures: number; updated_at: string }
 export interface AgentBriefRow {
   id: string; user_id: string; channel_row_id: string; created_at: string; trigger: 'weekly' | 'manual'; provider: string; model: string; via: 'own' | 'included';
   input_tokens: number; output_tokens: number; ideas: string; sources: string; missing: string; dropped: number;
