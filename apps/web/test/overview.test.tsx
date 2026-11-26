@@ -11,7 +11,7 @@ const allNoData = { current: measured.nd(NO), previous: measured.nd(NO) };
 const routes = (over: Record<string, unknown> = {}) => ({
   '/api/me': ME, '/api/channels': [channel()],
   '/api/channels/row1/overview': overview(), '/api/channels/row1/videos': videos(), '/api/channels/row1/upload-times': uploadTimes(),
-  '/api/channels/row1/search-terms': searchTerms(), ...over,
+  '/api/channels/row1/search-terms': searchTerms(), '/api/agent': { settings: { weekly: false, lastAttemptAt: null, lastError: null }, brief: null, changes: [], usage: { used: 0, limit: 0 } }, ...over,
 });
 
 describe('overview', () => {
@@ -89,12 +89,13 @@ describe('overview', () => {
 });
 
 describe('home', () => {
-  test('KPIs, top search terms, needs attention; unbuilt cards say so', async () => {
+  test('KPIs, top search terms, needs attention; the weekly brief card replaces the old placeholders', async () => {
     mockApi(routes({ '/api/channels/row1/search-terms': searchTerms([{ term: 'how to trim a bowl', views: 60, watchMinutes: 240, previousViews: measured.v(44), topVideo: null }]) }));
     renderAt('/');
     expect(await screen.findByText('how to trim a bowl')).toBeTruthy();
     expect(await screen.findByTestId('kpi-views')).toBeTruthy();
-    expect(screen.getAllByText('Arrives in a later update')).toHaveLength(2);
+    expect(await screen.findByTestId('weekly-brief')).toBeTruthy();
+    expect(screen.queryAllByText('Arrives in a later update')).toHaveLength(0);
     expect(screen.getByRole('heading', { name: /Needs attention/ })).toBeTruthy();
   });
 });

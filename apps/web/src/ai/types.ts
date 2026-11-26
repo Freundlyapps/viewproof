@@ -3,7 +3,7 @@ export interface AiSource { id: string; kind: string; label: string; detail: str
 export interface AiMissing { kind: string; label: string; reason: string }
 export interface AiInfo { provider: string; label: string; model: string; via: 'own' | 'included' }
 export interface UsageCount { used: number; limit: number | null }
-export interface AiUsage { month: string; quick: UsageCount; coach: UsageCount }
+export interface AiUsage { month: string; quick: UsageCount; coach: UsageCount; brief?: UsageCount }
 export interface AiItem { text: string; why: string; sources: string[] }
 export interface QuickResult { items: AiItem[]; sources: AiSource[]; missing: AiMissing[]; ai: AiInfo; usage: AiUsage }
 export interface AskResult { answer: string; cited: string[]; unknownCitations: string[]; sources: AiSource[]; missing: AiMissing[]; ai: AiInfo; usage: AiUsage }

@@ -23,8 +23,9 @@ export async function usageSummary(deps: Deps, userId: string): Promise<{ plan: 
             (SELECT COALESCE(SUM(count), 0) FROM usage_counts WHERE user_id = ?1 AND kind = 'keyword' AND period = ?2) AS keywords,
             (SELECT COUNT(*) FROM outlier_searches WHERE user_id = ?1 AND day = ?3) AS outliers,
             (SELECT COALESCE(SUM(quick), 0) FROM ai_usage WHERE user_id = ?1 AND month = ?2) AS quick,
-            (SELECT COALESCE(SUM(coach), 0) FROM ai_usage WHERE user_id = ?1 AND month = ?2) AS coach`,
-  ).bind(userId, month, dayOf(now)).first<Record<'channels' | 'competitors' | 'keywords' | 'outliers' | 'quick' | 'coach', number>>();
+            (SELECT COALESCE(SUM(coach), 0) FROM ai_usage WHERE user_id = ?1 AND month = ?2) AS coach,
+            (SELECT COALESCE(SUM(brief), 0) FROM ai_usage WHERE user_id = ?1 AND month = ?2) AS brief`,
+  ).bind(userId, month, dayOf(now)).first<Record<'channels' | 'competitors' | 'keywords' | 'outliers' | 'quick' | 'coach' | 'brief', number>>();
   const row = (key: LimitKey, label: string, used: number, per: UsageRow['per']): UsageRow => ({ key, label, used, limit: limitOf(plan, deps.config.selfHosted, key), per });
   return {
     plan, month, resetsOn: nextMonth(now),
@@ -35,6 +36,7 @@ export async function usageSummary(deps: Deps, userId: string): Promise<{ plan: 
       row('outlierSearches', 'Outlier searches', r!.outliers, 'day'),
       row('aiQuick', 'AI quick actions', r!.quick, 'month'),
       row('aiCoach', 'Ask AI messages', r!.coach, 'month'),
+      row('aiBrief', 'Weekly briefs', r!.brief, 'month'),
     ],
   };
 }

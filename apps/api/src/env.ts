@@ -25,6 +25,8 @@ export interface Env {
   AI_BASE_URL?: string;
   AI_QUICK_MODEL?: string;
   AI_COACH_MODEL?: string;
+  /** Model for the weekly brief (the agent's decisions); defaults to AI_COACH_MODEL. */
+  AI_BRIEF_MODEL?: string;
   /** Optional billing (plan 7): all three set and SELF_HOSTED not true turns it on. */
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
@@ -38,7 +40,7 @@ export interface Env {
 
 export interface BillingConfig { secretKey: string; webhookSecret: string; priceId: string }
 
-export interface AiConfig { provider: LlmProviderId; apiKey: string; baseUrl: string | null; quickModel: string; coachModel: string }
+export interface AiConfig { provider: LlmProviderId; apiKey: string; baseUrl: string | null; quickModel: string; coachModel: string; briefModel: string }
 
 export interface Config {
   appUrl: string;
@@ -100,5 +102,5 @@ function parseAi(env: Env): AiConfig | null {
   const quickModel = env.AI_QUICK_MODEL || preset.quickModel;
   const coachModel = env.AI_COACH_MODEL || preset.coachModel;
   if (!quickModel || !coachModel) throw new Error(`AI_QUICK_MODEL and AI_COACH_MODEL are required for ${provider}`);
-  return { provider, apiKey: env.AI_API_KEY ?? '', baseUrl, quickModel, coachModel };
+  return { provider, apiKey: env.AI_API_KEY ?? '', baseUrl, quickModel, coachModel, briefModel: env.AI_BRIEF_MODEL || coachModel };
 }

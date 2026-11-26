@@ -1,4 +1,5 @@
 import { tokensOf } from '../mcp/tokens';
+import { agentState } from '../agent/routes';
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
@@ -58,6 +59,8 @@ export async function revokeAndDelete(deps: Deps, ch: ChannelRow): Promise<boole
   const token = await tryDecrypt(deps, ch.refresh_token_enc);
   await deps.db.batch([
     deps.db.prepare('DELETE FROM report_cache WHERE channel_id = ?').bind(ch.id),
+    deps.db.prepare('DELETE FROM agent_changes WHERE channel_row_id = ?').bind(ch.id),
+    deps.db.prepare('DELETE FROM agent_briefs WHERE channel_row_id = ?').bind(ch.id),
     deps.db.prepare('DELETE FROM channels WHERE id = ?').bind(ch.id),
   ]);
   if (token) await deps.google.revoke(token);
@@ -162,7 +165,19 @@ export function accountRoutes(app: Hono, deps: Deps): void {
         const k = await deps.db.prepare('SELECT provider, quick_model, coach_model, key_hint FROM ai_keys WHERE user_id = ?').bind(u.id).first<{ provider: string; quick_model: string; coach_model: string; key_hint: string }>();
         return k ? { provider: k.provider, quickModel: k.quick_model, coachModel: k.coach_model, keyHint: k.key_hint } : null;
       })(),
-      aiUsage: (await deps.db.prepare('SELECT month, quick, coach FROM ai_usage WHERE user_id = ? ORDER BY month').bind(u.id).all<{ month: string; quick: number; coach: number }>()).results,
+      aiUsage: (await deps.db.prepare('SELECT month, quick, coach, brief FROM ai_usage WHERE user_id = ? ORDER BY month').bind(u.id).all<{ month: string; quick: number; coach: number; brief: number }>()).results,
+      agent: await (async () => {
+        const st = await agentState(deps, u.id);
+        const briefs = (await deps.db.prepare('SELECT created_at, trigger, provider, model, via, input_tokens, output_tokens, ideas, dropped FROM agent_briefs WHERE user_id = ? ORDER BY created_at').bind(u.id)
+          .all<{ created_at: string; trigger: string; provider: string; model: string; via: string; input_tokens: number; output_tokens: number; ideas: string; dropped: number }>()).results;
+        return {
+          weekly: st.settings.weekly,
+          briefs: briefs.map((b) => ({ createdAt: b.created_at, trigger: b.trigger, provider: b.provider, model: b.model, via: b.via, inputTokens: b.input_tokens, outputTokens: b.output_tokens, ideas: JSON.parse(b.ideas), dropped: b.dropped })),
+          // Every change, not just the 20 the page shows.
+          changes: (await deps.db.prepare('SELECT video_id, before_title, proposed_title, why, status, created_at, approved_at, applied_on, applied_title, check7, check28 FROM agent_changes WHERE user_id = ? ORDER BY created_at').bind(u.id)
+            .all<Record<string, string | null>>()).results.map((r) => ({ ...r, check7: r.check7 ? JSON.parse(r.check7) : null, check28: r.check28 ? JSON.parse(r.check28) : null })),
+        };
+      })(),
       mcpTokens: (await tokensOf(deps, u.id)).map((t) => ({ label: t.label, createdAt: t.createdAt, lastUsedAt: t.lastUsedAt })),
       mcpCalls: (await deps.db.prepare('SELECT day, count FROM mcp_calls WHERE user_id = ? ORDER BY day').bind(u.id).all<{ day: string; count: number }>()).results,
       sessions: (await deps.db.prepare('SELECT created_at, expires_at FROM sessions WHERE user_id = ? ORDER BY created_at').bind(u.id).all<{ created_at: string; expires_at: string }>()).results.map((x) => ({
@@ -196,6 +211,9 @@ export function accountRoutes(app: Hono, deps: Deps): void {
       deps.db.prepare('DELETE FROM report_cache WHERE channel_id IN (SELECT id FROM channels WHERE user_id = ?)').bind(s.userId),
       deps.db.prepare('DELETE FROM oauth_states WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM pending_connections WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM agent_changes WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM agent_briefs WHERE user_id = ?').bind(s.userId),
+      deps.db.prepare('DELETE FROM agent_settings WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM channels WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM user_competitors WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM keyword_lookups WHERE user_id = ?').bind(s.userId),

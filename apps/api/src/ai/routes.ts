@@ -3,6 +3,7 @@ import { type LlmMessage, isLlmError } from '@viewproof/providers';
 import type { Context, Hono } from 'hono';
 import type { Deps } from '../app';
 import type { AiTask } from '../plans';
+import { recordTokens } from './tokens';
 import { readSession } from '../session';
 import { type AiItem, citations, parseItems } from './answer';
 import { type QuickAction, SYSTEM_QUICK, askSystem, missingLine, quickPrompt } from './prompts';
@@ -84,6 +85,7 @@ export function aiRoutes(app: Hono, deps: Deps): void {
       const f = llmFailure(r, choice.via, choice.client.provider);
       return err(c, f.status, { error: f.error, message: f.message });
     }
+    await recordTokens(deps, 'quick', choice.client.provider, r.model || choice.client.model, choice.via, r.inputTokens, r.outputTokens);
     const parsed = parseItems(r.text, new Set(sources.map((x) => x.id)));
     const items = parsed && (action === 'tags' ? capTags(parsed) : parsed.slice(0, COUNT[action]));
     if (!items?.length) return err(c, 502, { error: 'bad_output', message: BAD_OUTPUT });
@@ -110,6 +112,7 @@ export function aiRoutes(app: Hono, deps: Deps): void {
       const f = llmFailure(r, choice.via, choice.client.provider);
       return err(c, f.status, { error: f.error, message: f.message });
     }
+    await recordTokens(deps, 'coach', choice.client.provider, r.model || choice.client.model, choice.via, r.inputTokens, r.outputTokens);
     const answer = r.text.trim();
     if (!answer) return err(c, 502, { error: 'bad_output', message: BAD_OUTPUT });
     const { cited, unknown } = citations(answer, new Set(sources.map((x) => x.id)));

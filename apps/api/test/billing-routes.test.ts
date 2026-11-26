@@ -32,7 +32,7 @@ describe('billing routes', () => {
     const app = createApp(makeDeps({ now: () => NOW }));
     const g = await (await app.request('/api/billing', { headers: { cookie } })).json<{ enabled: boolean; plan: string; usage: { rows: unknown[] } }>();
     expect(g).toMatchObject({ enabled: false, plan: 'free', status: null, periodEnd: null, cancelAt: null });
-    expect(g.usage.rows).toHaveLength(6);
+    expect(g.usage.rows).toHaveLength(7);
     for (const p of ['checkout', 'portal', 'cancel', 'resume']) {
       const r = await sendJsonReq(app, 'POST', `/api/billing/${p}`, cookie);
       expect(r.status).toBe(404);

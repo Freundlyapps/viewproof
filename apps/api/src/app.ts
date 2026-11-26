@@ -1,5 +1,6 @@
 import { aiKeyRoutes } from './ai/keys';
 import { aiRoutes } from './ai/routes';
+import { agentRoutes } from './agent/routes';
 import { mcpTokenRoutes } from './mcp/tokens';
 import { mcpRoutes } from './mcp/routes';
 import type { StripeClient } from './billing/stripe';
@@ -112,6 +113,7 @@ export function createApp(deps: Deps): Hono {
   outlierRoutes(app, deps);
   aiKeyRoutes(app, deps);
   aiRoutes(app, deps);
+  agentRoutes(app, deps);
   mcpTokenRoutes(app, deps);
   billingWebhook(app, deps);
   billingRoutes(app, deps);

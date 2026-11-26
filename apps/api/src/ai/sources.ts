@@ -8,7 +8,7 @@ import { latestUploads } from '../competitors/routes';
 import { findOutliers } from '../pool/outliers';
 import { channelReport, loadOverview, loadSearchTerms, loadVideos, today } from '../routes/channel';
 
-export type SourceKind = 'channel' | 'videos' | 'terms' | 'competitors' | 'outliers';
+export type SourceKind = 'channel' | 'videos' | 'terms' | 'competitors' | 'outliers' | 'candidates';
 export interface AiSource { id: string; kind: SourceKind; label: string; detail: string; provenance: 'real' | 'public' | 'pool'; lines: string[] }
 export interface Missing { kind: SourceKind; label: string; reason: string }
 
@@ -19,7 +19,9 @@ const LABELS: Record<SourceKind, { label: string; detail: string; provenance: Ai
   terms: { label: 'Your real search terms, last 90 days', detail: 'YouTube Analytics', provenance: 'real' },
   competitors: { label: "Tracked competitors' latest uploads", detail: 'public RSS feeds', provenance: 'public' },
   outliers: { label: 'Outliers our network observed, last 30 days', detail: 'ViewProof data pool', provenance: 'pool' },
+  candidates: { label: 'Your videos below your usual, last 28 days', detail: 'YouTube Analytics', provenance: 'real' },
 };
+export const SOURCE_LABELS = LABELS;
 const NO_CHANNEL = 'No channel connected';
 
 const num = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -115,6 +117,8 @@ export async function gatherSources(deps: Deps, userId: string, kinds: SourceKin
             return flatten(`${flatten(u.channelTitle, 60)}: "${flatten(u.title, 100)}" — ${n === null ? 'views unknown' : views(n)}${x === null ? '' : `, ×${x}`}, published ${date(u.publishedAt)}`);
           });
         }
+        case 'candidates':
+          return 'Only the weekly brief reads this';
         case 'outliers': {
           const r = await findOutliers(deps, { format: 'any', days: 30, min: 3, size: 'any', q: '' });
           if (!r.rows.length) return 'No outliers in the pool for the last 30 days';

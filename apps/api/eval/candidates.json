@@ -1,5 +1,5 @@
 [
-  { "name": "Claude Haiku 5.5", "provider": "anthropic", "model": "claude-haiku-5-5", "keyEnv": "EVAL_ANTHROPIC_KEY", "tasks": ["quick", "coach"], "price": { "inPerM": 0.10, "outPerM": 0.50, "source": "research 09 (claude-api price table)" } },
-  { "name": "Claude Sonnet 5.5", "provider": "anthropic", "model": "claude-sonnet-5-5", "keyEnv": "EVAL_ANTHROPIC_KEY", "tasks": ["coach"], "price": null },
-  { "name": "DeepSeek V4 Flash (OpenRouter)", "provider": "openrouter", "model": "deepseek/deepseek-v4-flash", "keyEnv": "EVAL_OPENROUTER_KEY", "tasks": ["quick", "coach"], "price": null }
+  { "name": "Claude Haiku 5.5", "provider": "anthropic", "model": "claude-haiku-5-5", "keyEnv": "EVAL_ANTHROPIC_KEY", "tasks": ["quick", "coach", "brief"], "price": { "inPerM": 0.10, "outPerM": 0.50, "source": "claude-api price table, 2026-11" } },
+  { "name": "Claude Sonnet 5.5", "provider": "anthropic", "model": "claude-sonnet-5-5", "keyEnv": "EVAL_ANTHROPIC_KEY", "tasks": ["coach", "brief"], "price": { "inPerM": 2.00, "outPerM": 10.00, "source": "claude-api price table, 2026-11" } },
+  { "name": "DeepSeek V4 Flash (OpenRouter)", "provider": "openrouter", "model": "deepseek/deepseek-v4-flash", "keyEnv": "EVAL_OPENROUTER_KEY", "tasks": ["quick", "coach", "brief"], "price": null }
 ]
