@@ -32,6 +32,8 @@ export interface Env {
   /** Shown on /privacy and /terms (Google's OAuth verification needs a reachable contact). */
   OPERATOR_NAME?: string;
   CONTACT_EMAIL?: string;
+  /** Postal address for the legal notice (/imprint); German law (§ 5 DDG) needs it for a commercial service. Lines split by \n. */
+  OPERATOR_ADDRESS?: string;
 }
 
 export interface BillingConfig { secretKey: string; webhookSecret: string; priceId: string }
@@ -54,7 +56,7 @@ export interface Config {
   /** Stripe billing, or null when this server has none (self-hosted or not configured). */
   billing: BillingConfig | null;
   /** Who runs this server, for the privacy and terms pages; null fields are said to be unset. */
-  operator: { name: string | null; contact: string | null };
+  operator: { name: string | null; contact: string | null; address: string | null };
 }
 
 export function parseConfig(env: Env): Config {
@@ -82,7 +84,7 @@ export function parseConfig(env: Env): Config {
     billing: env.SELF_HOSTED !== 'true' && env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET && env.STRIPE_PRICE_ID
       ? { secretKey: env.STRIPE_SECRET_KEY, webhookSecret: env.STRIPE_WEBHOOK_SECRET, priceId: env.STRIPE_PRICE_ID }
       : null,
-    operator: { name: env.OPERATOR_NAME?.trim() || null, contact: env.CONTACT_EMAIL?.trim() || null },
+    operator: { name: env.OPERATOR_NAME?.trim() || null, contact: env.CONTACT_EMAIL?.trim() || null, address: env.OPERATOR_ADDRESS?.replace(/\\n/g, '\n').trim() || null },
     cronFeedBudget: Math.min(Math.max(Number(env.CRON_FEED_BUDGET) || 10, 1), 200),
   };
 }

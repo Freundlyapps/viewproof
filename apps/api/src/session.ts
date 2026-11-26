@@ -5,7 +5,7 @@ import { randomToken, sha256Hex } from './crypto';
 
 export const SESSION_COOKIE = 'vp_session';
 /** On https the cookie gets the __Host- prefix: Secure, Path=/, no Domain, so no subdomain can plant one. */
-export const sessionCookieName = (deps: Deps) => (deps.config.secureCookies ? `__Host-${SESSION_COOKIE}` : SESSION_COOKIE);
+export const sessionCookieName = (deps: Pick<Deps, 'config'>) => (deps.config.secureCookies ? `__Host-${SESSION_COOKIE}` : SESSION_COOKIE);
 export const SESSION_DAYS = 30;
 const DAY_MS = 86_400_000;
 

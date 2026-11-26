@@ -219,7 +219,7 @@ A self-hosted server has no plan limits and no billing, uses your own Google OAu
    ```
    Cloudflare runs the hourly Cron Trigger itself.
 
-**Privacy and terms pages:** every server serves `/privacy` and `/terms`. Set `OPERATOR_NAME` and `CONTACT_EMAIL` so they say who runs it. Google's OAuth verification needs both pages and a contact address. The hosted service's launch steps are in [docs/closed-beta.md](docs/closed-beta.md).
+**Privacy, terms and legal notice:** every server serves `/privacy`, `/terms` and `/imprint`, linked from every page. Set `OPERATOR_NAME`, `CONTACT_EMAIL` and `OPERATOR_ADDRESS` so they say who runs it; the privacy page follows the server's own setup (self-hosted or not, DataForSEO, billing, pool archive). Google's OAuth verification needs both pages and a contact address. The hosted service's launch steps are in [docs/closed-beta.md](docs/closed-beta.md).
 
 **The extension and a self-hosted server:** the store build talks only to `viewproof.app`. To use keyword facts, Tools and the data pool with your own server, add your origin to `apps/extension/src/app-origins.ts` and build the extension yourself (see "Install from source").
 

@@ -14,7 +14,7 @@ import { factsSummary, gridOutliers, parseChannelPage, topResultsFacts } from '@
 import { getBaseline } from '../src/baseline';
 import { searchCard, searchFeedOutliers } from '../src/search-panel';
 import { badgeFor } from '../src/channel';
-import { readTranscriptPanel, transcriptCapture, transcriptStore } from '../src/tools';
+import { readTranscriptPanel, transcriptCapture } from '../src/tools';
 import { videoIdFromUrl } from '../src/bridge';
 import { DEFAULT_TOGGLES, type PanelToggles, settingsChanged, settingsStore } from '../src/settings';
 
@@ -183,7 +183,11 @@ export default defineContentScript({
     });
 
     // Tools → Transcripts: when the user opens YouTube's transcript panel, keep its text in this browser only.
-    const transcripts = transcriptStore(browser.storage.local);
+    // Saved by the background, the single writer: two YouTube tabs saving at once would otherwise lose one save.
+    const saveTranscript = async (t: { videoId: string; title: string; segments: unknown[] }) => {
+      const r = (await browser.runtime.sendMessage({ kind: 'transcript-save', ...t })) as { ok: boolean; reason?: string } | undefined;
+      if (!r?.ok) throw new Error(r?.reason ?? 'the extension did not answer');
+    };
     const capture = transcriptCapture();
     const watchedId = () => {
       const id = location.pathname === '/watch' ? videoIdFromUrl(location.href) : null;
@@ -194,7 +198,7 @@ export default defineContentScript({
       const videoId = watchedId();
       if (!videoId) return;
       const segments = capture.tick(videoId, readTranscriptPanel(document));
-      if (segments) void transcripts.put({ videoId, title: document.title.replace(/^\(\d+\)\s*/, '').replace(/ - YouTube$/, ''), segments }, Date.now()).catch(() => undefined);
+      if (segments) void saveTranscript({ videoId, title: document.title.replace(/^\(\d+\)\s*/, '').replace(/ - YouTube$/, ''), segments }).catch((e: unknown) => console.warn('[ViewProof] transcript not saved', e));
     }, 3000);
 
     // The moment navigation starts, the old video's numbers must go.

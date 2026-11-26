@@ -24,24 +24,31 @@ export function videoIdFromInput(input: string): string | null {
   return id && ID.test(id) ? id : null;
 }
 
-const MARKERS = ['ytInitialPlayerResponse = ', 'ytInitialPlayerResponse=', '"ytInitialPlayerResponse"] = ', '"ytInitialPlayerResponse"]='];
+/** Where a watch page assigns ytInitialPlayerResponse, in any spacing or quoting. */
+const MARKER = /(?:\bytInitialPlayerResponse|\[\s*["']ytInitialPlayerResponse["']\s*\])\s*=(?!=)\s*/g;
 
-/** The JSON object assigned to ytInitialPlayerResponse in a watch page's HTML; null when it isn't there or isn't JSON. */
+/**
+ * The JSON object assigned to ytInitialPlayerResponse in a watch page's HTML; null when it isn't there or isn't JSON.
+ * Every assignment is tried in page order: an early `= null`, a comparison or a stub never hides the real data later on.
+ * An object carrying videoDetails or playabilityStatus wins over any other object.
+ */
 export function extractPlayerResponse(html: string): unknown | null {
-  for (const marker of MARKERS) {
-    const at = html.indexOf(marker);
-    if (at < 0) continue;
-    const start = at + marker.length;
-    if (html[start] !== '{') return null;
+  let fallback: unknown = null;
+  for (const m of html.matchAll(MARKER)) {
+    const start = m.index + m[0].length;
+    if (html[start] !== '{') continue;
     const end = objectEnd(html, start);
-    if (end < 0) return null;
+    if (end < 0) continue;
+    let value: unknown;
     try {
-      return JSON.parse(html.slice(start, end + 1)) as unknown;
+      value = JSON.parse(html.slice(start, end + 1));
     } catch {
-      return null;
+      continue;
     }
+    if (value && typeof value === 'object' && ('videoDetails' in value || 'playabilityStatus' in value)) return value;
+    fallback ??= value;
   }
-  return null;
+  return fallback;
 }
 
 /** Index of the brace closing the object that opens at `start`, skipping braces inside strings; -1 if unterminated. */

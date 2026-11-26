@@ -40,7 +40,7 @@ export function Layout(props: { title: string; signedIn?: boolean; children: Chi
           {props.signedIn ? <a class="btn" href="/account">Account</a> : null}
         </header>
         <main>{props.children}</main>
-        <footer><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="https://github.com/Freundlyapps/viewproof">Source code</a></footer>
+        <footer><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/imprint">Legal notice</a> · <a href="https://github.com/Freundlyapps/viewproof">Source code</a></footer>
       </body>
     </html>
   );

@@ -189,7 +189,8 @@ export function serve<T>(
 const YT_SEARCH = 'insightTrafficSourceType==YT_SEARCH';
 const NOT_IN_PREV = "Not in YouTube's top 25 for the previous period";
 const NO_TERMS = "YouTube lists search terms only once enough people searched; it doesn't publish the threshold.";
-const FIRST_WEEK_TTL_MS = 30 * 86_400_000;
+/** First-week views can't change once the week is over; kept 30 days (and deleted then, see the hourly job). */
+export const FIRST_WEEK_TTL_MS = 30 * 86_400_000;
 const NOT_AVAILABLE_TTL_MS = 30 * 60_000;
 const DAY_MS = 86_400_000;
 

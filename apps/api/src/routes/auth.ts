@@ -17,7 +17,7 @@ const SCOPE_NAMES: Record<string, string> = {
 };
 
 /** Browser binding for the sign-in: the callback must come from the browser that started it. */
-const stateCookie = (deps: Deps) => (deps.config.secureCookies ? '__Host-vp_oauth' : 'vp_oauth');
+export const stateCookie = (deps: Pick<Deps, 'config'>) => (deps.config.secureCookies ? '__Host-vp_oauth' : 'vp_oauth');
 
 function problem(c: Context, title: string, text: string, status: 200 | 400 | 409 = 400, detail?: string) {
   c.status(status);

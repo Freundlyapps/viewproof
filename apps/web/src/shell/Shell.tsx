@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import type { ChannelInfo, Me } from '../api';
 import { type Theme, applyTheme, initialTheme } from '../theme';
+import { LegalLinks } from './LegalLinks';
 import { NAV } from './nav';
 
 export function Shell(props: { me: Me; channels: ChannelInfo[]; current: ChannelInfo | null; onSwitch: (id: string) => void; children: ReactNode }) {
@@ -67,6 +68,7 @@ export function Shell(props: { me: Me; channels: ChannelInfo[]; current: Channel
           ) : null}
           {props.children}
         </main>
+        <LegalLinks />
       </div>
     </div>
   );

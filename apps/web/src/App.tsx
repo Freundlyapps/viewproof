@@ -10,6 +10,7 @@ import { Tools } from './tools/Tools';
 import { NoChannel } from './shell/NoChannel';
 import { Shell } from './shell/Shell';
 import { SignIn } from './shell/SignIn';
+import { LegalLinks } from './shell/LegalLinks';
 import { Soon } from './shell/Soon';
 import { HomePage } from './home/Home';
 import { MyChannel } from './channel/MyChannel';
@@ -52,7 +53,7 @@ export function App() {
 
   if (state.kind === 'loading') return <p className="muted" style={{ padding: 24 }}>Loading…</p>;
   if (state.kind === 'signed_out') return <SignIn />;
-  if (state.kind === 'error') return <p style={{ padding: 24 }}>Couldn't load your account: {state.message}</p>;
+  if (state.kind === 'error') return <><p style={{ padding: 24 }}>Couldn't load your account: {state.message}</p><LegalLinks /></>;
 
   const current = state.channels.find((c) => c.id === currentId) ?? state.channels[0] ?? null;
   const onSwitch = (id: string) => {

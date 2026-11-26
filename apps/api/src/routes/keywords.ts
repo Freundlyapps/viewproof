@@ -5,7 +5,8 @@ import type { Deps } from '../app';
 import { limitMessage, limitOf, planOf } from '../plans';
 import { readSession } from '../session';
 
-const TRENDS_TTL_MS = 30 * 86_400_000;
+/** Shared keyword results are used and kept this long (deleted by the hourly job; stated on the privacy page). */
+export const KEYWORD_CACHE_MS = 30 * 86_400_000;
 /** New (uncached) paid lookups per user per month come from the plan (research 09). */
 const limitBase = (n: number) => `You used all ${n} new keyword lookups included this month; keywords looked up before still work.`;
 export const MAX_KEYWORD = 100;
@@ -22,7 +23,7 @@ export async function keywordTrends(deps: Deps, userId: string, q: string, count
   const country = COUNTRIES.find((x) => x.code === countryCode.toUpperCase()) ?? COUNTRIES.find((x) => x.code === DEFAULT_COUNTRY)!;
   const provider = deps.keywords;
   const row = await deps.db.prepare('SELECT * FROM keyword_cache WHERE keyword = ? AND country = ? AND provider = ?').bind(q, country.code, provider.name).first<KeywordCacheRow>();
-  if (row && deps.now() - Date.parse(row.fetched_at) < TRENDS_TTL_MS) return JSON.parse(row.body) as KeywordTrends;
+  if (row && deps.now() - Date.parse(row.fetched_at) < KEYWORD_CACHE_MS) return JSON.parse(row.body) as KeywordTrends;
   if (provider.name !== 'none') {
     // Count the lookup first (atomically), so parallel requests can't pass the limit together.
     const plan = await planOf(deps.db, userId);

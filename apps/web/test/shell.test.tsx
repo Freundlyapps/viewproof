@@ -7,6 +7,34 @@ import { ME, channel, mockApi, signedOut } from './fake-api';
 
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
 
+describe('legal links', () => {
+  // The server's privacy, terms and legal notice pages, outside the React app: plain links, not router links under /app.
+  const expectLegal = async () => {
+    const footer = await screen.findByRole('contentinfo');
+    for (const [name, href] of [['Privacy', '/privacy'], ['Terms', '/terms'], ['Legal notice', '/imprint']] as const) {
+      expect(within(footer).getByRole('link', { name }).getAttribute('href')).toBe(href);
+    }
+  };
+
+  test.each(['/', '/settings', '/tools', '/no/such/page'])('on every app page (%s)', async (path) => {
+    mockApi({ '/api/me': ME, '/api/channels': [channel()] });
+    renderAt(path);
+    await expectLegal();
+  });
+
+  test('without a channel yet', async () => {
+    mockApi({ '/api/me': ME, '/api/channels': [] });
+    renderAt('/');
+    await expectLegal();
+  });
+
+  test('on the sign-in screen', async () => {
+    mockApi({ '/api/me': signedOut(), '/api/channels': signedOut() });
+    renderAt('/');
+    await expectLegal();
+  });
+});
+
 describe('shell', () => {
   test('signed out offers Google sign-in', async () => {
     mockApi({ '/api/me': signedOut(), '/api/channels': signedOut() });
