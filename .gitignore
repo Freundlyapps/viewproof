@@ -10,3 +10,6 @@ playwright-report/
 .dev.vars
 .wrangler/
 apps/api/eval/out/
+
+# Store screenshots show other creators' videos and channel art: keep them local, upload them only to the store.
+docs/store/screenshots/
