@@ -29,3 +29,21 @@ crons = ["17 * * * *"]
 [[r2_buckets]]
 binding = "POOL"
 bucket_name = "viewproof-pool"
+
+# The hosted service (viewproof.app): `pnpm --filter web build && npx wrangler deploy --env production`.
+# Self-hosters: ignore this section (see README → Self-hosting). Secrets are set with `wrangler secret put … --env production`;
+# OPERATOR_NAME, CONTACT_EMAIL and OPERATOR_ADDRESS are set as secrets too, so they live only in Cloudflare.
+# No R2 binding yet: the pool archive step is skipped (and the privacy page says so) until R2 is enabled on the account.
+[env.production]
+routes = [{ pattern = "viewproof.app", custom_domain = true }]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "viewproof"
+database_id = "e07b2247-4e43-42bc-8f6d-ebad3c628b75"
+migrations_dir = "../../packages/db/migrations"
+
+[env.production.vars]
+APP_URL = "https://viewproof.app"
+SELF_HOSTED = "false"
+CRON_FEED_BUDGET = "10"
