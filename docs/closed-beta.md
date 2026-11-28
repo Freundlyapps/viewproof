@@ -31,7 +31,10 @@ Phase 1 launches as a closed beta while Google verifies the app. Google's limit 
 
 Both stores review the Privacy tab against the code and the privacy page: everything below must match what the extension does. Rejections come from a permission the code doesn't use ("Purple Potassium"), a missing or inaccurate privacy policy ("Purple Lithium") or undisclosed data handling ("Purple Nickel"). Access to all of `www.youtube.com` means a slower, closer review: expect days to a few weeks; contact Chrome Web Store support only after 3 weeks.
 
-- [ ] Build: `pnpm --filter extension build` (the store build has no `localhost` hosts). Upload as **unlisted** to the Chrome Web Store.
+- [ ] Section 1 done first: reviewers open `https://viewproof.app/privacy`, and a dead link is a rejection.
+- [ ] Build and zip: `pnpm --filter extension build`, then `pnpm --filter extension exec wxt zip` (the store build has no `localhost` hosts). Upload the zip from `apps/extension/.output/` to the Chrome Web Store. Public or unlisted gets the same review; the extension's panels work without an account, so public is fine.
+- [ ] **Store listing:** text, category and reviewer test steps are in [store/listing.md](store/listing.md). Images are in `docs/store/`: `store-icon-128.png`, `promo-tile-440x280.png`, and the 1280×800 screenshots in `docs/store/screenshots/` (git-ignored: they show other creators' videos, so they stay out of the public repo; retake them with the extension on real watch, search and channel pages).
+- [ ] No YouTube logo, red play button or "YouTube" in the extension's name or icon (trademark); naming YouTube in the description is fine.
 - [ ] **Single purpose:** "Shows public YouTube numbers (views per hour, outlier score, tags) on the YouTube pages you open, and hands what it read to your ViewProof account's keyword research and Tools pages."
 - [ ] **Permission justifications** (one per entry in the manifest; plain facts, no marketing):
   - `storage`: "Keeps what the extension read on YouTube (view counts, the first results page of your YouTube searches, transcripts you open, video lookups) and your settings in this browser only."
@@ -40,7 +43,7 @@ Both stores review the Privacy tab against the code and the privacy page: everyt
   - `https://suggestqueries-clients6.youtube.com/*`: "Fetches YouTube's own search suggestions for the keyword you research in ViewProof, without cookies."
   - `https://viewproof.app/*`: "Hands what the extension read on YouTube to your own ViewProof pages in this browser, and sends public video facts to the data pool only if you opt in."
   - Remote code: **No** (everything runs from the package).
-- [ ] **Data usage:** tick **Website content** (opt-in pool uploads: public video facts read from YouTube pages). Leave the others unticked: searches, transcripts and view counts stay in the browser and are never uploaded; nothing about the person (no account, cookies, watch time) is collected. Tick all three certifications (no sale, no unrelated use, no creditworthiness use).
+- [ ] **Data usage:** tick **Website content** (opt-in pool uploads: public video facts read from YouTube pages) and **Web history** (those uploads come from pages the person opened, so they show which videos were seen and when, stored to the hour). Declaring less than the extension does is a rejection ("Purple Nickel"). Leave the others unticked: search words, transcripts and settings stay in the browser and are never uploaded; nothing about the person (no account details, cookies, watch time) is collected. Tick all three certifications (no sale, no unrelated use, no creditworthiness use).
 - [ ] **Privacy policy URL:** `https://viewproof.app/privacy` (its "Browser extension and data pool" section must match the ticks above).
 - [ ] Edge Add-ons: the same build and the same Privacy-page answers. In "Notes for certification", give the test steps (open a YouTube video → the ViewProof panel; the data pool stays off until linked in Settings → Extension & data). Certification takes up to 7 business days.
 

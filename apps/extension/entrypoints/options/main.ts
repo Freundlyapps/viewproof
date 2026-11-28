@@ -68,6 +68,7 @@ function consent(s: PoolState) {
   const box = el('div', { class: 'card' }, el('h2', {}, "Share public video facts with ViewProof's data pool"));
   box.append(el('ul', {},
     el('li', {}, 'What is sent: video and channel ids, title, view count, upload time or age, length, Short or long — from YouTube pages you open.'),
+    el('li', {}, 'Because these come from pages you open, they show which public videos were seen and when (stored to the hour). They are stored without any link to your account.'),
     el('li', {}, "Never sent: who you are on YouTube, cookies, what you watch for how long, or the words you type into YouTube's search box (the facts of the results you see are sent)."),
     el('li', {}, 'Sent to: the ViewProof server this browser is linked to. You can see every item below and stop at any time.'),
   ));

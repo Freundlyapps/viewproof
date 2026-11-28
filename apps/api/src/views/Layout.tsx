@@ -4,10 +4,10 @@ import type { Child } from 'hono/jsx';
 const css = `
 :root{--bg:#FAFAF9;--surface:#fff;--text:#1C1917;--muted:#57534E;--border:#E7E5E4;--accent:#0F766E;--on-accent:#fff;--hi:#B45309;--neg:#B91C1C;
 font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#0F1115;--surface:#161920;--text:#E7E7EA;--muted:#9BA1AD;--border:#262A33;--accent:#2DD4BF;--on-accent:#042F2E;--hi:#F59E0B;--neg:#F87171;color-scheme:dark}}
+@media (prefers-color-scheme:dark){.logo{background:#E7E7EA;border-radius:8px;padding:3px}:root{--bg:#0F1115;--surface:#161920;--text:#E7E7EA;--muted:#9BA1AD;--border:#262A33;--accent:#2DD4BF;--on-accent:#042F2E;--hi:#F59E0B;--neg:#F87171;color-scheme:dark}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}
 header{display:flex;align-items:center;gap:10px;padding:14px clamp(16px,3vw,36px);border-bottom:1px solid var(--border);background:var(--surface)}
-.logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:800;font-size:.8rem}
+.logo{width:28px;height:28px;flex:none}
 header b{font-size:1.1rem} header .grow{flex:1}
 main{max-width:720px;margin:clamp(20px,5vh,56px) auto;padding:0 16px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:clamp(18px,3vw,28px)}
@@ -30,11 +30,13 @@ export function Layout(props: { title: string; signedIn?: boolean; children: Chi
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{`${props.title} · ViewProof`}</title>
+        <link rel="icon" type="image/png" href="/app/favicon.png" />
+        <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
         <style>{css}</style>
       </head>
       <body>
         <header>
-          <div class="logo">VP</div>
+          <img class="logo" src="/app/logo.png" alt="" />
           <b>ViewProof</b>
           <span class="grow" />
           {props.signedIn ? <a class="btn" href="/account">Account</a> : null}
