@@ -6,6 +6,9 @@ interface TokenInfo { id: string; label: string; createdAt: string; lastUsedAt: 
 interface TokenList { endpoint: string; tokens: TokenInfo[]; usage: { used: number; limit: number | null } }
 type Loaded = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; data: TokenList };
 
+const NAME = 'ViewProof';
+const DESCRIPTION = 'Your real YouTube channel numbers, read-only';
+
 const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
 function Usage(props: { u: TokenList['usage'] }) {
@@ -88,9 +91,17 @@ export function ConnectAi() {
           <div className="card stack">
             <h2>ChatGPT, Claude and other chat apps</h2>
             <ol className="stack-s">
-              <li>In your AI app, add a <strong>custom connector</strong>. In Claude: Settings → Connectors → Add custom connector. In ChatGPT: Settings → Apps &amp; Connectors (custom connectors may need developer mode).</li>
-              <li>Paste this address: <span className="row"><code>{v.data.endpoint}</code><CopyButton text={v.data.endpoint} /></span></li>
-              <li>Click Connect, sign in to ViewProof and click <strong>Allow</strong>.</li>
+              <li>In your AI app, add a custom MCP server. In ChatGPT: Plugins → Add → <strong>Add custom MCP server</strong>. In Claude: Settings → Connectors → <strong>Add custom connector</strong>.</li>
+              <li>Fill in the form:
+                <div className="stack-s">
+                  <span className="row small">Name: <code>{NAME}</code><CopyButton text={NAME} /></span>
+                  <span className="row small">Description: <code>{DESCRIPTION}</code><CopyButton text={DESCRIPTION} /></span>
+                  <span className="row small">Server URL: <code>{v.data.endpoint}</code><CopyButton text={v.data.endpoint} /></span>
+                  <span className="row small">Authentication: OAuth (leave the advanced settings as they are)</span>
+                  <span className="row small">Icon (optional): <a className="btn" href="/app/connector-icon.png" download="viewproof-icon.png">Download icon</a></span>
+                </div>
+              </li>
+              <li>Click Create or Connect, sign in to ViewProof and click <strong>Allow</strong>.</li>
             </ol>
             <p className="small muted">The app can only read: your channels' numbers, videos and search terms, competitors, outliers and keyword facts. It can't change anything in ViewProof or on YouTube.</p>
             <h3>Connected apps</h3>

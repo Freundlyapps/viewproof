@@ -19,6 +19,7 @@ describe('Connect AI (MCP)', () => {
     renderAt('/connect-ai');
     const chat = (await screen.findByRole('heading', { name: 'ChatGPT, Claude and other chat apps' })).closest('.card') as HTMLElement;
     expect(within(chat).getByText(ENDPOINT)).toBeTruthy();
+    expect(within(chat).getByRole('link', { name: 'Download icon' }).getAttribute('href')).toBe('/app/connector-icon.png');
     expect(within(chat).getByText('Tool calls today: 3 / 500')).toBeTruthy();
     expect(within(chat).getByText('No apps connected yet.')).toBeTruthy();
     const dev = screen.getByRole('heading', { name: 'Developer tools (Claude Code, Cursor, VS Code)' }).closest('.card') as HTMLElement;

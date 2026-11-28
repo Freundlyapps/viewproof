@@ -8,7 +8,7 @@ import { MCP_DAILY_CALLS } from '../src/mcp/tokens';
 import type { ReportQuery, VideoDetails, YouTubeClient } from '../src/youtube';
 import { fakeGoogle } from './fake-google';
 import { fakeYouTube } from './fake-youtube';
-import { addUser, channelFixture, makeDeps, post, sendJsonReq, sessionCookie, signIn } from './helpers';
+import { APP, addUser, channelFixture, makeDeps, post, sendJsonReq, sessionCookie, signIn } from './helpers';
 
 const NOW = Date.parse('2026-11-21T12:00:00Z');
 type App = ReturnType<typeof createApp>;
@@ -52,6 +52,7 @@ describe('MCP protocol', () => {
     expect(a.id).toBe(1);
     expect(a.result.protocolVersion).toBe('2025-06-18');
     expect(a.result.serverInfo.name).toBe('viewproof');
+    expect(a.result.serverInfo).toMatchObject({ icons: [{ src: `${APP}/app/connector-icon.png`, mimeType: 'image/png' }] });
     expect(a.result.capabilities).toEqual({ tools: { listChanged: false } });
     expect(a.result.instructions).toContain("Never fill in or estimate a no_data value");
     const b = (await (await rpc(app, token, { jsonrpc: '2.0', id: 2, method: 'initialize', params: { protocolVersion: '1999-01-01', capabilities: {}, clientInfo: { name: 't', version: '1' } } })).json()) as { result: { protocolVersion: string } };

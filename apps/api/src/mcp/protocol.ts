@@ -31,7 +31,9 @@ export async function handleMcp(deps: Deps, userId: string, body: unknown): Prom
       return ok(id, {
         protocolVersion: SUPPORTED_VERSIONS.includes(asked) ? asked : LATEST_VERSION,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'viewproof', title: 'ViewProof', version: SERVER_VERSION },
+        // Apps that show server icons (MCP 2025-11-25) pick up the logo without the user uploading one.
+        serverInfo: { name: 'viewproof', title: 'ViewProof', version: SERVER_VERSION, websiteUrl: deps.config.appOrigin,
+          icons: [{ src: `${deps.config.appOrigin}/app/connector-icon.png`, mimeType: 'image/png', sizes: ['256x256'] }] },
         instructions: INSTRUCTIONS,
       });
     }
