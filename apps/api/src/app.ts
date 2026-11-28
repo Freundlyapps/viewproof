@@ -93,6 +93,8 @@ export function createApp(deps: Deps): Hono {
   // missing files stay 404 so a broken build is visible.
   app.get('/app/*', async (c) => serveApp(c.req.raw, c.req.path));
   app.get('/app', async (c) => serveApp(c.req.raw, c.req.path));
+  // Browsers ask for /favicon.ico on their own; answer with the app's icon.
+  app.get('/favicon.ico', async (c) => serveApp(new Request(new URL('/app/favicon.png', c.req.url)), '/app/favicon.png'));
   async function serveApp(req: Request, path: string): Promise<Response> {
     if (!deps.assets) return new Response(NO_BUILD, { status: 503 });
     if (path !== '/app' && path !== '/app/') {

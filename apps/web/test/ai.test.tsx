@@ -59,7 +59,7 @@ describe('Ask AI', () => {
     const odd = await screen.findByText('[S7]');
     expect(odd.getAttribute('title')).toBe('Not one of the sources sent');
     expect(screen.getAllByRole('button', { name: 'S1' }).length).toBeGreaterThan(0);
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('img:not(.logo)')).toBeNull();
     expect(screen.getByText(/<img src=x onerror=alert\(1\)>/)).toBeTruthy();
     expect(screen.getByText(/Sent to Anthropic \(Claude\), model claude-sonnet-5-5 · your key$/)).toBeTruthy();
   });

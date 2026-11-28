@@ -24,7 +24,7 @@ export function Shell(props: { me: Me; channels: ChannelInfo[]; current: Channel
   return (
     <div className={`app${collapsed ? ' collapsed' : ''}`}>
       <aside className="side">
-        <div className="brand"><div className="logo">VP</div><span>ViewProof</span></div>
+        <div className="brand"><img className="logo" src="/app/logo.png" alt="" /><span>ViewProof</span></div>
         <nav aria-label="Main">
           {NAV.map((n, i) =>
             n === '-' ? <div className="sep" key={`sep${i}`} /> : (
