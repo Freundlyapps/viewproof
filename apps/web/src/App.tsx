@@ -2,6 +2,7 @@ import { type ReactElement, useEffect, useState } from 'react';
 import { API_OK } from './useApi';
 import { Route, Routes } from 'react-router';
 import { AskAi } from './ai/AskAi';
+import { ConnectAi } from './ai/ConnectAi';
 import { Optimize } from './optimize/Optimize';
 import { type ChannelInfo, type Me, getJson, isApiError } from './api';
 import { Settings } from './Settings';
@@ -70,6 +71,7 @@ export function App() {
         <Route path="/competitors/:channelId?" element={<Competitors />} />
         <Route path="/optimize/*" element={<Optimize channel={current} />} />
         <Route path="/ai" element={<AskAi channel={current?.id ?? null} />} />
+        <Route path="/connect-ai" element={<ConnectAi />} />
         <Route path="/tools/:tab?" element={<Tools />} />
         <Route path="/settings/*" element={<Settings />} />
         {NAV.flatMap((n) => (n !== '-' && n.soon ? [<Route key={n.to} path={`${n.to}/*`} element={<Soon title={n.label} text={n.soon} />} />] : []))}

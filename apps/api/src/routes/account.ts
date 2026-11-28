@@ -1,3 +1,4 @@
+import { takeReturn } from '../mcp/oauth';
 import { tokensOf } from '../mcp/tokens';
 import { agentState } from '../agent/routes';
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
@@ -90,6 +91,9 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     const s = await readSession(c, deps);
     const u = s && (await user(deps, s.userId));
     if (!u) return c.redirect('/auth/google/start', 302);
+    // Signed in from an AI app's "Connect" (MCP sign-in): go back to its consent page.
+    const back = takeReturn(c, deps);
+    if (back) return c.redirect(back, 302);
     const connected = c.req.query('connected');
     const byHand = c.req.query('note') === 'revoke-by-hand';
     const bill = await billingOf(deps, u.id);

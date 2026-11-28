@@ -8,25 +8,28 @@ import { ME, channel, mockApi } from './fake-api';
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
 const STATUS = { included: null, own: null, usage: { month: '2026-11', quick: { used: 0, limit: 20 }, coach: { used: 0, limit: 0 } }, customAllowed: false, presets: { anthropic: { label: 'Anthropic (Claude)', baseUrl: null, quickModel: 'claude-haiku-5-5', coachModel: 'claude-sonnet-5-5' } } };
 const ENDPOINT = 'https://viewproof.example/mcp';
-const T1 = { id: 'tok1', label: 'Claude Code', createdAt: '2026-11-20T10:00:00Z', lastUsedAt: null };
+const T1 = { id: 'tok1', label: 'Claude Code', createdAt: '2026-11-20T10:00:00Z', lastUsedAt: null, connectedApp: false };
+const APP1 = { id: 'app1', label: 'Claude', createdAt: '2026-11-21T10:00:00Z', lastUsedAt: '2026-11-22T10:00:00Z', connectedApp: true };
 const list = (tokens: unknown[], used = 3, limit: number | null = 500) => ({ endpoint: ENDPOINT, tokens, usage: { used, limit } });
 const base = { '/api/me': ME, '/api/channels': [channel()], '/api/ai/status': STATUS };
 
-describe('Settings → MCP server', () => {
+describe('Connect AI (MCP)', () => {
   test('lists tokens with "Never" for unused ones, the address and today\'s usage', async () => {
     mockApi({ ...base, '/api/mcp/tokens': list([T1]) });
-    renderAt('/settings/ai');
-    const card = (await screen.findByRole('heading', { name: 'MCP server' })).closest('.card') as HTMLElement;
-    expect(await within(card).findByText('Claude Code')).toBeTruthy();
-    expect(within(card).getByText('Never')).toBeTruthy();
-    expect(within(card).getByText(ENDPOINT)).toBeTruthy();
-    expect(within(card).getByText('Tool calls today: 3 / 500')).toBeTruthy();
+    renderAt('/connect-ai');
+    const chat = (await screen.findByRole('heading', { name: 'ChatGPT, Claude and other chat apps' })).closest('.card') as HTMLElement;
+    expect(within(chat).getByText(ENDPOINT)).toBeTruthy();
+    expect(within(chat).getByText('Tool calls today: 3 / 500')).toBeTruthy();
+    expect(within(chat).getByText('No apps connected yet.')).toBeTruthy();
+    const dev = screen.getByRole('heading', { name: 'Developer tools (Claude Code, Cursor, VS Code)' }).closest('.card') as HTMLElement;
+    expect(within(dev).getByText('Claude Code')).toBeTruthy();
+    expect(within(dev).getByText('Never')).toBeTruthy();
     expect(screen.queryByText(/Coming in the next update/)).toBeNull();
   });
 
   test('says when there is no limit, and when there are no tokens', async () => {
     mockApi({ ...base, '/api/mcp/tokens': list([], 7, null) });
-    renderAt('/settings/ai');
+    renderAt('/connect-ai');
     expect(await screen.findByText('Tool calls today: 7 (no limit)')).toBeTruthy();
     expect(screen.getByText('No tokens yet.')).toBeTruthy();
   });
@@ -42,7 +45,7 @@ describe('Settings → MCP server', () => {
       }
       return list(tokens);
     } });
-    renderAt('/settings/ai');
+    renderAt('/connect-ai');
     await userEvent.type(await screen.findByLabelText('Name (e.g. the app you use it in)'), 'Cursor');
     await userEvent.click(screen.getByRole('button', { name: 'Create token' }));
     expect(await screen.findByText("Copy this token now; it won't be shown again.")).toBeTruthy();
@@ -65,7 +68,7 @@ describe('Settings → MCP server', () => {
       }
       return list(tokens);
     } });
-    renderAt('/settings/ai');
+    renderAt('/connect-ai');
     await screen.findByText('Claude Code');
     await userEvent.click(screen.getByRole('button', { name: 'Revoke' }));
     expect(await screen.findByText('No tokens yet.')).toBeTruthy();
@@ -76,8 +79,35 @@ describe('Settings → MCP server', () => {
     mockApi({ ...base, '/api/mcp/tokens': (_u: URL, init?: RequestInit) => init?.method === 'POST'
       ? new Response(JSON.stringify({ error: 'limit', message: 'You can have up to 5 MCP tokens. Revoke one first.' }), { status: 422 })
       : list([T1]) });
-    renderAt('/settings/ai');
+    renderAt('/connect-ai');
     await userEvent.click(await screen.findByRole('button', { name: 'Create token' }));
     expect(await screen.findByText('You can have up to 5 MCP tokens. Revoke one first.')).toBeTruthy();
+  });
+
+  test('connected apps are listed apart from tokens and can be disconnected', async () => {
+    const seen: string[] = [];
+    let tokens: unknown[] = [T1, APP1];
+    mockApi({ ...base, '/api/mcp/tokens': (u: URL, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        seen.push(u.pathname);
+        tokens = [T1];
+        return new Response(null, { status: 204 });
+      }
+      return list(tokens);
+    } });
+    renderAt('/connect-ai');
+    const apps = await screen.findByRole('table', { name: 'Connected apps' });
+    expect(within(apps).getByText('Claude')).toBeTruthy();
+    expect(within(screen.getByRole('table', { name: 'MCP tokens' })).getByText('Claude Code')).toBeTruthy();
+    await userEvent.click(within(apps).getByRole('button', { name: 'Disconnect' }));
+    expect(await screen.findByText('No apps connected yet.')).toBeTruthy();
+    expect(seen).toEqual(['/api/mcp/tokens/app1']);
+  });
+
+  test('Settings → AI & apps no longer holds the MCP server', async () => {
+    mockApi({ ...base, '/api/mcp/tokens': list([]) });
+    renderAt('/settings/ai');
+    await screen.findByRole('heading', { name: 'Your own key' });
+    expect(screen.queryByRole('button', { name: 'Create token' })).toBeNull();
   });
 });

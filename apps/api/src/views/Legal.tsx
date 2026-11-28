@@ -60,7 +60,7 @@ export function Privacy(f: LegalFacts) {
 
         <h2>Google and YouTube data</h2>
         <p>When you sign in with Google, ViewProof receives your Google account id, email address and name. When you connect a channel, you give view-only access to it (YouTube Data API, scope <code>{youtube}</code>) and to its YouTube Analytics (<code>{analytics}</code>, and <code>{scopeName(SCOPES.revenue)}</code> only if you allow revenue). ViewProof can't upload, edit or delete anything on YouTube.</p>
-        <p>It uses this data only to show you your own channel's numbers, videos and search terms, and, when you ask, to answer your questions in Ask AI or through your own MCP tokens. It does not sell it, use it for advertising, or use it to train AI models. People don't read it, except with your permission, for security or abuse, or when the law requires it.</p>
+        <p>It uses this data only to show you your own channel's numbers, videos and search terms, and, when you ask, to answer your questions in Ask AI or in AI apps you connect yourself (MCP). It does not sell it, use it for advertising, or use it to train AI models. People don't read it, except with your permission, for security or abuse, or when the law requires it.</p>
         <p>ViewProof's use and transfer of information received from Google APIs to any other app will adhere to the <a href={USER_DATA_POLICY}>Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
         <p>ViewProof uses YouTube API Services. The <a href={YT_TERMS}>YouTube Terms of Service</a> and the <a href={GOOGLE_PRIVACY}>Google Privacy Policy</a> apply.</p>
 
@@ -70,7 +70,7 @@ export function Privacy(f: LegalFacts) {
           <li>Each connected channel's id, title, handle, picture and the permissions you gave. Google's refresh token is stored encrypted (AES-256-GCM) and never appears in exports.</li>
           <li>Answers from YouTube Analytics and the Data API, cached for up to {hours(REPORT_TTL_MS)} hours (first-week views per video for up to {days(FIRST_WEEK_TTL_MS)} days), deleted when you remove the channel.</li>
           <li>A hash of each login session id; the id itself is a cookie in your browser.</li>
-          <li>Competitor channels you track, your own AI key if you add one (encrypted), hashes of your MCP and linked-browser tokens, and counters for your plan's limits. Outlier search words are kept for up to two days to count your daily limit.</li>
+          <li>Competitor channels you track, your own AI key if you add one (encrypted), hashes of your MCP and linked-browser tokens, the AI apps you connect (the name each app gives itself and its return address), and counters for your plan's limits. Outlier search words are kept for up to two days to count your daily limit.</li>
           <li>If you use the weekly brief: each brief (the data it was given, its ideas, the model and its token counts) for {BRIEF_KEEP_DAYS} days; title changes it suggested, with your videos' old and new titles and the before/after view counts from YouTube Analytics, until {CHANGE_KEEP_DAYS} days after the last check. All of it is deleted when you remove the channel.</li>
           <li>Token counts of AI answers, summed per month and model, with no link to your account (to know what the AI costs).</li>
           {f.billing ? <li>Your Stripe customer id and subscription status. Payments are handled by Stripe, the merchant of record; ViewProof never sees card details.</li> : null}

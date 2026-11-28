@@ -151,12 +151,13 @@ On **Home → What to make next**, ViewProof's agent suggests 5 next videos and 
 
 ## MCP server
 
-Use ViewProof's data from your own AI app: Claude Code, Cursor, VS Code and other apps that support MCP. Your AI app does the writing; ViewProof gives it your real numbers. The tools are **read-only**: nothing is changed at YouTube or in ViewProof.
+Use ViewProof's data from your own AI app: ChatGPT, Claude, Claude Code, Cursor, VS Code and other apps that support MCP. Everything is on the **Connect AI** page in the app's menu. Your AI app does the writing; ViewProof gives it your real numbers. The tools are **read-only**: nothing is changed at YouTube or in ViewProof.
 - **Tools:** `list_channels`, `channel_overview`, `channel_videos`, `search_terms`, `upload_times`, `video_details` (one of your videos with its own search terms), `find_outliers`, `competitor_uploads`, `keyword_trends`, `check_video_text` (the Optimize rules). They return the same data as the web app, from the same cache, so they cost no extra YouTube quota. A value YouTube doesn't give comes back as `no_data` with the reason, and the server tells the AI not to fill it in.
-- **Connect:** in **Settings → AI & apps → MCP server**, create a token (shown once; up to 5; revoke at any time). Then:
+- **Chat apps (sign-in):** add a custom connector with the address `https://<your server>/mcp`, click Connect, sign in to ViewProof and click **Allow**. This is OAuth 2.1 with dynamic client registration and PKCE (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`). Access tokens last an hour; refresh tokens rotate on every use and end after 90 days unused. Up to 10 connected apps; disconnect any of them on Connect AI.
+- **Developer tools (token):** on **Connect AI**, create a token (shown once; up to 5; revoke at any time). Then:
   - Claude Code: `claude mcp add --transport http viewproof https://<your server>/mcp --header "Authorization: Bearer <token>"`
   - Other apps: `{"mcpServers":{"viewproof":{"type":"http","url":"https://<your server>/mcp","headers":{"Authorization":"Bearer <token>"}}}}`
-- **Limits:** 500 tool calls per day on the hosted service (no limit when self-hosted). Apps that only connect through an OAuth sign-in (such as claude.ai connectors) aren't supported yet.
+- **Limits:** 500 tool calls per day on the hosted service (no limit when self-hosted), shared by all your connected apps and tokens.
 
 ## Model eval
 

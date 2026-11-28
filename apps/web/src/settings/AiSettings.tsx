@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 import { sendJson } from '../api';
 import { type AiFailure, type AiStatus, type UsageCount, isFailure, postAi } from '../ai/types';
 import { useApi } from '../useApi';
-import { McpSettings } from './McpSettings';
 
 function Meter(props: { label: string; u: UsageCount }) {
   if (props.u.limit === null) return <p className="small">{props.label}: {props.u.used} this month (no limit)</p>;
@@ -108,7 +107,6 @@ export function AiSettings() {
           ) : <KeyForm status={s} onSaved={refresh} />}
         </div>
       </div>
-      <McpSettings />
     </section>
   );
 }
