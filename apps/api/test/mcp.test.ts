@@ -6,7 +6,7 @@ import type { ChannelRow } from '@viewproof/db';
 import { createApp, type Deps } from '../src/app';
 import { MCP_DAILY_CALLS } from '../src/mcp/tokens';
 import { SEARCH_TERMS_SCOPE } from '../src/mcp/tools';
-import { watchRatioAt } from '../src/routes/insights';
+import { pointAt } from '../src/routes/insights';
 import type { TrafficSources, VideoRetention } from '@viewproof/core';
 import type { ReportQuery, VideoDetails, YouTubeClient } from '../src/youtube';
 import { fakeGoogle } from './fake-google';
@@ -109,12 +109,12 @@ describe('MCP protocol', () => {
 });
 
 describe('MCP tools', () => {
-  test('tools/list names the 12 read-only tools', async () => {
+  test('tools/list names the 15 read-only tools', async () => {
     await addUser('mcp-t1');
     const { app } = appWith();
     const token = await tokenFor(app, 'mcp-t1');
     const r = (await (await rpc(app, token, { jsonrpc: '2.0', id: 1, method: 'tools/list' })).json()) as { result: { tools: { name: string; inputSchema: { type: string }; annotations: { readOnlyHint: boolean } }[] } };
-    expect(r.result.tools.map((t) => t.name).sort()).toEqual(['channel_overview', 'channel_videos', 'check_video_text', 'competitor_uploads', 'find_outliers', 'keyword_trends', 'list_channels', 'search_terms', 'traffic_sources', 'upload_times', 'video_details', 'video_retention']);
+    expect(r.result.tools.map((t) => t.name).sort()).toEqual(['audience', 'channel_overview', 'channel_videos', 'check_video_text', 'competitor_uploads', 'find_outliers', 'keyword_trends', 'list_channels', 'search_terms', 'thumbnails', 'traffic_sources', 'upload_times', 'video_checkup', 'video_details', 'video_retention']);
     for (const t of r.result.tools) {
       expect(t.annotations.readOnlyHint).toBe(true);
       expect(t.inputSchema.type).toBe('object');
@@ -245,9 +245,9 @@ describe('MCP insights', () => {
     const r = await call(app, token, 'traffic_sources', { range: '28d' });
     expect(r.isError).toBeFalsy();
     const sc = r.structuredContent as unknown as TrafficSources;
-    expect(sc.totalViews).toBe(400);
-    expect(sc.sources[0]).toMatchObject({ type: 'YT_SEARCH', label: 'YouTube search', views: 300, watchMinutes: 900, shareOfViews: { kind: 'value', value: 0.75 }, previousViews: { kind: 'value', value: 50 } });
-    expect(sc.sources[1]).toMatchObject({ label: 'Suggested videos', shareOfViews: { value: 0.25 }, previousViews: { kind: 'no_data' } });
+    expect(sc.sources[0]).toMatchObject({ type: 'YT_SEARCH', label: 'YouTube search', views: 300, watchMinutes: 900, previousViews: { kind: 'value', value: 50 } });
+    expect(sc.sources[0]).not.toHaveProperty('shareOfViews');
+    expect(sc.sources[1]).toMatchObject({ label: 'Suggested videos', previousViews: { kind: 'no_data' } });
     expect(sc.sources[2]!.label).toBe('NEW_THING');
     const q = youtube.calls.map((c) => c.arg as ReportQuery).find((x) => x.dimensions?.[0] === 'insightTrafficSourceType')!;
     expect(q).toMatchObject({ metrics: ['views', 'estimatedMinutesWatched'], sort: '-views' });
@@ -266,9 +266,9 @@ describe('MCP insights', () => {
     const sc = r.structuredContent as unknown as VideoRetention;
     expect(sc).toMatchObject({ videoId: 'abcdefghijk', title: 'Bowl', durationSec: 200, range: '90d', note: null });
     expect(sc.curve.map((p) => [p.elapsedRatio, p.elapsedSec])).toEqual([[0.1, 20], [0.2, 40]]);
-    // 30 s = 0.15 of 200 s, halfway between 0.8 and 0.6.
-    expect(sc.watchingAt30s.kind === 'value' && sc.watchingAt30s.value).toBeCloseTo(0.7);
-    expect(sc.dropOffBy30s.kind === 'value' && sc.dropOffBy30s.value).toBeCloseTo(0.3);
+    // 30 s = 0.15 of 200 s: YouTube's first point at or after it (0:40) as given, nothing read in between.
+    expect(sc.at30s).toMatchObject({ elapsedRatio: 0.2, elapsedSec: 40, audienceWatchRatio: 0.6, relativeRetentionPerformance: { value: 0.55 } });
+    expect(sc.at30sNote).toBeNull();
     const q = youtube.calls.map((c) => c.arg as ReportQuery).find((x) => x.dimensions?.[0] === 'elapsedVideoTimeRatio')!;
     expect(q).toMatchObject({ filters: 'video==abcdefghijk', metrics: ['audienceWatchRatio', 'relativeRetentionPerformance'] });
   });
@@ -285,17 +285,18 @@ describe('MCP insights', () => {
     const sc = r.structuredContent as unknown as VideoRetention;
     expect(sc.curve).toEqual([]);
     expect(sc.note).toMatch(/no retention data/);
-    expect(sc.watchingAt30s).toMatchObject({ kind: 'no_data' });
+    expect(sc.at30s).toBeNull();
+    expect(sc.at30sNote).toMatch(/no retention data/);
   });
 });
 
-describe('watchRatioAt', () => {
+describe('pointAt', () => {
   const pt = (elapsedRatio: number, audienceWatchRatio: number) => ({ elapsedRatio, elapsedSec: null, audienceWatchRatio, relativeRetentionPerformance: { kind: 'no_data' as const, reason: '' } });
-  test('exact point, too short, unknown length, before the first point', () => {
-    expect(watchRatioAt([pt(0.5, 0.4)], 60, 30)).toMatchObject({ kind: 'value', value: 0.4 });
-    expect(watchRatioAt([pt(0.5, 0.4)], 30, 30)).toMatchObject({ kind: 'no_data', reason: 'The video is 30 seconds long or shorter.' });
-    expect(watchRatioAt([pt(0.5, 0.4)], null, 30).kind).toBe('no_data');
-    expect(watchRatioAt([pt(0.01, 0.9)], 6000, 30)).toMatchObject({ kind: 'no_data' });
+  test('first point at or after the second, too short, unknown length', () => {
+    expect(pointAt([pt(0.25, 0.9), pt(0.5, 0.4)], 60, 30).point).toMatchObject({ elapsedRatio: 0.5, audienceWatchRatio: 0.4 });
+    expect(pointAt([pt(0.01, 0.9)], 6000, 30).point).toMatchObject({ elapsedRatio: 0.01 });
+    expect(pointAt([pt(0.5, 0.4)], 30, 30)).toEqual({ point: null, note: 'The video is 30 seconds long or shorter.' });
+    expect(pointAt([pt(0.5, 0.4)], null, 30).point).toBeNull();
   });
 });
 
@@ -311,7 +312,7 @@ describe('MCP interop', () => {
     const client = new Client({ name: 'interop-test', version: '1.0.0' });
     await client.connect(transport);
     const tools = await client.listTools();
-    expect(tools.tools).toHaveLength(12);
+    expect(tools.tools).toHaveLength(15);
     const r = await client.callTool({ name: 'check_video_text', arguments: { title: 'Hello' } });
     expect((r.structuredContent as { title: unknown[] }).title.length).toBeGreaterThan(0);
     await client.close();

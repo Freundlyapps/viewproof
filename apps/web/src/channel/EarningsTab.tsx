@@ -9,6 +9,8 @@ import { Value } from '../ui/Value';
 import { Kpi } from './Kpi';
 import { useRange } from './RangeChips';
 
+const countryName = (code: string) => { try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code; } catch { return code; } };
+
 export function EarningsTab(props: { channel: ChannelInfo }) {
   const [range] = useRange();
   const r = useApi<Earnings>(`/api/channels/${props.channel.id}/earnings?range=${range}`);
@@ -35,6 +37,7 @@ export function EarningsTab(props: { channel: ChannelInfo }) {
         <Kpi id="kpi-revenue" label="Estimated revenue" pair={e.totals.estimatedRevenue} previousLabel={prev} format={fmt.usd} badge="est" />
         <Kpi id="kpi-cpm" label="Playback-based CPM" pair={e.totals.playbackBasedCpm} previousLabel={prev} format={fmt.usd} badge="est" />
         <Kpi id="kpi-playbacks" label="Monetized playbacks" pair={e.totals.monetizedPlaybacks} previousLabel={prev} format={fmt.count} />
+        {e.totals.premiumRevenue ? <Kpi id="kpi-premium" label="YouTube Premium revenue" pair={e.totals.premiumRevenue} previousLabel={prev} format={fmt.usd} badge="est" /> : null}
       </div>
       <div className="card">
         <h2>Top earning videos <Badge kind="est" /></h2>
@@ -48,6 +51,17 @@ export function EarningsTab(props: { channel: ChannelInfo }) {
         )}
         <div className="note" style={{ marginTop: 12 }}>YouTube's estimate; it can change at month end.</div>
       </div>
+      {e.countries ? (
+        <div className="card">
+          <h2>Revenue by country <Badge kind="est" /></h2>
+          {e.countriesNote ? <p className="empty">{e.countriesNote}</p> : (
+            <table>
+              <thead><tr><th>Country</th><th className="num">Estimated revenue</th></tr></thead>
+              <tbody>{e.countries.map((c) => <tr key={c.country}><td>{countryName(c.country)}</td><td className="num">{fmt.usd(c.estimatedRevenue)}</td></tr>)}</tbody>
+            </table>
+          )}
+        </div>
+      ) : null}
     </>
   );
 }

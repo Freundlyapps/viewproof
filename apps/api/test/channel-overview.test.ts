@@ -9,7 +9,7 @@ import { fakeYouTube } from './fake-youtube';
 import { channelFixture, makeDeps, post, signIn } from './helpers';
 
 const NOW = Date.parse('2026-11-21T12:00:00Z');
-const TOTALS = ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost'];
+const TOTALS = ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost', 'averageViewPercentage'];
 
 async function connected(sub: string, channelId: string) {
   const s = await signIn({ sub, channel: channelFixture({ channelId }) });
@@ -139,7 +139,7 @@ describe('videos', () => {
     expect(v.videos[1]).toMatchObject({ videoId: 'b', lifetimeViews: { kind: 'no_data', reason: 'View count hidden' }, views: { kind: 'no_data', reason: why }, watchMinutes: { kind: 'no_data', reason: why } });
     expect(youtube.calls.find((c) => c.method === 'uploads')?.arg).toBe(200);
     // Asks about exactly the uploads shown, not YouTube's top 200 of all videos.
-    expect(youtube.calls.find((c) => c.method === 'report' && (c.arg as ReportQuery).dimensions?.[0] === 'video')?.arg).toMatchObject({ startDate: '2026-10-25', endDate: '2026-11-21', dimensions: ['video'], filters: 'video==a,b', sort: '-views', maxResults: 200, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost'] });
+    expect(youtube.calls.find((c) => c.method === 'report' && (c.arg as ReportQuery).dimensions?.[0] === 'video')?.arg).toMatchObject({ startDate: '2026-10-25', endDate: '2026-11-21', dimensions: ['video'], filters: 'video==a,b', sort: '-views', maxResults: 200, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost', 'averageViewPercentage'] });
     expect(v.coverage).toMatchObject({ dataThrough: '2026-11-21', days: 28 });
   });
 

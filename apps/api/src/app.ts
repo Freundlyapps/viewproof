@@ -22,6 +22,7 @@ import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
 import { authRoutes, stateCookie } from './routes/auth';
 import { channelRoutes } from './routes/channel';
+import { insightRoutes } from './routes/insights';
 import { connectRoutes } from './routes/connect';
 import { readSession, sessionCookieName } from './session';
 import { Home } from './views/Home';
@@ -111,6 +112,7 @@ export function createApp(deps: Deps): Hono {
   connectRoutes(app, deps);
   accountRoutes(app, deps);
   channelRoutes(app, deps);
+  insightRoutes(app, deps);
   keywordRoutes(app, deps);
   competitorRoutes(app, deps);
   poolRoutes(app, deps);

@@ -179,3 +179,19 @@ pre.wrap{font-size:.8rem;background:var(--surface);border:1px solid var(--border
 
 /* Tools: tag chips in a wrapping row. */
 .tags-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0; }
+/* bars, check-up */
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:flex;flex-direction:column;gap:4px}
+.bar-label{font-weight:500}
+.bar-track{height:9px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.bar-track i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.finding{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.finding:last-child{border-bottom:0}
+.verdict{flex:none;font-size:.75rem;font-weight:700;border-radius:6px;padding:3px 8px;height:fit-content;min-width:64px;text-align:center}
+.v-better{background:color-mix(in srgb,var(--pos) 15%,transparent);color:var(--pos)}
+.v-worse{background:color-mix(in srgb,var(--neg) 13%,transparent);color:var(--neg)}
+.v-usual{background:var(--surface-2);color:var(--muted)}
+.v-no_data{border:1px dashed var(--border);color:var(--muted)}
+.tabs{overflow-x:auto}
+.select{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 12px;max-width:100%}
+.hint{background:var(--surface-2);border-radius:10px;padding:10px 14px}

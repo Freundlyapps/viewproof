@@ -1,12 +1,13 @@
 // Read-only MCP tools (plan 6c). Each tool calls the same loaders as the web app, through the same report cache.
-import { type OptimizeVideo, type Overview, RANGES, type SearchTerms, type TrafficSources, type UploadTimes, type VideoRetention, type Videos, checkDescription, checkTags, checkTitle, normalizeKeyword } from '@viewproof/core';
+import { type OptimizeVideo, type Overview, RANGES, type SearchTerms, type TrafficSources, type UploadTimes, type VideoRetention, type Videos, type Audience, type Thumbnails, type VideoCheckup, checkDescription, checkTags, checkTitle, normalizeKeyword } from '@viewproof/core';
 import type { ChannelRow } from '@viewproof/db';
 import type { Deps } from '../app';
 import { ownedChannel } from '../channel-data';
 import { latestUploads } from '../competitors/routes';
 import { findOutliers, parseOutlierQuery } from '../pool/outliers';
 import { VIDEO_ID, channelReport, loadOptimize, loadOverview, loadSearchTerms, loadUploadTimes, loadVideos, today } from '../routes/channel';
-import { loadRetention, loadTrafficSources } from '../routes/insights';
+import { loadAudience, loadCheckup, loadRetention, loadTrafficSources } from '../routes/insights';
+import { loadThumbnails } from '../reporting/read';
 import { MAX_KEYWORD, keywordTrends } from '../routes/keywords';
 
 type Kind = 'string' | 'number' | 'string[]';
@@ -55,12 +56,12 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'channel_overview', title: 'Channel overview', params: [CHANNEL, RANGE],
-    description: 'Views, watch time and subscribers for a period compared with the period before, from YouTube Analytics.',
+    description: 'Views, watch time, average view duration, average share watched (averageViewPercentage, 0–100) and subscribers gained and lost for a period, compared with the period before, from YouTube Analytics.',
     run: report<Overview>((a, d) => `overview:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadOverview(deps, acc, range(a))),
   },
   {
     name: 'channel_videos', title: 'Channel videos', params: [CHANNEL, RANGE],
-    description: "The channel's videos with their views, watch time and subscribers gained and lost in the period, from YouTube Analytics.",
+    description: "The channel's videos with, for the period: views, watch time, average view duration, average share watched and subscribers gained and lost (YouTube Analytics), plus thumbnail impressions summed over the days ViewProof has and YouTube's click-through rate for the latest day (YouTube Reporting API, last 30 days at most).",
     run: report<Videos>((a, d) => `videos:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadVideos(deps, acc, range(a))),
   },
   {
@@ -73,7 +74,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'traffic_sources', title: 'Traffic sources', params: [CHANNEL, RANGE],
-    description: "Where the channel's views came from in the period (YouTube search, Browse features, Suggested videos, Shorts feed, External, …): views, watch time and share of views per source, with the period before. From YouTube Analytics. YouTube gives no impressions or click-through rate here.",
+    description: "Where the channel's views came from in the period (YouTube search, Browse features, Suggested videos, Shorts feed, External, …): views and watch time per source, with the period before. From YouTube Analytics. For thumbnail impressions and click-through rate, call thumbnails.",
     run: report<TrafficSources>((a, d) => `traffic:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadTrafficSources(deps, acc, range(a))),
   },
   {
@@ -92,9 +93,30 @@ export const TOOLS: Tool[] = [
     },
   },
   {
+    name: 'audience', title: 'Audience', params: [CHANNEL, RANGE],
+    description: "Who watches: top countries and devices with their views, and age and gender (YouTube's viewerPercentage of signed-in viewers), from YouTube Analytics. `notAvailable` lists what YouTube gives no app (unique and returning viewers).",
+    run: report<Audience>((a, d) => `audience:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadAudience(deps, acc, range(a))),
+  },
+  {
+    name: 'thumbnails', title: 'Thumbnail impressions and clicks', params: [CHANNEL, RANGE],
+    description: "Thumbnail impressions (summed per day, per video and per traffic source) and YouTube's click-through rate per video per day as given (0–1), plus end screen impressions and clicks, from the YouTube Reporting API. ViewProof keeps only the last 30 days, so `days` says which days are covered; `status` waiting means the reports just started (about two days).",
+    run: report<Thumbnails>((a, d) => `thumbs:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadThumbnails(deps, acc, range(a))),
+  },
+  {
+    name: 'video_checkup', title: 'Video check-up',
+    params: [VIDEO_ID_PARAM, CHANNEL, RANGE],
+    description: "One video's YouTube values in six parts (reach, thumbnail & title, opening at 0:30 with YouTube's score against similar-length videos, share watched, subscribers, end screen), with the channel's value beside it where YouTube gives the same measure, and fixed guidance on what to look for. Also the retention curve, the daily click-through rate and the video's traffic sources.",
+    run: async (ctx, a) => {
+      const id = a.videoId as string;
+      if (!VIDEO_ID.test(id)) return { error: BAD_VIDEO_ID };
+      const r = await report<VideoCheckup | { missing: true }>((a2, d) => `checkup:${id}:${range(a2)}:${d}`, (_d, a2) => (deps, acc) => loadCheckup(deps, acc, id, range(a2)))(ctx, a);
+      return 'data' in r && 'missing' in r.data ? { error: NOT_THIS_CHANNEL } : r;
+    },
+  },
+  {
     name: 'video_retention', title: 'Video retention',
     params: [VIDEO_ID_PARAM, CHANNEL, { name: 'range', kind: 'string', enum: RANGES, description: 'Period: last 7, 28, 90 or 365 days. Default 90d (retention needs enough views).' }],
-    description: "One of the creator's videos: its audience retention curve (up to 100 points by share of the video's length; audienceWatchRatio = viewers still watching ÷ views, above 1 where people rewatch), YouTube's comparison with similar-length videos, and how many were still watching at 30 seconds. From YouTube Analytics.",
+    description: "One of the creator's videos: its audience retention curve (up to 100 points by share of the video's length; audienceWatchRatio = viewers still watching ÷ views, above 1 where people rewatch), YouTube's comparison with similar-length videos, and YouTube's first point at or after 0:30 (at30s). From YouTube Analytics.",
     run: async (ctx, a) => {
       const id = a.videoId as string;
       if (!VIDEO_ID.test(id)) return { error: BAD_VIDEO_ID };

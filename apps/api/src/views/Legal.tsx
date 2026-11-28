@@ -8,6 +8,7 @@ import { SCOPES } from '../google';
 import { SESSION_DAYS } from '../session';
 import type { Config } from '../env';
 import { Layout } from './Layout';
+import { REACH_KEEP_MS } from '../reporting/sync';
 
 /** Change when the text below changes. */
 const UPDATED = '24 November 2026';
@@ -69,6 +70,7 @@ export function Privacy(f: LegalFacts) {
           <li>Your Google account id, email, name and plan, until you delete your account.</li>
           <li>Each connected channel's id, title, handle, picture and the permissions you gave. Google's refresh token is stored encrypted (AES-256-GCM) and never appears in exports.</li>
           <li>Answers from YouTube Analytics and the Data API, cached for up to {hours(REPORT_TTL_MS)} hours (first-week views per video for up to {days(FIRST_WEEK_TTL_MS)} days), deleted when you remove the channel.</li>
+          <li>Daily thumbnail impressions, click-through rates and end screen clicks per video from the YouTube Reporting API, for up to {days(REACH_KEEP_MS)} days after they are downloaded, deleted when you remove the channel. To get them, ViewProof creates reporting jobs on your channel (they only produce reports and change nothing on YouTube).</li>
           <li>A hash of each login session id; the id itself is a cookie in your browser.</li>
           <li>Competitor channels you track, your own AI key if you add one (encrypted), hashes of your MCP and linked-browser tokens, the AI apps you connect (the name each app gives itself and its return address), and counters for your plan's limits. Outlier search words are kept for up to two days to count your daily limit.</li>
           <li>If you use the weekly brief: each brief (the data it was given, its ideas, the model and its token counts) for {BRIEF_KEEP_DAYS} days; title changes it suggested, with your videos' old and new titles and the before/after view counts from YouTube Analytics, until {CHANGE_KEEP_DAYS} days after the last check. All of it is deleted when you remove the channel.</li>

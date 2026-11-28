@@ -9,24 +9,27 @@ const base = (over: Record<string, unknown>) => ({ '/api/me': ME, '/api/channels
 const WHY = "YouTube reported no row for this video in these dates (no views, or below YouTube's reporting threshold)";
 
 describe('videos tab', () => {
-  test('columns and values; a missing row shows its reason; Studio link', async () => {
+  test('columns and values; a missing row shows its reason; check-up link', async () => {
     mockApi(base({ '/api/channels/row1/videos': videos([
-      { videoId: 'a', title: 'Centering for beginners', publishedAt: '2026-11-10T10:00:00Z', durationSec: 542, thumbnailUrl: null, lifetimeViews: measured.v(58600), views: measured.v(3100), watchMinutes: measured.v(930), averageViewDuration: measured.v(301) },
-      { videoId: 'b', title: 'Kiln day vlog', publishedAt: '2026-10-01T10:00:00Z', durationSec: 220, thumbnailUrl: null, lifetimeViews: measured.nd('View count hidden'), views: measured.nd(WHY), watchMinutes: measured.nd(WHY), averageViewDuration: measured.nd(WHY) },
+      { videoId: 'a', title: 'Centering for beginners', publishedAt: '2026-11-10T10:00:00Z', durationSec: 542, thumbnailUrl: null, lifetimeViews: measured.v(58600), views: measured.v(3100), watchMinutes: measured.v(930), averageViewDuration: measured.v(301), averageViewPercentage: measured.v(41.5), subscribersGained: measured.v(9), subscribersLost: measured.v(1), impressions: measured.v(12500), latestCtr: { kind: 'value', value: 0.052, formula: 'YouTube Reporting API', inputs: { day: '2026-11-19' } } },
+      { videoId: 'b', title: 'Kiln day vlog', publishedAt: '2026-10-01T10:00:00Z', durationSec: 220, thumbnailUrl: null, lifetimeViews: measured.nd('View count hidden'), views: measured.nd(WHY), watchMinutes: measured.nd(WHY), averageViewDuration: measured.nd(WHY), averageViewPercentage: measured.nd(WHY), subscribersGained: measured.nd(WHY), subscribersLost: measured.nd(WHY), impressions: measured.nd('no thumbnails'), latestCtr: measured.nd('no thumbnails') },
     ]) }));
     renderAt('/channel/videos');
     const table = await screen.findByRole('table');
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Video', 'Views', 'Watch time', 'Avg view', 'Lifetime views', '']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Video', 'Views', 'Watch time', 'Avg view', 'Watched', 'Subs gained', 'Impressions', 'CTR (latest day)', 'Lifetime views', '']);
     const rows = within(table).getAllByRole('row').slice(1);
     expect(rows[0]!.textContent).toContain('3,100');
     expect(rows[0]!.textContent).toContain('15.5 h');
     expect(rows[0]!.textContent).toContain('5:01');
     expect(rows[0]!.textContent).toContain('58,600');
+    expect(rows[0]!.textContent).toContain('41.5%');
+    expect(rows[0]!.textContent).toContain('12,500');
+    expect(rows[0]!.textContent).toContain('5.2%');
     expect(rows[1]!.textContent).toContain(WHY);
     // One reason for the three range columns, not the same sentence three times.
     expect(rows[1]!.textContent!.split(WHY)).toHaveLength(2);
     expect(within(rows[1]!).getByText(`No data: ${WHY}`).closest('td')!.getAttribute('colspan')).toBe('3');
-    expect(within(rows[0]!).getByRole('link', { name: 'Open in Studio' }).getAttribute('href')).toBe('https://studio.youtube.com/video/a/analytics');
+    expect(within(rows[0]!).getByRole('link', { name: 'Check-up' }).getAttribute('href')).toBe('/channel/checkup?video=a');
   });
 
   test('no uploads', async () => {

@@ -5,6 +5,7 @@ import { pollStale, pruneCompetitors } from './poll';
 import { saveStats } from './routes';
 import { FIRST_WEEK_TTL_MS, REPORT_TTL_MS } from '../routes/channel';
 import { KEYWORD_CACHE_MS } from '../routes/keywords';
+import { runReportingCron } from '../reporting/sync';
 
 /**
  * Cron (hourly). Archive and prune first, so they run even if polling hits a platform limit.
@@ -23,6 +24,8 @@ export async function runCron(deps: Deps, at: Date): Promise<void> {
     deps.db.prepare("DELETE FROM report_cache WHERE (key NOT LIKE 'fw:%' AND fetched_at < ?) OR (key LIKE 'fw:%' AND fetched_at < ?)").bind(iso(REPORT_TTL_MS), iso(FIRST_WEEK_TTL_MS)),
     deps.db.prepare('DELETE FROM keyword_cache WHERE fetched_at < ?').bind(iso(KEYWORD_CACHE_MS)),
   ]);
+  // Thumbnail reports (Reporting API): prune rows older than 30 days, download new daily files for a few channels.
+  await runReportingCron(deps);
   // The agent before feed polling: its own work is bounded per run (see agent/checks).
   await runAgentCron(deps, at);
   if (at.getUTCHours() === 4) await archiveDay(deps, new Date(at.getTime() - 86_400_000).toISOString().slice(0, 10));
