@@ -88,7 +88,7 @@ export const TOOLS: Tool[] = [
       { name: 'format', kind: 'string', enum: ['any', 'long', 'short'], description: 'Video format. Default any.' },
       { name: 'size', kind: 'string', enum: ['any', 'small', 'medium', 'large'], description: 'Channel size by median views (small < 10k, medium < 100k). Default any.' },
     ],
-    description: "Videos beating their channel's usual views (×N), from videos ViewProof's network observed — not all of YouTube.",
+    description: "Videos beating their channel's usual views (×N), from videos ViewProof's network observed — not all of YouTube. `coverage` describes the network's pool (videos seen in its last `coverage.days` days), not the `days` filter, which applies to the rows.",
     run: async (ctx, a) => {
       const u = new URLSearchParams();
       for (const k of ['q', 'days', 'min', 'format', 'size']) if (a[k] !== undefined) u.set(k, String(a[k]));
