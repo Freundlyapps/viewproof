@@ -15,6 +15,11 @@ export const fmt = {
     return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
   },
   usd: (n: number) => money.format(n),
+  /** A 0–1 share → "12.3%". */
+  pct: (n: number) => `${one.format(n * 100)}%`,
+  /** A value already in percent (0–100) → "45.6%". */
+  pct100: (n: number) => `${one.format(n)}%`,
+  one: (n: number) => one.format(n),
 };
 
 export const RANGE_LABEL: Record<string, string> = { '7d': '7 days', '28d': '28 days', '90d': '90 days', '365d': '12 months' };

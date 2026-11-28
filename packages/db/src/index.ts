@@ -12,6 +12,7 @@ export interface ChannelRow {
   scopes: string; refresh_token_enc: string; status: ChannelStatus; status_reason: string | null; connected_at: string; last_verified_at: string;
 }
 export interface ReportCacheRow { channel_id: string; key: string; body: string; fetched_at: string }
+export interface ReportingJobRow { channel_id: string; report_type: string; job_id: string | null; status: 'ok' | 'failed'; status_reason: string | null; created_at: string; checked_at: string | null; last_file_created: string | null }
 export interface KeywordCacheRow { keyword: string; country: string; provider: string; body: string; fetched_at: string }
 export interface TrackedChannelRow {
   channel_id: string; title: string; handle: string | null; last_polled_at: string | null; last_poll_ok_at: string | null; last_poll_error: string | null;

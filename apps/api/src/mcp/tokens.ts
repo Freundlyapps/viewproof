@@ -9,23 +9,25 @@ export { MCP_DAILY_CALLS };
 export const MAX_MCP_TOKENS = 5;
 const DEFAULT_LABEL = 'AI app';
 
-export interface McpTokenInfo { id: string; label: string; createdAt: string; lastUsedAt: string | null }
-interface Row { id: string; label: string; created_at: string; last_used_at: string | null }
+/** `connectedApp`: made by signing in from an AI app (OAuth), not created by hand. */
+export interface McpTokenInfo { id: string; label: string; createdAt: string; lastUsedAt: string | null; connectedApp: boolean }
+interface Row { id: string; label: string; created_at: string; last_used_at: string | null; client_id: string | null }
 
 const dayOf = (deps: Deps) => new Date(deps.now()).toISOString().slice(0, 10);
-const info = (r: Row): McpTokenInfo => ({ id: r.id, label: r.label, createdAt: r.created_at, lastUsedAt: r.last_used_at });
+const info = (r: Row): McpTokenInfo => ({ id: r.id, label: r.label, createdAt: r.created_at, lastUsedAt: r.last_used_at, connectedApp: r.client_id !== null });
 
 export async function tokensOf(deps: Deps, userId: string): Promise<McpTokenInfo[]> {
-  return (await deps.db.prepare('SELECT id, label, created_at, last_used_at FROM mcp_tokens WHERE user_id = ? ORDER BY created_at, id').bind(userId).all<Row>()).results.map(info);
+  return (await deps.db.prepare('SELECT id, label, created_at, last_used_at, client_id FROM mcp_tokens WHERE user_id = ? ORDER BY created_at, id').bind(userId).all<Row>()).results.map(info);
 }
 
-/** The user an `Authorization: Bearer vpm_…` header belongs to, or null. Records the time of use. */
+/** The user an `Authorization: Bearer vpm_…` header belongs to, or null. Records the time of use. Connected apps' tokens expire. */
 export async function userForToken(deps: Deps, header: string | undefined): Promise<string | null> {
   const m = /^Bearer\s+(\S+)$/i.exec(header?.trim() ?? '');
   if (!m) return null;
   const hash = await sha256Hex(m[1]!);
-  const row = await deps.db.prepare('UPDATE mcp_tokens SET last_used_at = ? WHERE id_hash = ? RETURNING user_id')
-    .bind(new Date(deps.now()).toISOString(), hash).first<{ user_id: string }>();
+  const now = new Date(deps.now()).toISOString();
+  const row = await deps.db.prepare('UPDATE mcp_tokens SET last_used_at = ? WHERE id_hash = ? AND (expires_at IS NULL OR expires_at > ?) RETURNING user_id')
+    .bind(now, hash, now).first<{ user_id: string }>();
   return row?.user_id ?? null;
 }
 
@@ -62,12 +64,12 @@ export function mcpTokenRoutes(app: Hono, deps: Deps): void {
   app.post('/api/mcp/tokens', async (c) => {
     const s = await readSession(c, deps);
     if (!s) return err(c, 401, 'signed_out', 'Sign in first.');
-    const n = (await deps.db.prepare('SELECT COUNT(*) AS n FROM mcp_tokens WHERE user_id = ?').bind(s.userId).first<{ n: number }>())!.n;
+    const n = (await deps.db.prepare('SELECT COUNT(*) AS n FROM mcp_tokens WHERE user_id = ? AND client_id IS NULL').bind(s.userId).first<{ n: number }>())!.n;
     if (n >= MAX_MCP_TOKENS) return err(c, 422, 'limit', `You can have up to ${MAX_MCP_TOKENS} MCP tokens. Revoke one first.`);
     const body = (await c.req.json().catch(() => null)) as { label?: unknown } | null;
     const label = typeof body?.label === 'string' && body.label.trim() ? body.label.trim().slice(0, 40) : DEFAULT_LABEL;
     const token = `vpm_${randomToken(32)}`;
-    const row: Row = { id: randomToken(12), label, created_at: new Date(deps.now()).toISOString(), last_used_at: null };
+    const row: Row = { id: randomToken(12), label, created_at: new Date(deps.now()).toISOString(), last_used_at: null, client_id: null };
     await deps.db.prepare('INSERT INTO mcp_tokens (id, id_hash, user_id, label, created_at) VALUES (?, ?, ?, ?, ?)')
       .bind(row.id, await sha256Hex(token), s.userId, row.label, row.created_at).run();
     return c.json({ token, info: info(row) }, 201);

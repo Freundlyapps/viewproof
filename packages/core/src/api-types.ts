@@ -15,7 +15,11 @@ export interface Overview {
   period: Period;
   /** Last day YouTube returned data for (it lags 48–72 h), or null when it returned none. */
   dataThrough: string | null;
-  totals: { views: Pair; watchMinutes: Pair; averageViewDuration: Pair; subscribersGained: Pair; subscribersLost: Pair };
+  totals: {
+    views: Pair; watchMinutes: Pair; averageViewDuration: Pair; subscribersGained: Pair; subscribersLost: Pair;
+    /** Share of each video watched on average (YouTube's averageViewPercentage, 0–100). */
+    averageViewPercentage: Pair;
+  };
   daily: { date: string; views: number }[];
   /** Which days the comparison covers (YouTube lags, so often fewer than the range). */
   coverage: Coverage;
@@ -32,6 +36,14 @@ export interface VideoRow {
   views: Measured<number>;
   watchMinutes: Measured<number>;
   averageViewDuration: Measured<number>;
+  subscribersGained: Measured<number>;
+  subscribersLost: Measured<number>;
+  /** 0–100. */
+  averageViewPercentage: Measured<number>;
+  /** Thumbnail impressions summed over the period's days ViewProof has (Reporting API, last 30 days at most). */
+  impressions: Measured<number>;
+  /** YouTube's click-through rate for the video's latest day with data (0–1); inputs.day names the day. */
+  latestCtr: Measured<number>;
 }
 export interface Videos { range: RangeKey; dataThrough: string | null; coverage: Coverage; videos: VideoRow[]; fetchedAt: string }
 
@@ -45,6 +57,102 @@ export interface SearchTerm {
 }
 export interface SearchTerms { range: RangeKey; coverage: Coverage; terms: SearchTerm[]; note: string | null; fetchedAt: string }
 
+/** Where the period's views came from (YouTube search, Browse, Suggested, Shorts feed…), with the period before. */
+export interface TrafficSource {
+  /** YouTube's insightTrafficSourceType code, e.g. YT_SEARCH. */
+  type: string;
+  label: string;
+  views: number;
+  watchMinutes: number;
+  previousViews: Measured<number>;
+}
+export interface TrafficSources { range: RangeKey; coverage: Coverage; sources: TrafficSource[]; note: string | null; fetchedAt: string }
+
+/** One point of a video's audience retention curve (YouTube gives up to 100, by share of the video's length). */
+export interface RetentionPoint {
+  /** Share of the video's length, 0.01–1. */
+  elapsedRatio: number;
+  /** The same point in seconds, when the video's length is known. */
+  elapsedSec: number | null;
+  /** Viewers still watching ÷ views (can pass 1 where people rewatch). */
+  audienceWatchRatio: number;
+  /** Retention at this point against videos of similar length on YouTube, 0–1 (0.5 = typical). */
+  relativeRetentionPerformance: Measured<number>;
+}
+export interface VideoRetention {
+  videoId: string;
+  title: string;
+  durationSec: number | null;
+  range: RangeKey;
+  period: { start: string; end: string };
+  curve: RetentionPoint[];
+  /** YouTube's first curve point at or after 0:30, as given (inputs.elapsedSec says where it is). */
+  at30s: RetentionPoint | null;
+  /** Why there is no 0:30 point. */
+  at30sNote: string | null;
+  note: string | null;
+  fetchedAt: string;
+}
+
+/** One row of a breakdown (country, device…) with YouTube's views and watch time. */
+export interface Slice { key: string; label: string; views: number; watchMinutes: number }
+/** Who watches: countries, devices and age/gender, each with why it's empty when YouTube gives nothing. */
+export interface Audience {
+  range: RangeKey;
+  coverage: Coverage;
+  countries: Slice[];
+  countriesNote: string | null;
+  devices: Slice[];
+  devicesNote: string | null;
+  /** YouTube's viewerPercentage (signed-in viewers) per age group and gender, 0–100. */
+  ageGender: { ageGroup: string; female: number; male: number; other: number }[];
+  ageGenderNote: string | null;
+  /** What YouTube doesn't give any app (shown so nobody guesses them). */
+  notAvailable: string[];
+  fetchedAt: string;
+}
+
+/** Thumbnail impressions and click-through rate (YouTube Reporting API, daily files, the last 30 days at most). */
+export interface Thumbnails {
+  /** waiting: jobs just started (data in about two days); failed: YouTube refused (reason). */
+  status: 'ok' | 'waiting' | 'failed';
+  reason: string | null;
+  range: RangeKey;
+  /** The days of the range that have data, oldest and newest. */
+  days: { from: string | null; to: string | null; count: number };
+  /** Impressions summed over the days ViewProof has. */
+  totals: { impressions: Measured<number> };
+  daily: { date: string; impressions: number }[];
+  /** Per video: impressions summed, and YouTube's click-through rate per day as given (0–1). */
+  videos: { videoId: string; title: string; thumbnailUrl: string | null; impressions: number; latestCtr: Measured<number>; ctrByDay: { date: string; ctr: number }[] }[];
+  sources: { type: number; label: string; impressions: number }[];
+  endScreens: { impressions: Measured<number>; clicks: Measured<number> };
+  fetchedAt: string;
+}
+
+/**
+ * One part of a video's check-up: YouTube's own values for the video, and the channel's value for the same
+ * period where YouTube gives one. Nothing is computed from them (YouTube policy III.E.4.h): the creator compares.
+ */
+export interface CheckupPart {
+  area: 'Reach' | 'Thumbnail & title' | 'Opening' | 'Watching' | 'Subscribers' | 'Next video';
+  /** What to look for, in plain words (fixed guidance, not computed from the numbers). */
+  guide: string;
+  values: { label: string; video: Measured<number>; channel: Measured<number> | null; unit: 'count' | 'fraction' | 'percent' | 'seconds' | 'score' }[];
+}
+export interface VideoCheckup {
+  video: { videoId: string; title: string; publishedAt: string; durationSec: number | null; thumbnailUrl: string | null };
+  range: RangeKey;
+  period: { start: string; end: string };
+  views: Measured<number>;
+  parts: CheckupPart[];
+  retention: VideoRetention | null;
+  /** YouTube's click-through rate per day for this video (0–1). */
+  ctrByDay: { date: string; ctr: number }[];
+  sources: TrafficSource[];
+  fetchedAt: string;
+}
+
 export type Earnings =
   | { status: 'not_granted' }
   | { status: 'not_available'; reason: string }
@@ -52,8 +160,15 @@ export type Earnings =
       status: 'ok';
       range: RangeKey;
       coverage: Coverage;
-      totals: { estimatedRevenue: Pair; playbackBasedCpm: Pair; monetizedPlaybacks: Pair };
+      totals: {
+        estimatedRevenue: Pair; playbackBasedCpm: Pair; monetizedPlaybacks: Pair;
+        /** YouTube Premium revenue (estimatedRedPartnerRevenue). */
+        premiumRevenue: Pair;
+      };
       topVideos: { videoId: string; title: string; estimatedRevenue: number; playbackBasedCpm: Measured<number> }[];
+      /** Top 10 countries by estimated revenue, or why there are none. */
+      countries: { country: string; estimatedRevenue: number }[];
+      countriesNote: string | null;
       fetchedAt: string;
     };
 

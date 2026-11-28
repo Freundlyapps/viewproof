@@ -6,7 +6,7 @@ import { TOOLS, inputSchema, validate } from './tools';
 export const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26'];
 export const LATEST_VERSION = SUPPORTED_VERSIONS[0]!;
 const SERVER_VERSION = '0.1.0';
-export const INSTRUCTIONS = "ViewProof gives read-only research data for the creator's YouTube channels and niche. Numbers come as measured values: kind 'value' with its source, or kind 'no_data' with a reason. Never fill in or estimate a no_data value; tell the user the reason. Search volume estimates are labelled as estimates; outliers come from videos ViewProof's network observed, not all of YouTube.";
+export const INSTRUCTIONS = "ViewProof gives read-only research data for the creator's YouTube channels and niche. Numbers come as measured values: kind 'value' with its source, or kind 'no_data' with a reason. Never fill in or estimate a no_data value; tell the user the reason. Search volume estimates are labelled as estimates; outliers come from videos ViewProof's network observed, not all of YouTube. Thumbnail impressions and click-through rate cover the last 30 days at most. No YouTube API gives unique or returning viewers: say so instead of guessing them.";
 const LIMIT_MESSAGE = `You used all ${MCP_DAILY_CALLS} MCP tool calls for today. More tomorrow.`;
 
 type Id = string | number | null;
@@ -31,7 +31,9 @@ export async function handleMcp(deps: Deps, userId: string, body: unknown): Prom
       return ok(id, {
         protocolVersion: SUPPORTED_VERSIONS.includes(asked) ? asked : LATEST_VERSION,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'viewproof', title: 'ViewProof', version: SERVER_VERSION },
+        // Apps that show server icons (MCP 2025-11-25) pick up the logo without the user uploading one.
+        serverInfo: { name: 'viewproof', title: 'ViewProof', version: SERVER_VERSION, websiteUrl: deps.config.appOrigin,
+          icons: [{ src: `${deps.config.appOrigin}/app/connector-icon.png`, mimeType: 'image/png', sizes: ['256x256'] }] },
         instructions: INSTRUCTIONS,
       });
     }

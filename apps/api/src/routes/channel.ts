@@ -7,6 +7,8 @@ import { type GoogleError, SCOPES } from '../google';
 import { readSession } from '../session';
 import type { Report, ReportQuery } from '../youtube';
 import { BAD_KEYWORD, keywordParam } from './keywords';
+import { reachByVideo, reachMeasures } from '../reporting/read';
+import { ensureJobs } from '../reporting/sync';
 
 export const REPORT_TTL_MS = 6 * 3_600_000;
 const SOURCE = 'YouTube Analytics';
@@ -49,7 +51,7 @@ export function firstRow(r: Report): Record<string, number> | null {
   return Object.fromEntries(r.columns.map((c, i) => [c, Number(row[i])]));
 }
 
-const TOTAL_METRICS = ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost'];
+const TOTAL_METRICS = ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost', 'averageViewPercentage'];
 
 export function pair(cur: Record<string, number> | null, prev: Record<string, number> | null, metric: string, why = NO_ROWS): Pair {
   const m = (r: Record<string, number> | null): Measured<number> =>
@@ -57,8 +59,9 @@ export function pair(cur: Record<string, number> | null, prev: Record<string, nu
   return { current: m(cur), previous: m(prev) };
 }
 
+
 /** Views per day for the range, and which days YouTube has filled (cached; every tab uses it). */
-async function dailyFor(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<{ daily: { date: string; views: number }[]; coverage: Coverage } | GoogleError> {
+export async function dailyFor(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<{ daily: { date: string; views: number }[]; coverage: Coverage } | GoogleError> {
   return cached(deps, a.channel.id, `daily:${range}:${today(deps)}`, REPORT_TTL_MS, async () => {
     const p = periodFor(range, today(deps));
     const d = await deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: ['views'], dimensions: ['day'], sort: 'day' });
@@ -91,6 +94,7 @@ export async function loadOverview(deps: Deps, a: ChannelAccess, range: RangeKey
       averageViewDuration: pair(c, pr, 'averageViewDuration'),
       subscribersGained: pair(c, pr, 'subscribersGained'),
       subscribersLost: pair(c, pr, 'subscribersLost'),
+      averageViewPercentage: pair(c, pr, 'averageViewPercentage'),
     },
     daily: d.daily,
     coverage: d.coverage,
@@ -110,10 +114,14 @@ export async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey):
   const p = d.coverage.period;
   // Ask about exactly the uploads shown (YouTube accepts a list of video ids), not its top videos overall.
   const rep = ups.length === 0 ? { columns: [], rows: [] } : await deps.youtube.report(a.accessToken, {
-    startDate: p.start, endDate: p.end, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration'], dimensions: ['video'],
+    startDate: p.start, endDate: p.end, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost', 'averageViewPercentage'], dimensions: ['video'],
     filters: `video==${ups.map((u) => u.videoId).join(',')}`, sort: '-views', maxResults: 200,
   });
   if (isErr(rep)) return rep;
+  // Start the thumbnail reports if this channel has none yet (cheap once they exist).
+  const started = await ensureJobs(deps, a);
+  if (started) return started;
+  const reach = await reachByVideo(deps, a.channel.id, p.start, p.end);
   const byVideo = new Map(rep.rows.map((r) => [String(r[rep.columns.indexOf('video')]), r]));
   const col = (r: (string | number)[] | undefined, name: string): Measured<number> => {
     const i = rep.columns.indexOf(name);
@@ -125,6 +133,9 @@ export async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey):
       videoId: u.videoId, title: u.title, publishedAt: u.publishedAt, durationSec: u.durationSec, thumbnailUrl: u.thumbnailUrl,
       lifetimeViews: u.views === null ? noData('View count hidden') : value(u.views, 'YouTube Data API', { metric: 'viewCount' }),
       views: col(r, 'views'), watchMinutes: col(r, 'estimatedMinutesWatched'), averageViewDuration: col(r, 'averageViewDuration'),
+      subscribersGained: col(r, 'subscribersGained'), subscribersLost: col(r, 'subscribersLost'),
+      averageViewPercentage: col(r, 'averageViewPercentage'),
+      ...reachMeasures(reach, u.videoId),
     };
   });
   return { range, dataThrough: d.coverage.dataThrough, coverage: d.coverage, videos, fetchedAt: new Date(deps.now()).toISOString() };
@@ -199,7 +210,7 @@ const terms = (deps: Deps, a: ChannelAccess, start: string, end: string, video?:
     startDate: start, endDate: end, metrics: ['views', 'estimatedMinutesWatched'], dimensions: ['insightTrafficSourceDetail'],
     filters: video ? `${YT_SEARCH};video==${video}` : YT_SEARCH, sort: '-views', maxResults: 25,
   });
-const rowsBy = (r: Report, key: string) => r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])) as Record<string, string | number>).map((o) => ({ key: String(o[key]), o }));
+export const rowsBy = (r: Report, key: string) => r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])) as Record<string, string | number>).map((o) => ({ key: String(o[key]), o }));
 
 async function titles(deps: Deps, a: ChannelAccess): Promise<Map<string, string>> {
   const ups = await uploadsOf(deps, a);
@@ -244,6 +255,7 @@ export async function loadSearchTerms(deps: Deps, a: ChannelAccess, range: Range
 }
 
 const REVENUE_METRICS = ['estimatedRevenue', 'playbackBasedCpm', 'monetizedPlaybacks'];
+const EXTRA_REVENUE_METRICS = ['estimatedRedPartnerRevenue'];
 
 async function loadEarnings(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<Earnings | GoogleError> {
   const d = await dailyFor(deps, a, range);
@@ -258,18 +270,33 @@ async function loadEarnings(deps: Deps, a: ChannelAccess, range: RangeKey): Prom
     if (isErr(r) && r.kind === 'forbidden') return { status: 'not_available', reason: r.reason };
     if (isErr(r)) return r;
   }
-  const c = firstRow(cur as Report);
-  const pr = firstRow(prev as Report);
+  // Premium revenue and countries are extra questions: if YouTube refuses one, only that part says why.
+  const [xCur, xPrev, byCountry] = await Promise.all([
+    deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: EXTRA_REVENUE_METRICS }),
+    deps.youtube.report(a.accessToken, { startDate: p.prevStart, endDate: p.prevEnd, metrics: EXTRA_REVENUE_METRICS }),
+    deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: ['estimatedRevenue'], dimensions: ['country'], sort: '-estimatedRevenue', maxResults: 10 }),
+  ]);
+  for (const r of [xCur, xPrev, byCountry]) if (isErr(r) && r.kind === 'revoked') return r;
+  const why = (r: Report | GoogleError) => (isErr(r) ? `YouTube didn't answer: ${'reason' in r ? r.reason : r.kind}` : NO_ROWS);
+  const c = { ...firstRow(cur as Report), ...(isErr(xCur) ? {} : firstRow(xCur)) };
+  const pr = { ...firstRow(prev as Report), ...(isErr(xPrev) ? {} : firstRow(xPrev)) };
+  const hasC = firstRow(cur as Report) ? c : null;
+  const hasP = firstRow(prev as Report) ? pr : null;
   const names = await titles(deps, a);
   return {
     status: 'ok',
     range,
     coverage: d.coverage,
-    totals: { estimatedRevenue: pair(c, pr, 'estimatedRevenue'), playbackBasedCpm: pair(c, pr, 'playbackBasedCpm'), monetizedPlaybacks: pair(c, pr, 'monetizedPlaybacks') },
+    totals: {
+      estimatedRevenue: pair(hasC, hasP, 'estimatedRevenue'), playbackBasedCpm: pair(hasC, hasP, 'playbackBasedCpm'), monetizedPlaybacks: pair(hasC, hasP, 'monetizedPlaybacks'),
+      premiumRevenue: pair(hasC, hasP, 'estimatedRedPartnerRevenue', why(xCur)),
+    },
     topVideos: rowsBy(top as Report, 'video').map(({ key, o }) => ({
       videoId: key, title: names.get(key) ?? key, estimatedRevenue: Number(o.estimatedRevenue),
       playbackBasedCpm: Number.isFinite(Number(o.playbackBasedCpm)) ? yt(Number(o.playbackBasedCpm), { metric: 'playbackBasedCpm' }) : noData(NO_ROWS),
     })),
+    countries: isErr(byCountry) ? [] : rowsBy(byCountry, 'country').map(({ key, o }) => ({ country: key, estimatedRevenue: Number(o.estimatedRevenue) })).filter((x) => Number.isFinite(x.estimatedRevenue)),
+    countriesNote: isErr(byCountry) ? why(byCountry) : byCountry.rows.length ? null : 'YouTube reported no revenue by country for these dates',
     fetchedAt: new Date(deps.now()).toISOString(),
   };
 }

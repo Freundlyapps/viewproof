@@ -5,10 +5,13 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import type { ChannelRow } from '@viewproof/db';
 import { createApp, type Deps } from '../src/app';
 import { MCP_DAILY_CALLS } from '../src/mcp/tokens';
+import { SEARCH_TERMS_SCOPE } from '../src/mcp/tools';
+import { pointAt } from '../src/routes/insights';
+import type { TrafficSources, VideoRetention } from '@viewproof/core';
 import type { ReportQuery, VideoDetails, YouTubeClient } from '../src/youtube';
 import { fakeGoogle } from './fake-google';
 import { fakeYouTube } from './fake-youtube';
-import { addUser, channelFixture, makeDeps, post, sendJsonReq, sessionCookie, signIn } from './helpers';
+import { APP, addUser, channelFixture, makeDeps, post, sendJsonReq, sessionCookie, signIn } from './helpers';
 
 const NOW = Date.parse('2026-11-21T12:00:00Z');
 type App = ReturnType<typeof createApp>;
@@ -52,6 +55,7 @@ describe('MCP protocol', () => {
     expect(a.id).toBe(1);
     expect(a.result.protocolVersion).toBe('2025-06-18');
     expect(a.result.serverInfo.name).toBe('viewproof');
+    expect(a.result.serverInfo).toMatchObject({ icons: [{ src: `${APP}/app/connector-icon.png`, mimeType: 'image/png' }] });
     expect(a.result.capabilities).toEqual({ tools: { listChanged: false } });
     expect(a.result.instructions).toContain("Never fill in or estimate a no_data value");
     const b = (await (await rpc(app, token, { jsonrpc: '2.0', id: 2, method: 'initialize', params: { protocolVersion: '1999-01-01', capabilities: {}, clientInfo: { name: 't', version: '1' } } })).json()) as { result: { protocolVersion: string } };
@@ -105,12 +109,12 @@ describe('MCP protocol', () => {
 });
 
 describe('MCP tools', () => {
-  test('tools/list names the 10 read-only tools', async () => {
+  test('tools/list names the 15 read-only tools', async () => {
     await addUser('mcp-t1');
     const { app } = appWith();
     const token = await tokenFor(app, 'mcp-t1');
     const r = (await (await rpc(app, token, { jsonrpc: '2.0', id: 1, method: 'tools/list' })).json()) as { result: { tools: { name: string; inputSchema: { type: string }; annotations: { readOnlyHint: boolean } }[] } };
-    expect(r.result.tools.map((t) => t.name).sort()).toEqual(['channel_overview', 'channel_videos', 'check_video_text', 'competitor_uploads', 'find_outliers', 'keyword_trends', 'list_channels', 'search_terms', 'upload_times', 'video_details']);
+    expect(r.result.tools.map((t) => t.name).sort()).toEqual(['audience', 'channel_overview', 'channel_videos', 'check_video_text', 'competitor_uploads', 'find_outliers', 'keyword_trends', 'list_channels', 'search_terms', 'thumbnails', 'traffic_sources', 'upload_times', 'video_checkup', 'video_details', 'video_retention']);
     for (const t of r.result.tools) {
       expect(t.annotations.readOnlyHint).toBe(true);
       expect(t.inputSchema.type).toBe('object');
@@ -218,6 +222,84 @@ describe('MCP tools', () => {
   });
 });
 
+describe('MCP insights', () => {
+  const day = async (_t: string, q: ReportQuery) => (q.dimensions?.[0] === 'day' ? { columns: ['day', 'views'], rows: [['2026-11-19', 3]] } : null);
+
+  test('search_terms says it covers YouTube search only', async () => {
+    const { row } = await connected('mcp-s1', 'UCmcps1');
+    const { app } = appWith({ report: async (t, q) => (await day(t, q)) ?? { columns: ['insightTrafficSourceDetail', 'views', 'estimatedMinutesWatched'], rows: [['pottery', 10, 20]] } });
+    const token = await tokenFor(app, row.user_id);
+    const r = await call(app, token, 'search_terms');
+    expect(r.isError).toBeFalsy();
+    expect(r.structuredContent).toMatchObject({ scope: SEARCH_TERMS_SCOPE, terms: [{ term: 'pottery', views: 10 }] });
+  });
+
+  test('traffic_sources: labels, share of views and the period before', async () => {
+    const { row } = await connected('mcp-s2', 'UCmcps2');
+    const { app, youtube } = appWith({
+      report: async (t, q) => (await day(t, q)) ?? (q.endDate === '2026-11-19'
+        ? { columns: ['insightTrafficSourceType', 'views', 'estimatedMinutesWatched'], rows: [['YT_SEARCH', 300, 900], ['RELATED_VIDEO', 100, 200], ['NEW_THING', 0, 0]] }
+        : { columns: ['insightTrafficSourceType', 'views', 'estimatedMinutesWatched'], rows: [['YT_SEARCH', 50, 100]] }),
+    });
+    const token = await tokenFor(app, row.user_id);
+    const r = await call(app, token, 'traffic_sources', { range: '28d' });
+    expect(r.isError).toBeFalsy();
+    const sc = r.structuredContent as unknown as TrafficSources;
+    expect(sc.sources[0]).toMatchObject({ type: 'YT_SEARCH', label: 'YouTube search', views: 300, watchMinutes: 900, previousViews: { kind: 'value', value: 50 } });
+    expect(sc.sources[0]).not.toHaveProperty('shareOfViews');
+    expect(sc.sources[1]).toMatchObject({ label: 'Suggested videos', previousViews: { kind: 'no_data' } });
+    expect(sc.sources[2]!.label).toBe('NEW_THING');
+    const q = youtube.calls.map((c) => c.arg as ReportQuery).find((x) => x.dimensions?.[0] === 'insightTrafficSourceType')!;
+    expect(q).toMatchObject({ metrics: ['views', 'estimatedMinutesWatched'], sort: '-views' });
+  });
+
+  test('video_retention: curve in seconds and the 30-second point', async () => {
+    const { row } = await connected('mcp-s3', 'UCmcps3');
+    const video = async (_t: string, id: string): Promise<VideoDetails> => ({ videoId: id, channelId: 'UCmcps3', title: 'Bowl', description: '', tags: [], publishedAt: '2026-10-01T00:00:00Z', durationSec: 200 });
+    const { app, youtube } = appWith({
+      video,
+      report: async (t, q) => (await day(t, q)) ?? { columns: ['elapsedVideoTimeRatio', 'audienceWatchRatio', 'relativeRetentionPerformance'], rows: [[0.2, 0.6, 0.55], [0.1, 0.8, 0.5]] },
+    });
+    const token = await tokenFor(app, row.user_id);
+    const r = await call(app, token, 'video_retention', { videoId: 'abcdefghijk' });
+    expect(r.isError).toBeFalsy();
+    const sc = r.structuredContent as unknown as VideoRetention;
+    expect(sc).toMatchObject({ videoId: 'abcdefghijk', title: 'Bowl', durationSec: 200, range: '90d', note: null });
+    expect(sc.curve.map((p) => [p.elapsedRatio, p.elapsedSec])).toEqual([[0.1, 20], [0.2, 40]]);
+    // 30 s = 0.15 of 200 s: YouTube's first point at or after it (0:40) as given, nothing read in between.
+    expect(sc.at30s).toMatchObject({ elapsedRatio: 0.2, elapsedSec: 40, audienceWatchRatio: 0.6, relativeRetentionPerformance: { value: 0.55 } });
+    expect(sc.at30sNote).toBeNull();
+    const q = youtube.calls.map((c) => c.arg as ReportQuery).find((x) => x.dimensions?.[0] === 'elapsedVideoTimeRatio')!;
+    expect(q).toMatchObject({ filters: 'video==abcdefghijk', metrics: ['audienceWatchRatio', 'relativeRetentionPerformance'] });
+  });
+
+  test("video_retention: another channel's video, a bad id, no curve", async () => {
+    const { row } = await connected('mcp-s4', 'UCmcps4');
+    const mk = (channelId: string) => async (_t: string, id: string): Promise<VideoDetails> => ({ videoId: id, channelId, title: 't', description: '', tags: [], publishedAt: '2026-10-01T00:00:00Z', durationSec: 20 });
+    const other = appWith({ video: mk('UCother') });
+    const token = await tokenFor(other.app, row.user_id);
+    expect(await call(other.app, token, 'video_retention', { videoId: 'abcdefghijk' })).toMatchObject({ isError: true, content: [{ text: 'Video not found on this channel.' }] });
+    expect(await call(other.app, token, 'video_retention', { videoId: 'nope' })).toMatchObject({ isError: true, content: [{ text: 'That is not a YouTube video id.' }] });
+    const mine = appWith({ video: mk('UCmcps4') });
+    const r = await call(mine.app, token, 'video_retention', { videoId: 'bbbbbbbbbbb' });
+    const sc = r.structuredContent as unknown as VideoRetention;
+    expect(sc.curve).toEqual([]);
+    expect(sc.note).toMatch(/no retention data/);
+    expect(sc.at30s).toBeNull();
+    expect(sc.at30sNote).toMatch(/no retention data/);
+  });
+});
+
+describe('pointAt', () => {
+  const pt = (elapsedRatio: number, audienceWatchRatio: number) => ({ elapsedRatio, elapsedSec: null, audienceWatchRatio, relativeRetentionPerformance: { kind: 'no_data' as const, reason: '' } });
+  test('first point at or after the second, too short, unknown length', () => {
+    expect(pointAt([pt(0.25, 0.9), pt(0.5, 0.4)], 60, 30).point).toMatchObject({ elapsedRatio: 0.5, audienceWatchRatio: 0.4 });
+    expect(pointAt([pt(0.01, 0.9)], 6000, 30).point).toMatchObject({ elapsedRatio: 0.01 });
+    expect(pointAt([pt(0.5, 0.4)], 30, 30)).toEqual({ point: null, note: 'The video is 30 seconds long or shorter.' });
+    expect(pointAt([pt(0.5, 0.4)], null, 30).point).toBeNull();
+  });
+});
+
 describe('MCP interop', () => {
   test('the official SDK client connects, lists and calls a tool', async () => {
     await addUser('mcp-i1');
@@ -230,7 +312,7 @@ describe('MCP interop', () => {
     const client = new Client({ name: 'interop-test', version: '1.0.0' });
     await client.connect(transport);
     const tools = await client.listTools();
-    expect(tools.tools).toHaveLength(10);
+    expect(tools.tools).toHaveLength(15);
     const r = await client.callTool({ name: 'check_video_text', arguments: { title: 'Hello' } });
     expect((r.structuredContent as { title: unknown[] }).title.length).toBeGreaterThan(0);
     await client.close();

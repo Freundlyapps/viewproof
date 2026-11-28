@@ -1,3 +1,4 @@
+import { takeReturn } from '../mcp/oauth';
 import { tokensOf } from '../mcp/tokens';
 import { agentState } from '../agent/routes';
 import type { ChannelRow, PendingConnectionRow, UserRow } from '@viewproof/db';
@@ -12,6 +13,7 @@ import { LIVE_STATUSES, billingOf } from '../billing/routes';
 import { clearSession, readSession } from '../session';
 import { Account } from '../views/Account';
 import { Message } from '../views/Message';
+import { REPORTING_TABLES } from '../reporting/sync';
 
 const notFound = (c: Context) => {
   c.status(404);
@@ -59,6 +61,7 @@ export async function revokeAndDelete(deps: Deps, ch: ChannelRow): Promise<boole
   const token = await tryDecrypt(deps, ch.refresh_token_enc);
   await deps.db.batch([
     deps.db.prepare('DELETE FROM report_cache WHERE channel_id = ?').bind(ch.id),
+    ...REPORTING_TABLES.map((t) => deps.db.prepare(`DELETE FROM ${t} WHERE channel_id = ?`).bind(ch.id)),
     deps.db.prepare('DELETE FROM agent_changes WHERE channel_row_id = ?').bind(ch.id),
     deps.db.prepare('DELETE FROM agent_briefs WHERE channel_row_id = ?').bind(ch.id),
     deps.db.prepare('DELETE FROM channels WHERE id = ?').bind(ch.id),
@@ -90,6 +93,9 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     const s = await readSession(c, deps);
     const u = s && (await user(deps, s.userId));
     if (!u) return c.redirect('/auth/google/start', 302);
+    // Signed in from an AI app's "Connect" (MCP sign-in): go back to its consent page.
+    const back = takeReturn(c, deps);
+    if (back) return c.redirect(back, 302);
     const connected = c.req.query('connected');
     const byHand = c.req.query('note') === 'revoke-by-hand';
     const bill = await billingOf(deps, u.id);
@@ -209,6 +215,7 @@ export function accountRoutes(app: Hono, deps: Deps): void {
     await clearSession(c, deps);
     await deps.db.batch([
       deps.db.prepare('DELETE FROM report_cache WHERE channel_id IN (SELECT id FROM channels WHERE user_id = ?)').bind(s.userId),
+      ...REPORTING_TABLES.map((t) => deps.db.prepare(`DELETE FROM ${t} WHERE channel_id IN (SELECT id FROM channels WHERE user_id = ?)`).bind(s.userId)),
       deps.db.prepare('DELETE FROM oauth_states WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM pending_connections WHERE user_id = ?').bind(s.userId),
       deps.db.prepare('DELETE FROM agent_changes WHERE user_id = ?').bind(s.userId),

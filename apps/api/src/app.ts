@@ -2,6 +2,7 @@ import { aiKeyRoutes } from './ai/keys';
 import { aiRoutes } from './ai/routes';
 import { agentRoutes } from './agent/routes';
 import { mcpTokenRoutes } from './mcp/tokens';
+import { mcpOAuthRoutes } from './mcp/oauth';
 import { mcpRoutes } from './mcp/routes';
 import type { StripeClient } from './billing/stripe';
 import { billingWebhook } from './billing/webhook';
@@ -21,6 +22,7 @@ import { keywordRoutes } from './routes/keywords';
 import { accountRoutes } from './routes/account';
 import { authRoutes, stateCookie } from './routes/auth';
 import { channelRoutes } from './routes/channel';
+import { insightRoutes } from './routes/insights';
 import { connectRoutes } from './routes/connect';
 import { readSession, sessionCookieName } from './session';
 import { Home } from './views/Home';
@@ -65,7 +67,8 @@ export function createApp(deps: Deps): Hono {
   app.use('*', async (c, next) => {
     // The pool contribution route takes no cookie: its bearer token is the credential (sent by the extension).
     // The Stripe webhook is signed; its signature is the credential.
-    const bearerOnly = c.req.path === '/api/pool/contribute' || c.req.path === '/api/billing/webhook';
+    // An AI app registers and swaps codes for tokens from its own server: no cookie is read; the PKCE verifier and refresh token are the credentials.
+    const bearerOnly = c.req.path === '/api/pool/contribute' || c.req.path === '/api/billing/webhook' || c.req.path === '/oauth/token' || c.req.path === '/oauth/register';
     // MCP clients (CLI apps) send no Origin; a browser's Origin must be ours (DNS rebinding rule). Its bearer token is the credential.
     if (c.req.path === '/mcp') {
       const o = c.req.header('origin');
@@ -109,6 +112,7 @@ export function createApp(deps: Deps): Hono {
   connectRoutes(app, deps);
   accountRoutes(app, deps);
   channelRoutes(app, deps);
+  insightRoutes(app, deps);
   keywordRoutes(app, deps);
   competitorRoutes(app, deps);
   poolRoutes(app, deps);
@@ -119,6 +123,7 @@ export function createApp(deps: Deps): Hono {
   mcpTokenRoutes(app, deps);
   billingWebhook(app, deps);
   billingRoutes(app, deps);
+  mcpOAuthRoutes(app, deps);
   mcpRoutes(app, deps);
   return app;
 }

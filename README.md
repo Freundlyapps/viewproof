@@ -83,9 +83,18 @@ Keep live checks to a handful of requests; never loop them.
 
 ## The web app
 
-Sign in with Google, connect your channel (view-only) and open **My channel**: views, watch time, average view duration and subscribers per day; your videos; the real YouTube search terms that brought viewers; and YouTube's revenue estimates if you allow revenue access.
+Sign in with Google, connect your channel (view-only) and open **My channel**. Its tabs:
+- **Overview:** views, watch time, average view duration, average share watched and subscribers, with views per day.
+- **Videos:** each video's numbers for the period, with thumbnail impressions and click-through rate.
+- **Video check-up:** everything YouTube tells about one video on one page (reach, thumbnail & title, opening at 0:30, watching, subscribers, end screen), with the channel's value beside it where YouTube gives the same measure, the retention curve, the daily click-through rate and where its views come from. Each part says in plain words what to look for.
+- **Thumbnails:** impressions per day, per video and per traffic source, YouTube's click-through rate per video per day, and end screen impressions and clicks (YouTube Reporting API).
+- **Traffic:** views per traffic source (search, Browse, Suggested, Shorts feed…), with the period before.
+- **Audience:** top countries and devices, age and gender. Unique and returning viewers aren't available to any app.
+- **Search terms** and **Earnings** (revenue estimates, Premium revenue and revenue by country, if you allow revenue access).
 
-Every number is YouTube's own value, labelled REAL (or ESTIMATE for revenue), with the previous period beside it. ViewProof doesn't compute scores, percentages or ratios from YouTube API data: YouTube's developer policy (III.E.4.h) forbids derived metrics. When YouTube returns nothing, the app says "No data" and why.
+Every number is YouTube's own value, labelled REAL (or ESTIMATE for revenue), with the previous period beside it. ViewProof doesn't compute scores, percentages or ratios from YouTube API data: YouTube's developer policy (III.E.4.h) forbids derived metrics. The only arithmetic is adding up YouTube's own daily counts (impressions, end screen clicks) over the days shown; click-through rates are YouTube's per video and day, never averaged. When YouTube returns nothing, the app says "No data" and why.
+
+**Thumbnail data** comes from the YouTube Reporting API: ViewProof creates three reporting jobs on the channel (reach, reach by traffic source, end screens) the first time the Videos or Thumbnails tab opens, and the hourly job downloads YouTube's daily files. The first data arrives about two days later, with up to 30 days of history. Rows are deleted 30 days after download. The **YouTube Reporting API** must be enabled in the Google Cloud project, next to the Analytics and Data APIs.
 
 Run it yourself: see [Self-hosting](#self-hosting).
 
@@ -151,12 +160,13 @@ On **Home → What to make next**, ViewProof's agent suggests 5 next videos and 
 
 ## MCP server
 
-Use ViewProof's data from your own AI app: Claude Code, Cursor, VS Code and other apps that support MCP. Your AI app does the writing; ViewProof gives it your real numbers. The tools are **read-only**: nothing is changed at YouTube or in ViewProof.
-- **Tools:** `list_channels`, `channel_overview`, `channel_videos`, `search_terms`, `upload_times`, `video_details` (one of your videos with its own search terms), `find_outliers`, `competitor_uploads`, `keyword_trends`, `check_video_text` (the Optimize rules). They return the same data as the web app, from the same cache, so they cost no extra YouTube quota. A value YouTube doesn't give comes back as `no_data` with the reason, and the server tells the AI not to fill it in.
-- **Connect:** in **Settings → AI & apps → MCP server**, create a token (shown once; up to 5; revoke at any time). Then:
+Use ViewProof's data from your own AI app: ChatGPT, Claude, Claude Code, Cursor, VS Code and other apps that support MCP. Everything is on the **Connect AI** page in the app's menu. Your AI app does the writing; ViewProof gives it your real numbers. The tools are **read-only**: nothing is changed at YouTube or in ViewProof.
+- **Tools:** `list_channels`, `channel_overview`, `channel_videos` (with subscribers gained and lost per video), `search_terms` (YouTube search only, top 25), `traffic_sources` (search, Browse, Suggested, Shorts feed…), `upload_times`, `video_details` (one of your videos with its own search terms), `video_retention` (a video's retention curve and how many still watch at 30 seconds), `video_checkup` (one video against your own usual), `audience` (countries, devices, age and gender), `thumbnails` (impressions and click-through rate, last 30 days), `find_outliers`, `competitor_uploads`, `keyword_trends`, `check_video_text` (the Optimize rules). They return the same data as the web app, from the same cache, so they cost no extra YouTube quota (the new tools share the cache of the My channel tabs Video check-up, Thumbnails, Traffic and Audience). A value YouTube doesn't give comes back as `no_data` with the reason, and the server tells the AI not to fill it in.
+- **Chat apps (sign-in):** add a custom connector with the address `https://<your server>/mcp`, click Connect, sign in to ViewProof and click **Allow**. This is OAuth 2.1 with dynamic client registration and PKCE (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`). Access tokens last an hour; refresh tokens rotate on every use and end after 90 days unused. Up to 10 connected apps; disconnect any of them on Connect AI.
+- **Developer tools (token):** on **Connect AI**, create a token (shown once; up to 5; revoke at any time). Then:
   - Claude Code: `claude mcp add --transport http viewproof https://<your server>/mcp --header "Authorization: Bearer <token>"`
   - Other apps: `{"mcpServers":{"viewproof":{"type":"http","url":"https://<your server>/mcp","headers":{"Authorization":"Bearer <token>"}}}}`
-- **Limits:** 500 tool calls per day on the hosted service (no limit when self-hosted). Apps that only connect through an OAuth sign-in (such as claude.ai connectors) aren't supported yet.
+- **Limits:** 500 tool calls per day on the hosted service (no limit when self-hosted), shared by all your connected apps and tokens.
 
 ## Model eval
 

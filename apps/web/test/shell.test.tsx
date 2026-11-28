@@ -48,7 +48,7 @@ describe('shell', () => {
     renderAt('/settings');
     const nav = await screen.findByRole('navigation', { name: 'Main' });
     const items = within(nav).getAllByRole('link');
-    expect(items.map((a) => a.getAttribute('data-label'))).toEqual(['Home', 'Research', 'My channel', 'Optimize video', 'Competitors', 'Ask AI', 'Tools', 'Settings']);
+    expect(items.map((a) => a.getAttribute('data-label'))).toEqual(['Home', 'Research', 'My channel', 'Optimize video', 'Competitors', 'Ask AI', 'Connect AI', 'Tools', 'Settings']);
     const soon = items.filter((a) => within(a).queryByText('soon')).map((a) => a.getAttribute('data-label'));
     expect(soon).toEqual([]);
   });

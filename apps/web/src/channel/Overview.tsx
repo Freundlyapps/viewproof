@@ -21,6 +21,7 @@ export function Kpis(props: { data: OverviewData }) {
       <Kpi id="kpi-views" label="Views" pair={totals.views} previousLabel={prev} format={fmt.count} />
       <Kpi id="kpi-watch" label="Watch time" pair={totals.watchMinutes} previousLabel={prev} format={fmt.hours} />
       <Kpi id="kpi-avg" label="Average view duration" pair={totals.averageViewDuration} previousLabel={prev} format={fmt.duration} />
+      {totals.averageViewPercentage ? <Kpi id="kpi-avgpct" label="Average share watched" pair={totals.averageViewPercentage} previousLabel={prev} format={fmt.pct100} /> : null}
       <Kpi id="kpi-subs" label="Subscribers gained" pair={totals.subscribersGained} previousLabel={prev} format={fmt.count} />
       <Kpi id="kpi-lost" label="Subscribers lost" pair={totals.subscribersLost} previousLabel={prev} format={fmt.count} />
     </div>
