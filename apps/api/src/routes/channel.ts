@@ -58,7 +58,7 @@ export function pair(cur: Record<string, number> | null, prev: Record<string, nu
 }
 
 /** Views per day for the range, and which days YouTube has filled (cached; every tab uses it). */
-async function dailyFor(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<{ daily: { date: string; views: number }[]; coverage: Coverage } | GoogleError> {
+export async function dailyFor(deps: Deps, a: ChannelAccess, range: RangeKey): Promise<{ daily: { date: string; views: number }[]; coverage: Coverage } | GoogleError> {
   return cached(deps, a.channel.id, `daily:${range}:${today(deps)}`, REPORT_TTL_MS, async () => {
     const p = periodFor(range, today(deps));
     const d = await deps.youtube.report(a.accessToken, { startDate: p.start, endDate: p.end, metrics: ['views'], dimensions: ['day'], sort: 'day' });
@@ -110,7 +110,7 @@ export async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey):
   const p = d.coverage.period;
   // Ask about exactly the uploads shown (YouTube accepts a list of video ids), not its top videos overall.
   const rep = ups.length === 0 ? { columns: [], rows: [] } : await deps.youtube.report(a.accessToken, {
-    startDate: p.start, endDate: p.end, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration'], dimensions: ['video'],
+    startDate: p.start, endDate: p.end, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost'], dimensions: ['video'],
     filters: `video==${ups.map((u) => u.videoId).join(',')}`, sort: '-views', maxResults: 200,
   });
   if (isErr(rep)) return rep;
@@ -125,6 +125,7 @@ export async function loadVideos(deps: Deps, a: ChannelAccess, range: RangeKey):
       videoId: u.videoId, title: u.title, publishedAt: u.publishedAt, durationSec: u.durationSec, thumbnailUrl: u.thumbnailUrl,
       lifetimeViews: u.views === null ? noData('View count hidden') : value(u.views, 'YouTube Data API', { metric: 'viewCount' }),
       views: col(r, 'views'), watchMinutes: col(r, 'estimatedMinutesWatched'), averageViewDuration: col(r, 'averageViewDuration'),
+      subscribersGained: col(r, 'subscribersGained'), subscribersLost: col(r, 'subscribersLost'),
     };
   });
   return { range, dataThrough: d.coverage.dataThrough, coverage: d.coverage, videos, fetchedAt: new Date(deps.now()).toISOString() };
@@ -199,7 +200,7 @@ const terms = (deps: Deps, a: ChannelAccess, start: string, end: string, video?:
     startDate: start, endDate: end, metrics: ['views', 'estimatedMinutesWatched'], dimensions: ['insightTrafficSourceDetail'],
     filters: video ? `${YT_SEARCH};video==${video}` : YT_SEARCH, sort: '-views', maxResults: 25,
   });
-const rowsBy = (r: Report, key: string) => r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])) as Record<string, string | number>).map((o) => ({ key: String(o[key]), o }));
+export const rowsBy = (r: Report, key: string) => r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])) as Record<string, string | number>).map((o) => ({ key: String(o[key]), o }));
 
 async function titles(deps: Deps, a: ChannelAccess): Promise<Map<string, string>> {
   const ups = await uploadsOf(deps, a);

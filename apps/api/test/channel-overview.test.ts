@@ -129,15 +129,17 @@ describe('videos', () => {
       ],
       report: async (_t, q) => (q.dimensions?.[0] === 'day'
         ? { columns: ['day', 'views'], rows: [['2026-11-21', 1]] }
-        : { columns: ['video', 'views', 'estimatedMinutesWatched', 'averageViewDuration'], rows: [['a', 300, 1500, 300]] }),
+        : { columns: ['video', 'views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost'], rows: [['a', 300, 1500, 300, 12, 2]] }),
     });
     const v = (await (await get(app, `/api/channels/${row.id}/videos?range=28d`, cookie)).json()) as Videos;
+    expect(v.videos[0]).toMatchObject({ subscribersGained: { kind: 'value', value: 12 }, subscribersLost: { kind: 'value', value: 2 } });
+    expect(v.videos[1]!.subscribersGained.kind).toBe('no_data');
     expect(v.videos[0]).toMatchObject({ videoId: 'a', title: 'A', durationSec: 600, thumbnailUrl: 'ta', lifetimeViews: { kind: 'value', value: 900 }, views: { kind: 'value', value: 300 }, watchMinutes: { kind: 'value', value: 1500 }, averageViewDuration: { kind: 'value', value: 300 } });
     const why = "YouTube reported no row for this video in these dates (no views, or below YouTube's reporting threshold)";
     expect(v.videos[1]).toMatchObject({ videoId: 'b', lifetimeViews: { kind: 'no_data', reason: 'View count hidden' }, views: { kind: 'no_data', reason: why }, watchMinutes: { kind: 'no_data', reason: why } });
     expect(youtube.calls.find((c) => c.method === 'uploads')?.arg).toBe(200);
     // Asks about exactly the uploads shown, not YouTube's top 200 of all videos.
-    expect(youtube.calls.find((c) => c.method === 'report' && (c.arg as ReportQuery).dimensions?.[0] === 'video')?.arg).toMatchObject({ startDate: '2026-10-25', endDate: '2026-11-21', dimensions: ['video'], filters: 'video==a,b', sort: '-views', maxResults: 200, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration'] });
+    expect(youtube.calls.find((c) => c.method === 'report' && (c.arg as ReportQuery).dimensions?.[0] === 'video')?.arg).toMatchObject({ startDate: '2026-10-25', endDate: '2026-11-21', dimensions: ['video'], filters: 'video==a,b', sort: '-views', maxResults: 200, metrics: ['views', 'estimatedMinutesWatched', 'averageViewDuration', 'subscribersGained', 'subscribersLost'] });
     expect(v.coverage).toMatchObject({ dataThrough: '2026-11-21', days: 28 });
   });
 

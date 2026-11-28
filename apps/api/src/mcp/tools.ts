@@ -1,11 +1,12 @@
 // Read-only MCP tools (plan 6c). Each tool calls the same loaders as the web app, through the same report cache.
-import { type OptimizeVideo, type Overview, RANGES, type SearchTerms, type UploadTimes, type Videos, checkDescription, checkTags, checkTitle, normalizeKeyword } from '@viewproof/core';
+import { type OptimizeVideo, type Overview, RANGES, type SearchTerms, type TrafficSources, type UploadTimes, type VideoRetention, type Videos, checkDescription, checkTags, checkTitle, normalizeKeyword } from '@viewproof/core';
 import type { ChannelRow } from '@viewproof/db';
 import type { Deps } from '../app';
 import { ownedChannel } from '../channel-data';
 import { latestUploads } from '../competitors/routes';
 import { findOutliers, parseOutlierQuery } from '../pool/outliers';
 import { VIDEO_ID, channelReport, loadOptimize, loadOverview, loadSearchTerms, loadUploadTimes, loadVideos, today } from '../routes/channel';
+import { loadRetention, loadTrafficSources } from '../routes/insights';
 import { MAX_KEYWORD, keywordTrends } from '../routes/keywords';
 
 type Kind = 'string' | 'number' | 'string[]';
@@ -39,6 +40,9 @@ function report<T extends object>(key: (a: Args, day: string) => string, load: (
   };
 }
 const range = (a: Args) => (a.range as (typeof RANGES)[number] | undefined) ?? '28d';
+/** Said in the search_terms answer itself, so a chat app can't take the terms for the whole traffic picture. */
+export const SEARCH_TERMS_SCOPE = "Only views that came from YouTube search, and only YouTube's top 25 terms: the terms don't add up to all search views, and search is one traffic source among others (call traffic_sources for the split).";
+const VIDEO_ID_PARAM: Param = { name: 'videoId', kind: 'string', required: true, description: '11-character YouTube video id of one of your videos.' };
 
 export const TOOLS: Tool[] = [
   {
@@ -56,13 +60,21 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'channel_videos', title: 'Channel videos', params: [CHANNEL, RANGE],
-    description: "The channel's videos with their views and watch time in the period, from YouTube Analytics.",
+    description: "The channel's videos with their views, watch time and subscribers gained and lost in the period, from YouTube Analytics.",
     run: report<Videos>((a, d) => `videos:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadVideos(deps, acc, range(a))),
   },
   {
     name: 'search_terms', title: 'Search terms', params: [CHANNEL, RANGE],
-    description: 'The real YouTube search terms that brought viewers to the channel (top 25), or YouTube\'s note when it withholds them.',
-    run: report<SearchTerms>((a, d) => `terms:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadSearchTerms(deps, acc, range(a))),
+    description: "The top 25 terms people typed in YouTube search before watching the channel, or YouTube's note when it withholds them. Covers YouTube search traffic only, not all traffic: for the split between search, Browse, Suggested, Shorts feed and other sources, call traffic_sources.",
+    run: async (ctx, a) => {
+      const r = await report<SearchTerms>((a2, d) => `terms:${range(a2)}:${d}`, (_d, a2) => (deps, acc) => loadSearchTerms(deps, acc, range(a2)))(ctx, a);
+      return 'data' in r ? { data: { scope: SEARCH_TERMS_SCOPE, ...r.data } } : r;
+    },
+  },
+  {
+    name: 'traffic_sources', title: 'Traffic sources', params: [CHANNEL, RANGE],
+    description: "Where the channel's views came from in the period (YouTube search, Browse features, Suggested videos, Shorts feed, External, …): views, watch time and share of views per source, with the period before. From YouTube Analytics. YouTube gives no impressions or click-through rate here.",
+    run: report<TrafficSources>((a, d) => `traffic:${range(a)}:${d}`, (_d, a) => (deps, acc) => loadTrafficSources(deps, acc, range(a))),
   },
   {
     name: 'upload_times', title: 'Upload times', params: [CHANNEL],
@@ -70,12 +82,24 @@ export const TOOLS: Tool[] = [
     run: report<UploadTimes>((_a, d) => `upload-times:${d}`, () => (deps, acc) => loadUploadTimes(deps, acc)),
   },
   {
-    name: 'video_details', title: 'Video details', params: [{ name: 'videoId', kind: 'string', required: true, description: '11-character YouTube video id of one of your videos.' }, CHANNEL],
+    name: 'video_details', title: 'Video details', params: [VIDEO_ID_PARAM, CHANNEL],
     description: "One of the creator's videos: title, description, tags and the video's own real search terms (last 90 days).",
     run: async (ctx, a) => {
       const id = a.videoId as string;
       if (!VIDEO_ID.test(id)) return { error: BAD_VIDEO_ID };
       const r = await report<OptimizeVideo | { missing: true }>((_a, d) => `optimize:${id}:${d}`, () => (deps, acc) => loadOptimize(deps, acc, id))(ctx, a);
+      return 'data' in r && 'missing' in r.data ? { error: NOT_THIS_CHANNEL } : r;
+    },
+  },
+  {
+    name: 'video_retention', title: 'Video retention',
+    params: [VIDEO_ID_PARAM, CHANNEL, { name: 'range', kind: 'string', enum: RANGES, description: 'Period: last 7, 28, 90 or 365 days. Default 90d (retention needs enough views).' }],
+    description: "One of the creator's videos: its audience retention curve (up to 100 points by share of the video's length; audienceWatchRatio = viewers still watching ÷ views, above 1 where people rewatch), YouTube's comparison with similar-length videos, and how many were still watching at 30 seconds. From YouTube Analytics.",
+    run: async (ctx, a) => {
+      const id = a.videoId as string;
+      if (!VIDEO_ID.test(id)) return { error: BAD_VIDEO_ID };
+      const rg = (a.range as (typeof RANGES)[number] | undefined) ?? '90d';
+      const r = await report<VideoRetention | { missing: true }>((_a, d) => `retention:${id}:${rg}:${d}`, () => (deps, acc) => loadRetention(deps, acc, id, rg))(ctx, a);
       return 'data' in r && 'missing' in r.data ? { error: NOT_THIS_CHANNEL } : r;
     },
   },

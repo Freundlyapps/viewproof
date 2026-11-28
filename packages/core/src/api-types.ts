@@ -32,6 +32,8 @@ export interface VideoRow {
   views: Measured<number>;
   watchMinutes: Measured<number>;
   averageViewDuration: Measured<number>;
+  subscribersGained: Measured<number>;
+  subscribersLost: Measured<number>;
 }
 export interface Videos { range: RangeKey; dataThrough: string | null; coverage: Coverage; videos: VideoRow[]; fetchedAt: string }
 
@@ -44,6 +46,45 @@ export interface SearchTerm {
   topVideo: { videoId: string; title: string } | null;
 }
 export interface SearchTerms { range: RangeKey; coverage: Coverage; terms: SearchTerm[]; note: string | null; fetchedAt: string }
+
+/** Where the period's views came from (YouTube search, Browse, Suggested, Shorts feed…), with the period before. */
+export interface TrafficSource {
+  /** YouTube's insightTrafficSourceType code, e.g. YT_SEARCH. */
+  type: string;
+  label: string;
+  views: number;
+  watchMinutes: number;
+  /** This source's views ÷ the views of all sources YouTube listed for the period. */
+  shareOfViews: Measured<number>;
+  previousViews: Measured<number>;
+}
+export interface TrafficSources { range: RangeKey; coverage: Coverage; sources: TrafficSource[]; totalViews: number; note: string | null; fetchedAt: string }
+
+/** One point of a video's audience retention curve (YouTube gives up to 100, by share of the video's length). */
+export interface RetentionPoint {
+  /** Share of the video's length, 0.01–1. */
+  elapsedRatio: number;
+  /** The same point in seconds, when the video's length is known. */
+  elapsedSec: number | null;
+  /** Viewers still watching ÷ views (can pass 1 where people rewatch). */
+  audienceWatchRatio: number;
+  /** Retention at this point against videos of similar length on YouTube, 0–1 (0.5 = typical). */
+  relativeRetentionPerformance: Measured<number>;
+}
+export interface VideoRetention {
+  videoId: string;
+  title: string;
+  durationSec: number | null;
+  range: RangeKey;
+  period: { start: string; end: string };
+  curve: RetentionPoint[];
+  /** audienceWatchRatio at 30 seconds, read between the two nearest points. */
+  watchingAt30s: Measured<number>;
+  /** 1 − watchingAt30s: the share of views that stopped before 30 seconds (negative when rewatches outweigh). */
+  dropOffBy30s: Measured<number>;
+  note: string | null;
+  fetchedAt: string;
+}
 
 export type Earnings =
   | { status: 'not_granted' }
